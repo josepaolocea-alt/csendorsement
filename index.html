@@ -1515,6 +1515,7 @@ function openNewDIDModal(){
   document.getElementById('d-resolved-display').style.color='var(--text3)';
   document.getElementById('d-comment-text').value='';
   _pendingAttachments['did-attach-pending']=[];
+  _pendingDIDComments=[];
   renderPendingPreviews('did-attach-pending');
   renderDIDModalComments([]);
   clearModalMeta('did-modal');
@@ -1543,7 +1544,7 @@ function openEditDID(id){
   document.getElementById('did-modal').classList.remove('hidden');
 }
 
-function closeDIDModal(){if(_skipModalClose)return;document.getElementById('did-modal').classList.add('hidden');}
+function closeDIDModal(){if(_skipModalClose)return;document.getElementById('did-modal').classList.add('hidden');editingDIDId=null;_pendingDIDComments=[];}
 
 function onDIDPriorityChange(){}
 
@@ -1578,6 +1579,8 @@ function saveDIDRecord(){
   }else{
     if(isDone) rec.resolvedDate=today;
     var nd=Object.assign({id:idSeq++,_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    // Merge any buffered DID comments
+    if(_pendingDIDComments.length){nd.comments=_pendingDIDComments.slice();_pendingDIDComments=[];}
     DATA.push(nd);saveOne(nd);
     writeLog('created',nd.client||'DID record','Created DID entry');
     toast('Added!','success');
@@ -1608,22 +1611,11 @@ function addDIDComment(){
       toast('Comment added','success');
     }
   }else{
-    var dClient=document.getElementById('d-client-sel');
-    var dVal=(dClient&&dClient.style.display!=='none'?dClient.value:document.getElementById('d-client').value).trim().toUpperCase();
-    if(!dVal){toast('Please fill in the Client / Vendor field first','error');return;}
-    _skipModalClose=true;
-    saveDIDRecord();
-    _skipModalClose=false;
-    var newRec=DATA[DATA.length-1];
-    if(newRec){
-      if(!newRec.comments)newRec.comments=[];
-      newRec.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
-      saveOne(newRec);
-      editingDIDId=newRec.id;
-      document.getElementById('d-comment-text').value='';
-      renderDIDModalComments(newRec.comments);
-      toast('Record saved & comment added','success');
-    }
+    // Buffer comment — don't save record yet, wait for Save button
+    _pendingDIDComments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+    document.getElementById('d-comment-text').value='';
+    renderDIDModalComments(_pendingDIDComments);
+    toast('Comment queued — will save with entry','info');
   }
 }
 
@@ -1759,6 +1751,7 @@ function openNewModal(){
   document.getElementById('f-end').value='0';
   document.getElementById('f-comment-text').value='';
   _pendingAttachments['endorse-attach-pending']=[];
+  _pendingComments=[];
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments([]);
   clearModalMeta('modal');
@@ -1801,7 +1794,7 @@ function openEdit(id){
   markRead(id);renderRows();
   document.getElementById('record-modal').classList.remove('hidden');
 }
-function closeModal(){if(_skipModalClose)return;document.getElementById('record-modal').classList.add('hidden');editingId=null;}
+function closeModal(){if(_skipModalClose)return;document.getElementById('record-modal').classList.add('hidden');editingId=null;_pendingComments=[];}
 
 function saveRecord(){
   var sel=document.getElementById('f-client-sel');var client=(sel&&sel.style.display!=='none'?sel.value:document.getElementById('f-client').value).trim().toUpperCase();
@@ -1854,6 +1847,8 @@ function saveRecord(){
   }else{
     if(isCompleted){rec.resolvedDate=today;rec.timerStart=null;rec.timerAlerted=false;}
     var ne=Object.assign({id:idSeq++,_sel:false,timerStart:isCompleted?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    // Merge any buffered comments
+    if(_pendingComments.length){ne.comments=_pendingComments.slice();_pendingComments=[];}
     DATA.push(ne);saveOne(ne);
     try{writeLog('created',ne.client||'new record','Created new endorsement');}catch(le){}
     toast('Added'+(isCompleted?'':' & timer started!'),'success');
@@ -1945,6 +1940,8 @@ function onPriorityChange(){
 
 var _commentModalId=null;
 var _skipModalClose=false;
+var _pendingComments=[]; // buffer for comments on unsaved new entries
+var _pendingDIDComments=[]; // buffer for DID comments on unsaved new entries
 
 // ─── UNREAD COMMENT TRACKING ─────────────────────────────────
 // Stores: { recordId: lastReadTimestamp } in localStorage per user
@@ -2137,24 +2134,11 @@ function addComment(){
       toast('Comment added','success');
     }
   }else{
-    // Auto-save the record first, then attach the comment
-    var client=document.getElementById('f-client-sel');
-    var clientVal=(client&&client.style.display!=='none'?client.value:document.getElementById('f-client').value).trim().toUpperCase();
-    if(!clientVal){toast('Please fill in the Client / Vendor field first','error');return;}
-    _skipModalClose=true;
-    saveRecord();
-    _skipModalClose=false;
-    // After saveRecord, editingId is now set — find the record just added
-    var newRec=DATA[DATA.length-1];
-    if(newRec){
-      if(!newRec.comments)newRec.comments=[];
-      newRec.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
-      saveOne(newRec);
-      editingId=newRec.id;
-      document.getElementById('f-comment-text').value='';
-      renderModalComments(newRec.comments);
-      toast('Record saved & comment added','success');
-    }
+    // Buffer comment — don't save record yet, wait for Save button
+    _pendingComments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+    document.getElementById('f-comment-text').value='';
+    renderModalComments(_pendingComments);
+    toast('Comment queued — will save with entry','info');
   }
 }
 
