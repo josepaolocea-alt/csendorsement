@@ -357,9 +357,14 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 
     <!-- DROPDOWN OPTIONS -->
     <div class="admin-section">
-      <h3>🔽 Dropdown Options</h3>
-      <p class="sub">Manage options for Service, Platform, and Status dropdowns. Changes apply to all tabs immediately. Admin only.</p>
-      <div id="dropdown-options-wrap" style="display:flex;flex-direction:column;gap:16px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleDropdownPanel()">
+        <div>
+          <h3 style="margin-bottom:2px">🔽 Dropdown Options</h3>
+          <p class="sub" style="margin:0">Manage options for Service, Platform, and Status dropdowns. Changes apply to all tabs immediately. Admin only.</p>
+        </div>
+        <span id="dropdown-panel-arrow" style="font-size:16px;color:var(--accent);font-weight:700;margin-left:12px">▶</span>
+      </div>
+      <div id="dropdown-options-wrap" style="display:none;flex-direction:column;gap:16px;margin-top:14px"></div>
     </div>
 
     <!-- CLIENT LIST -->
@@ -587,21 +592,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp"><label>RR by</label>
           <select class="fc" id="rr-by">
             <option value="">— Select —</option>
-            <optgroup label="BM">
-              <option>Ma'am Kath</option><option>Sir Jason</option><option>Ma'am Shayne</option>
-            </optgroup>
-            <optgroup label="AM">
-              <option>Jem Santos</option><option>Robert Pinote</option>
-            </optgroup>
-            <optgroup label="Product">
-              <option>Raffy Ching</option><option>Mark Deviente</option><option>Vi Quibingco</option><option>Paul Fabella</option><option>Jessa Lubiano</option>
-            </optgroup>
           </select>
         </div>
         <div class="fgrp"><label>RO by</label>
           <select class="fc" id="ro-by">
             <option value="">— Select —</option>
-            <option>Sir Rod</option><option>L2 Aries</option><option>L2 Efren</option><option>L2 Franz</option>
           </select>
         </div>
         <div class="fgrp"><label>Status</label>
@@ -2296,10 +2291,12 @@ function toggleClientGrid(){
 }
 // ─── DROPDOWN OPTIONS ────────────────────────────────────────
 var DROPDOWN_OPTS = {
-  service:    {label:'Service',         defaults:['VOIP','SMS','Payment']},
-  platform:   {label:'Platform',        defaults:['MS Teams','Viber','WhatsApp','Telegram','Email']},
+  service:    {label:'Service',              defaults:['VOIP','SMS','Payment']},
+  platform:   {label:'Platform',             defaults:['MS Teams','Viber','WhatsApp','Telegram','Email']},
   status_ip:  {label:'Status — In Progress', defaults:['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client']},
-  status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted']}
+  status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted']},
+  rr_by:      {label:'RR by',                defaults:["Ma'am Kath","Sir Jason","Ma'am Shayne","Jem Santos","Robert Pinote","Raffy Ching","Mark Deviente","Vi Quibingco","Paul Fabella","Jessa Lubiano"]},
+  ro_by:      {label:'RO by',                defaults:['Sir Rod','L2 Aries','L2 Efren','L2 Franz']}
 };
 var _dropdownData = {}; // loaded from Firestore
 
@@ -2371,6 +2368,38 @@ function applyDropdownsToForms(){
     if(curStf) fstf.value=curStf;
     else fstf.value=ipItems[0]||'';
   }
+  // RR by dropdown
+  var rrByItems=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
+  var rrByEl=document.getElementById('rr-by');
+  if(rrByEl){
+    var curRrBy=rrByEl.value;
+    rrByEl.innerHTML='<option value="">— Select —</option>'
+      +rrByItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
+    if(curRrBy) rrByEl.value=curRrBy;
+  }
+  // RO by dropdown
+  var roByItems=_dropdownData['ro_by']||DROPDOWN_OPTS.ro_by.defaults;
+  var roByEl=document.getElementById('ro-by');
+  if(roByEl){
+    var curRoBy=roByEl.value;
+    roByEl.innerHTML='<option value="">— Select —</option>'
+      +roByItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
+    if(curRoBy) roByEl.value=curRoBy;
+  }
+  // Update RR badge arrays from dynamic data
+  RR_BM=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
+  RR_AM=[];RR_PROD=[];
+  RR_RO=_dropdownData['ro_by']||DROPDOWN_OPTS.ro_by.defaults;
+}
+
+var _dropdownPanelOpen=false;
+function toggleDropdownPanel(){
+  _dropdownPanelOpen=!_dropdownPanelOpen;
+  var wrap=document.getElementById('dropdown-options-wrap');
+  var arrow=document.getElementById('dropdown-panel-arrow');
+  if(wrap) wrap.style.display=_dropdownPanelOpen?'flex':'none';
+  if(arrow) arrow.textContent=_dropdownPanelOpen?'▼':'▶';
+  if(_dropdownPanelOpen) renderDropdownOptionsPanel();
 }
 
 function renderDropdownOptionsPanel(){
@@ -2998,6 +3027,7 @@ window.autoResizeId=autoResizeId;
 window.addDropdownOption=addDropdownOption;
 window.deleteDropdownOption=deleteDropdownOption;
 window.renderDropdownOptionsPanel=renderDropdownOptionsPanel;
+window.toggleDropdownPanel=toggleDropdownPanel;
 </script>
 </body>
 </html>
