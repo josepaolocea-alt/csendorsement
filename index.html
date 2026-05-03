@@ -154,6 +154,7 @@ textarea.fc{resize:vertical;min-height:70px;}
 .admin-table tr:hover td{background:var(--bg3);}
 .role-badge{display:inline-flex;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;}
 .role-admin{background:rgba(239,68,68,.15);color:#f87171;}
+.role-semi{background:rgba(234,179,8,.15);color:#fbbf24;}
 .role-viewer{background:rgba(91,124,255,.15);color:#818cf8;}
 .client-tag{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:12px;color:var(--text2);}
 .client-tag button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;line-height:1;padding:0;}
@@ -290,7 +291,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </select>
     <select class="fsel" id="f-pri" onchange="applyFilters()"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
     <select class="fsel" id="f-plt" onchange="applyFilters()"><option value="">All Platforms</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
-    <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()">⚙️ Settings ▾</button>
+    <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">⚙️ Settings ▾</button>
     <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇️ Export</button>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">🗑️ Delete Selected</button>
     <span style="font-size:12px;color:var(--text3)" id="rec-count"></span>
@@ -342,9 +343,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 
     <!-- CLIENT LIST -->
     <div class="admin-section">
-      <h3>🏢 Client / Vendor List</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <h3>🏢 Client / Vendor List</h3>
+        <button onclick="toggleClientGrid()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:12px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px">
+          <span id="client-grid-count" style="color:var(--text3)"></span>
+          <span id="client-grid-arrow">▼</span>
+        </button>
+      </div>
       <p class="sub">Clients added here will appear in the dropdown for all tabs. Default selection is "— Select Client —".</p>
-      <div class="client-grid" id="client-grid">
+      <div class="client-grid" id="client-grid" style="display:none">
         <span style="color:var(--text3);font-size:12px">Loading clients...</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -373,6 +380,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp"><label>Role</label>
           <select class="fc" id="au-role">
             <option value="Viewer">Viewer</option>
+            <option value="Semi-Admin">Semi-Admin</option>
             <option value="Admin">Admin</option>
           </select>
         </div>
@@ -397,6 +405,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp"><label>Role</label>
           <select class="fc" id="eu-role">
             <option value="Viewer">Viewer</option>
+            <option value="Semi-Admin">Semi-Admin</option>
             <option value="Admin">Admin</option>
           </select>
         </div>
@@ -699,6 +708,8 @@ var _fbReady = false;
 var _firestoreUnsub = null;
 var _currentUser = null;
 var _currentUserRole = 'Viewer';
+window._canEdit=false;
+window._canAdd=false;
 var CLIENTS = []; // loaded from Firestore
 var _editingUserId = null;
 
@@ -765,16 +776,15 @@ function setUserDisplay(user){
       if(d.data().email===email) found=d.data();
     });
     if(!found){
-      // First-ever user becomes Admin automatically
       var role=snap.empty?'Admin':'Viewer';
       setDoc(doc(db,'users',uid),{name:email,email:email,role:role,addedAt:Date.now()}).then(function(){
         _currentUserRole=role;
-        if(role==='Admin') document.getElementById('admin-tab-btn').style.display='';
+        applyRolePermissions(role);
         toast(snap.empty?'You are set as Admin (first user)':'Account created as Viewer','info');
       });
     }else{
       _currentUserRole=found.role||'Viewer';
-      if(_currentUserRole==='Admin') document.getElementById('admin-tab-btn').style.display='';
+      applyRolePermissions(_currentUserRole);
     }
   }).catch(function(e){
     console.error('User check failed',e);
@@ -879,6 +889,7 @@ function switchTab(tab,el){
 }
 
 function openNewModalCurrent(){
+  if(!window._canAdd){toast('You do not have permission to add records','error');return;}
   if(currentTab==='did') openNewDIDModal();
   else if(currentTab==='mine') openNewRRModal();
   else openNewModal();
@@ -1166,11 +1177,11 @@ function renderRRRows(){
       +'<td>'+rrBadge(r.rrAdvised||'Not Yet','advised')+'</td>'
       +'<td>'+rrBadge(r.rrPosted||'None','posted')+'</td>'
       +'<td>'+rrBadge(r.rrInv||'None','inv')+'</td>'
-      +'<td style="text-align:center"><input type="checkbox" style="accent-color:#4ade80;width:15px;height:15px;cursor:pointer" '+(r.rrCompleted?'checked':'')+' onchange="toggleRRField('+r.id+',\'rrCompleted\',this.checked);renderRRRows()"></td>'
-      +'<td style="text-align:center"><input type="checkbox" style="accent-color:#f87171;width:15px;height:15px;cursor:pointer" '+(r.rrDisregard?'checked':'')+' onchange="toggleRRField('+r.id+',\'rrDisregard\',this.checked);renderRRRows()"></td>'
+      +'<td style="text-align:center"><input type="checkbox" style="accent-color:#4ade80;width:15px;height:15px;cursor:pointer" '+(r.rrCompleted?'checked':'')+' '+(window._canEdit?'':'disabled')+' onchange="toggleRRField('+r.id+',\'rrCompleted\',this.checked);renderRRRows()"></td>'
+      +'<td style="text-align:center"><input type="checkbox" style="accent-color:#f87171;width:15px;height:15px;cursor:pointer" '+(r.rrDisregard?'checked':'')+' '+(window._canEdit?'':'disabled')+' onchange="toggleRRField('+r.id+',\'rrDisregard\',this.checked);renderRRRows()"></td>'
       +'<td><div class="row-acts">'
-      +'<button class="btn-icon btn-sm" onclick="openEditRR('+r.id+')" title="Edit">&#9998;</button>'
-      +'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>'
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEditRR('+r.id+')" title="Edit">&#9998;</button>':'')
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
   }).join('');
@@ -1290,9 +1301,9 @@ function renderRows(){
         +'<td></td>'
         +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
         +'<td><div class="row-acts">'
-        +'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>'
+        +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>':'')
         +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')+'</button>'
-        +'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>'
+        +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
         +'</div></td>'
         +'</tr>';
     }
@@ -1310,11 +1321,11 @@ function renderRows(){
       +'<td>'+timerHTML(r)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
       +'<td><div class="row-acts">'
-      +'<button class="btn-icon btn-sm" onclick="openEdit('+r.id+')" title="Edit">&#9998;</button>'
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEdit('+r.id+')" title="Edit">&#9998;</button>':'')
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
       +'💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')
       +'</button>'
-      +'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>'
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
   }).join('');
@@ -1375,11 +1386,11 @@ function renderDIDRows(){
       +'<td>'+didPriBadge(r.priority)+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
       +'<td><div class="row-acts">'
-      +'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>'
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>':'')
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
       +'💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')
       +'</button>'
-      +'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>'
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
   }).join('');
@@ -1561,7 +1572,7 @@ document.addEventListener('keydown',function(e){
 function updateBulkBar(){
   var sel=DATA.filter(function(r){return r._sel;});
   var btn=document.getElementById('bulk-delete-btn');
-  if(btn) btn.style.display=sel.length>0?'':'none';
+  if(btn) btn.style.display=(sel.length>0&&window._canEdit)?'':'none';
   if(btn&&sel.length>0) btn.textContent='🗑️ Delete '+sel.length+' Selected';
 }
 function toggleAll(chk){filteredData.forEach(function(r){r._sel=chk.checked;});renderRows();updateBulkBar();}
@@ -1569,6 +1580,7 @@ function toggleRow(id,chk){var r=DATA.find(function(d){return d.id===id;});if(r)
 function toggleEnd(id,chk){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.endorsed=chk.checked?1:0;saveOne(r);toast(chk.checked?'Marked endorsed':'Unmarked','info');}
 
 function bulkDelete(){
+  if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
   var sel=DATA.filter(function(r){return r._sel;});
   if(!sel.length)return;
   appConfirm('Delete '+sel.length+' selected record'+(sel.length>1?'s':'')+'?','Delete').then(function(ok){
@@ -1700,6 +1712,7 @@ function saveRecord(){
 }
 
 function delRec(id){
+  if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
   appConfirm('Delete this record?','Delete').then(function(ok){
     if(!ok)return;
     DATA=DATA.filter(function(r){return r.id!==id;});
@@ -2027,7 +2040,37 @@ function startFirestore(){
   });
 }
 
-// ─── ADMIN: USER MANAGEMENT ──────────────────────────────────
+function applyRolePermissions(role){
+  var isAdmin   = role==='Admin';
+  var isSemi    = role==='Semi-Admin';
+  var isViewer  = role==='Viewer';
+
+  // Admin tab: Admin only
+  document.getElementById('admin-tab-btn').style.display = isAdmin ? '' : 'none';
+
+  // Settings button: Admin only
+  var settingsBtn = document.getElementById('auto-toggle-btn');
+  if(settingsBtn) settingsBtn.style.display = isAdmin ? '' : 'none';
+
+  // New button: Admin + Semi-Admin only
+  var newBtn = document.getElementById('new-btn');
+  if(newBtn) newBtn.style.display = isViewer ? 'none' : '';
+
+  // Store permission on window so renderRows can check it
+  window._canEdit = !isViewer;   // Admin + Semi-Admin can edit/delete
+  window._canAdd  = !isViewer;   // Admin + Semi-Admin can add
+}
+
+var _clientGridExpanded=false;
+function toggleClientGrid(){
+  _clientGridExpanded=!_clientGridExpanded;
+  var grid=document.getElementById('client-grid');
+  var arrow=document.getElementById('client-grid-arrow');
+  var count=document.getElementById('client-grid-count');
+  if(grid) grid.style.display=_clientGridExpanded?'flex':'none';
+  if(arrow) arrow.textContent=_clientGridExpanded?'▲':'▼';
+  if(count) count.textContent=_clientGridExpanded?'':' ('+CLIENTS.length+' clients — click to expand)';
+}
 function loadAdminData(){
   loadAdminUsers();
   renderClientGrid(); // CLIENTS already live via onSnapshot
@@ -2040,7 +2083,7 @@ function loadAdminUsers(){
     var rows=[];
     snap.forEach(function(d){
       var u=d.data();
-      var roleCls=u.role==='Admin'?'role-admin':'role-viewer';
+      var roleCls=u.role==='Admin'?'role-admin':u.role==='Semi-Admin'?'role-semi':'role-viewer';
       var added=u.addedAt?new Date(u.addedAt).toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}):'—';
       rows.push('<tr>'
         +'<td style="font-weight:600">'+escHtml(u.name||u.email)+'</td>'
@@ -2125,7 +2168,10 @@ function loadClientsAdmin(){
 
 function renderClientGrid(){
   var grid=document.getElementById('client-grid');
+  var count=document.getElementById('client-grid-count');
   if(!grid)return;
+  // Update count label
+  if(count) count.textContent=_clientGridExpanded?'':' ('+CLIENTS.length+' clients — click to expand)';
   if(!CLIENTS.length){grid.innerHTML='<span style="color:var(--text3);font-size:12px">No clients yet. Add one below.</span>';return;}
   grid.innerHTML=CLIENTS.map(function(c){
     return '<div class="client-tag">'+escHtml(c)
@@ -2240,6 +2286,7 @@ window.addCommentFromModal=addCommentFromModal;
 window.addDIDComment=addDIDComment;
 window.appConfirm=appConfirm;
 window.applyFilters=applyFilters;
+window.applyRolePermissions=applyRolePermissions;
 window.bulkDelete=bulkDelete;
 window.clampTimerHH=clampTimerHH;
 window.clampTimerMM=clampTimerMM;
@@ -2304,6 +2351,7 @@ window.switchTab=switchTab;
 window.testAlert=testAlert;
 window.toggleAll=toggleAll;
 window.toggleAutoPanel=toggleAutoPanel;
+window.toggleClientGrid=toggleClientGrid;
 window.toggleEnd=toggleEnd;
 window.togglePassVis=togglePassVis;
 window.toggleRRField=toggleRRField;
