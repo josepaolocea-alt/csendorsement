@@ -458,7 +458,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div class="fg">
         <div class="fgrp"><label>Display Name</label><input class="fc" id="eu-name" placeholder="e.g. Juan dela Cruz"></div>
         <div class="fgrp"><label>Alias</label><input class="fc" id="eu-nick" placeholder="e.g. CS, Juan, Kath..."></div>
-        <div class="fgrp"><label>Role</label>
+        <div class="fgrp" id="eu-role-wrap"><label>Role</label>
           <select class="fc" id="eu-role">
             <option value="Viewer">Viewer</option>
             <option value="Semi-Admin">Semi-Admin</option>
@@ -2433,8 +2433,10 @@ function loadNicknames(){
   getDocs(collection(db,'users')).then(function(snap){
     snap.forEach(function(d){
       var u=d.data();
-      if(u.email) _userNickCache[u.email]=u.name||u.nickname||u.email;
+      if(u.email) _userNickCache[u.email]=u.nickname||u.name||u.email;
     });
+    // Re-render current view so comment authors update from "Unknown"
+    applyFilters();
   });
 }
 
@@ -2573,7 +2575,6 @@ function saveCommentEdit(btn){
   var ts=parseInt(btn.dataset.ts);
   var source=btn.dataset.src;
   var recordId=btn.dataset.rid;
-  var containerId=btn.dataset.cid;
   var ta=document.getElementById('cedit_ta_'+ts);
   if(!ta) return;
   var newText=ta.value.trim();
@@ -2581,11 +2582,15 @@ function saveCommentEdit(btn){
   if(!r||!r.comments) return;
   var cm=r.comments.find(function(c){return c.ts===ts;});
   if(!cm) return;
+  // Security: Viewer can only edit own comments
+  var isOwner=_currentUser&&cm.user===_currentUser.email;
+  var isAdminOrSemi=_currentUserRole==='Admin'||_currentUserRole==='Semi-Admin';
+  if(!isOwner&&!isAdminOrSemi){toast('You can only edit your own comments','error');return;}
   cm.text=newText;
   saveOne(r);
   if(source==='endorsement') renderModalComments(r.comments);
   else if(source==='did') renderDIDModalComments(r.comments);
-  else if(source==='cm') renderCmModalComments(r.comments);
+  else renderCmModalComments(r.comments);
   toast('Comment updated','success');
 }
 
