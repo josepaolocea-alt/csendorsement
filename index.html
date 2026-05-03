@@ -492,7 +492,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <select class="fc" id="f-svc-f"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
         </div>
         <div class="fgrp full"><label>Concern</label><textarea class="fc" id="f-concern" placeholder="Describe the issue..." style="min-height:55px"></textarea></div>
-        <div class="fgrp full"><label>Description</label><textarea class="fc" id="f-remarks" placeholder="Additional description / notes..." style="min-height:90px"></textarea></div>
+        <div class="fgrp full"><label>Description</label><textarea class="fc" id="f-remarks" placeholder="Additional description / notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
         <div class="fgrp"><label>Platform</label>
           <select class="fc" id="f-plt-f"><option value="">-- Select --</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
         </div>
@@ -575,7 +575,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           </select>
         </div>
         <div class="fgrp"><label>Effective Date</label><input class="fc" id="rr-eff-date" type="date"></div>
-        <div class="fgrp full"><label>Description</label><textarea class="fc" id="rr-remarks" placeholder="Instructions, references, notes..." style="min-height:90px"></textarea></div>
+        <div class="fgrp full"><label>Description</label><textarea class="fc" id="rr-remarks" placeholder="Instructions, references, notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
         <div class="fgrp"><label>RR Date</label><input class="fc" id="rr-date" type="date"></div>
         <div class="fgrp"><label>RR by</label>
           <select class="fc" id="rr-by">
@@ -656,7 +656,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <select class="fc" id="d-svc"><option>VOIP</option><option>SMS</option></select>
         </div>
         <div class="fgrp full"><label>Concern</label><textarea class="fc" id="d-desc" placeholder="e.g. #9954130700: DID Disconnection Notice — AM" style="min-height:55px"></textarea></div>
-        <div class="fgrp full"><label>Description</label><textarea class="fc" id="d-remarks" placeholder="Additional description / notes..." style="min-height:90px"></textarea></div>
+        <div class="fgrp full"><label>Description</label><textarea class="fc" id="d-remarks" placeholder="Additional description / notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
         <div class="fgrp"><label>Status</label>
           <select class="fc" id="d-status">
             <optgroup label="In Progress">
@@ -1324,7 +1324,7 @@ function openEditRR(id){
   document.getElementById('rr-subject').value=r.rrSubject||'';
   document.getElementById('rr-priority').value=r.rrPriority||'';
   document.getElementById('rr-eff-date').value=r.rrEffDate||'';
-  document.getElementById('rr-remarks').value=r.rrRemarks||'';
+  document.getElementById('rr-remarks').value=r.rrRemarks||'';setTimeout(function(){autoResizeId('rr-remarks');},0);
   document.getElementById('rr-date').value=r.rrDate||'';
   document.getElementById('rr-by').value=r.rrBy||'';
   document.getElementById('ro-by').value=r.roBy||'';
@@ -1501,7 +1501,7 @@ function openNewDIDModal(){
   var dcs=document.getElementById('d-client-sel');if(dcs){dcs.value='';}document.getElementById('d-client').value='';
   document.getElementById('d-svc').value='VOIP';
   document.getElementById('d-desc').value='';
-  document.getElementById('d-remarks').value='';
+  document.getElementById('d-remarks').value='';autoResizeId('d-remarks');
   document.getElementById('d-status').value='Pending AM';
   document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('d-priority').value='Normal';
@@ -1522,7 +1522,7 @@ function openEditDID(id){
   var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){setClientDropdown('d-client-sel','d-client',r.client||'');}else{document.getElementById('d-client').value=r.client||'';}
   document.getElementById('d-svc').value=r.service||'VOIP';
   document.getElementById('d-desc').value=r.desc||'';
-  document.getElementById('d-remarks').value=r.remarks||'';
+  document.getElementById('d-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('d-remarks');},0);
   document.getElementById('d-status').value=r.status||'Pending AM';
   document.getElementById('d-date').value=r.startDate||'';
   document.getElementById('d-priority').value=r.priority||'Normal';
@@ -1600,7 +1600,20 @@ function addDIDComment(){
       toast('Comment added','success');
     }
   }else{
-    toast('Save the record first to add comments','info');
+    var dClient=document.getElementById('d-client-sel');
+    var dVal=(dClient&&dClient.style.display!=='none'?dClient.value:document.getElementById('d-client').value).trim().toUpperCase();
+    if(!dVal){toast('Please fill in the Client / Vendor field first','error');return;}
+    saveDIDRecord();
+    var newRec=DATA[DATA.length-1];
+    if(newRec){
+      if(!newRec.comments)newRec.comments=[];
+      newRec.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+      saveOne(newRec);
+      editingDIDId=newRec.id;
+      document.getElementById('d-comment-text').value='';
+      renderDIDModalComments(newRec.comments);
+      toast('Record saved & comment added','success');
+    }
   }
 }
 
@@ -1697,7 +1710,7 @@ function openNewModal(){
   var fcs=document.getElementById('f-client-sel');if(fcs){fcs.value='';}document.getElementById('f-client').value='';
   document.getElementById('f-svc-f').value='VOIP';
   document.getElementById('f-concern').value='';
-  document.getElementById('f-remarks').value='';
+  document.getElementById('f-remarks').value='';autoResizeId('f-remarks');
   document.getElementById('f-plt-f').value='';
   document.getElementById('f-st-f').value='Pending at CS';
   document.getElementById('f-pri-f').value='Medium';
@@ -1725,7 +1738,7 @@ function openEdit(id){
   setClientDropdown('f-client-sel','f-client',r.client||'');
   document.getElementById('f-svc-f').value=r.service||'VOIP';
   document.getElementById('f-concern').value=r.concern||'';
-  document.getElementById('f-remarks').value=r.remarks||'';
+  document.getElementById('f-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('f-remarks');},0);
   document.getElementById('f-plt-f').value=r.platform||'';
   document.getElementById('f-st-f').value=r.status||'Pending at CS';
   document.getElementById('f-pri-f').value=r.priority||'Medium';
@@ -1859,6 +1872,16 @@ function toast(msg,type){
   el.innerHTML='<span>'+({success:'✅',error:'❌',info:'ℹ️'}[type]||'ℹ️')+'</span><span>'+msg+'</span>';
   document.getElementById('toast-wrap').appendChild(el);
   setTimeout(function(){el.remove();},3500);
+}
+
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=Math.max(90,el.scrollHeight)+'px';
+}
+
+function autoResizeId(id){
+  var el=document.getElementById(id);
+  if(el) autoResize(el);
 }
 
 function onModalTimerChange(){
@@ -2062,7 +2085,22 @@ function addComment(){
       toast('Comment added','success');
     }
   }else{
-    toast('Save the record first to add comments','info');
+    // Auto-save the record first, then attach the comment
+    var client=document.getElementById('f-client-sel');
+    var clientVal=(client&&client.style.display!=='none'?client.value:document.getElementById('f-client').value).trim().toUpperCase();
+    if(!clientVal){toast('Please fill in the Client / Vendor field first','error');return;}
+    saveRecord();
+    // After saveRecord, editingId is still null for new — find the record just added by highest id
+    var newRec=DATA[DATA.length-1];
+    if(newRec){
+      if(!newRec.comments)newRec.comments=[];
+      newRec.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+      saveOne(newRec);
+      editingId=newRec.id;
+      document.getElementById('f-comment-text').value='';
+      renderModalComments(newRec.comments);
+      toast('Record saved & comment added','success');
+    }
   }
 }
 
@@ -2763,6 +2801,8 @@ window.editComment=editComment;
 window.deleteComment=deleteComment;
 window.saveCommentEdit=saveCommentEdit;
 window.cancelCommentEdit=cancelCommentEdit;
+window.autoResize=autoResize;
+window.autoResizeId=autoResizeId;
 </script>
 </body>
 </html>
