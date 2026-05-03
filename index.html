@@ -343,7 +343,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div style="overflow-x:auto">
         <table class="admin-table">
           <thead><tr>
-            <th>Name</th><th>Email</th><th>Role</th><th>Added</th><th>Actions</th>
+            <th>Display Name</th><th>Email</th><th>Alias</th><th>Role</th><th>Added</th><th>Actions</th>
           </tr></thead>
           <tbody id="admin-users-tbody">
             <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">Loading users...</td></tr>
@@ -426,7 +426,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-body">
       <div class="fg">
         <div class="fgrp"><label>Display Name</label><input class="fc" id="au-name" placeholder="e.g. Juan dela Cruz"></div>
-        <div class="fgrp"><label>Nickname / Alias <span style="color:var(--text3);font-weight:400">(shown in comments)</span></label><input class="fc" id="au-nick" placeholder="e.g. Juan"></div>
+        <div class="fgrp"><label>Alias</label><input class="fc" id="au-nick" placeholder="e.g. CS, Juan, Kath..."></div>
         <div class="fgrp"><label>Role</label>
           <select class="fc" id="au-role">
             <option value="Viewer">Viewer</option>
@@ -452,7 +452,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-body">
       <div class="fg">
         <div class="fgrp"><label>Display Name</label><input class="fc" id="eu-name" placeholder="e.g. Juan dela Cruz"></div>
-        <div class="fgrp"><label>Nickname / Alias <span style="color:var(--text3);font-weight:400">(shown in comments)</span></label><input class="fc" id="eu-nick" placeholder="e.g. Juan"></div>
+        <div class="fgrp"><label>Alias</label><input class="fc" id="eu-nick" placeholder="e.g. CS, Juan, Kath..."></div>
         <div class="fgrp"><label>Role</label>
           <select class="fc" id="eu-role">
             <option value="Viewer">Viewer</option>
@@ -821,7 +821,6 @@ function doLogout(){
     if(!ok)return;
     if(_firestoreUnsub){_firestoreUnsub();_firestoreUnsub=null;}
     _fbReady=false;DATA=[];filteredData=[];
-    writeLog('login','Signed out',_currentUser?_currentUser.email:'',{});
     signOut(auth);
   });
 }
@@ -852,11 +851,13 @@ function setUserDisplay(user){
       setDoc(doc(db,'users',uid),{name:email,email:email,role:role,addedAt:Date.now()}).then(function(){
         _currentUserRole=role;
         applyRolePermissions(role);
+        writeLog('login',email,'Signed in — role: '+role);
         toast(snap.empty?'You are set as Admin (first user)':'Account created as Viewer','info');
       });
     }else{
       _currentUserRole=found.role||'Viewer';
       applyRolePermissions(_currentUserRole);
+      writeLog('login',email,'Signed in — role: '+_currentUserRole);
     }
   }).catch(function(e){
     console.error('User check failed',e);
@@ -869,7 +870,7 @@ onAuthStateChanged(auth, function(user){
     setUserDisplay(user);
     hideLoginScreen();
     startFirestore();
-    writeLog('login',user.email,'Signed in as '+(_currentUserRole||'user'),{});
+    // login log written after role is loaded (in setUserDisplay)
   }else{
     showLoginScreen();
     hideLoader();
@@ -2182,6 +2183,7 @@ function loadAdminUsers(){
       rows.push('<tr>'
         +'<td style="font-weight:600">'+escHtml(u.name||u.email)+'</td>'
         +'<td style="color:var(--text2)">'+escHtml(u.email)+'</td>'
+        +'<td style="color:var(--accent)">'+escHtml(u.nickname||'—')+'</td>'
         +'<td><span class="role-badge '+roleCls+'">'+escHtml(u.role||'Viewer')+'</span></td>'
         +'<td style="color:var(--text3)">'+added+'</td>'
         +'<td><button class="btn btn-secondary btn-sm" onclick="openEditUser(\''+d.id+'\')">✏️ Edit</button></td>'
@@ -2226,7 +2228,7 @@ function openEditUser(uid){
         var u=d.data();
         document.getElementById('eu-name').value=u.name||'';
         document.getElementById('eu-nick').value=u.nickname||'';
-        document.getElementById('eu-email').value=u.email||'';
+document.getElementById('eu-email').value=u.email||'';
         document.getElementById('eu-role').value=u.role||'Viewer';
         document.getElementById('edit-user-modal').classList.remove('hidden');
       }
@@ -2238,16 +2240,13 @@ function closeEditUserModal(){document.getElementById('edit-user-modal').classLi
 function saveEditUser(){
   if(!_editingUserId)return;
   var name=document.getElementById('eu-name').value.trim();
+  var nick=document.getElementById('eu-nick').value.trim();
   var role=document.getElementById('eu-role').value;
-  setDoc(doc(db,'users',_editingUserId),{
-    name:name,
-    nickname:document.getElementById('eu-nick').value.trim(),
-    role:role
-  },{merge:true}).then(function(){
+  setDoc(doc(db,'users',_editingUserId),{name:name,nickname:nick,role:role},{merge:true}).then(function(){
     toast('User updated!','success');
     closeEditUserModal();
     loadAdminUsers();
-    // Re-check current user's role
+    loadNicknames();
     if(_currentUser) setUserDisplay(_currentUser);
   }).catch(function(e){toast('Error: '+e.message,'error');});
 }
@@ -2410,7 +2409,7 @@ function loadNicknames(){
   getDocs(collection(db,'users')).then(function(snap){
     snap.forEach(function(d){
       var u=d.data();
-      if(u.email) _userNickCache[u.email]=u.nickname||u.name||u.email;
+      if(u.email) _userNickCache[u.email]=u.name||u.nickname||u.email;
     });
   });
 }
