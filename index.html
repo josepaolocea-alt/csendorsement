@@ -2007,7 +2007,7 @@ function _renderCommentList(comments,containerId,recordId,source){
   var isAdminOrSemi=_currentUserRole==='Admin'||_currentUserRole==='Semi-Admin';
   var currentEmail=_currentUser?_currentUser.email:'';
   el.innerHTML=sorted.map(function(c){
-    var isOwner=c.user===currentEmail;
+    var isOwner=currentEmail&&c.user&&c.user===currentEmail;
     var safeTs=String(c.ts);
     var safeRid=String(recordId||'').replace(/"/g,'');
     var safeSrc=String(source||'').replace(/"/g,'');
@@ -2251,8 +2251,12 @@ function openEditUser(uid){
         var u=d.data();
         document.getElementById('eu-name').value=u.name||'';
         document.getElementById('eu-nick').value=u.nickname||'';
-document.getElementById('eu-email').value=u.email||'';
+        document.getElementById('eu-email').value=u.email||'';
         document.getElementById('eu-role').value=u.role||'Viewer';
+        // If editing own admin account, hide role field entirely
+        var isSelf=_currentUser&&u.email===_currentUser.email;
+        var roleWrap=document.getElementById('eu-role-wrap');
+        if(roleWrap) roleWrap.style.display=isSelf?'none':'';
         document.getElementById('edit-user-modal').classList.remove('hidden');
       }
     });
@@ -2264,8 +2268,11 @@ function saveEditUser(){
   if(!_editingUserId)return;
   var name=document.getElementById('eu-name').value.trim();
   var nick=document.getElementById('eu-nick').value.trim();
-  var role=document.getElementById('eu-role').value;
-  setDoc(doc(db,'users',_editingUserId),{name:name,nickname:nick,role:role},{merge:true}).then(function(){
+  var roleWrap=document.getElementById('eu-role-wrap');
+  var roleVisible=roleWrap&&roleWrap.style.display!=='none';
+  var updates={name:name,nickname:nick};
+  if(roleVisible) updates.role=document.getElementById('eu-role').value;
+  setDoc(doc(db,'users',_editingUserId),updates,{merge:true}).then(function(){
     toast('User updated!','success');
     closeEditUserModal();
     loadAdminUsers();
@@ -2437,6 +2444,10 @@ function loadNicknames(){
     });
     // Re-render current view so comment authors update from "Unknown"
     applyFilters();
+    // Also re-render any open comment lists
+    if(editingId){var rr=DATA.find(function(d){return d.id===editingId;});if(rr)renderModalComments(rr.comments||[]);}
+    if(editingDIDId){var rd=DATA.find(function(d){return d.id===editingDIDId;});if(rd)renderDIDModalComments(rd.comments||[]);}
+    if(_commentModalId){var rc=DATA.find(function(d){return d.id===_commentModalId;});if(rc)renderCmModalComments(rc.comments||[]);}
   });
 }
 
