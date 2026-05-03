@@ -134,6 +134,16 @@ textarea.fc{resize:vertical;min-height:70px;}
 .ca-item .ca-name{font-size:9px;color:var(--text2);padding:2px 4px;text-align:center;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;}
 .lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.7);}
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:8000;display:flex;align-items:center;justify-content:center;}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;justify-content:center;}
+.login-logo-icon{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;}
+.login-logo-title{font-size:17px;font-weight:700;}
+.login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.login-field label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.login-err{color:#f87171;font-size:12px;text-align:center;min-height:18px;margin-bottom:6px;}
+.user-chip{display:flex;align-items:center;gap:7px;padding:4px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text2);}
+.user-avatar{width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
 
 .rr-bm{background:rgba(239,68,68,.15);color:#f87171;}
 .rr-am{background:rgba(234,179,8,.15);color:#fbbf24;}
@@ -153,6 +163,30 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">E</div>
+      <span class="login-logo-title">CYN Endorsement</span>
+    </div>
+    <div class="login-field">
+      <label>Email</label>
+      <input class="fc" id="login-email" type="email" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <div style="position:relative">
+        <input class="fc" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:40px">
+        <button onclick="togglePassVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px" id="pass-eye">👁</button>
+      </div>
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doLogin()" id="login-btn">Sign In</button>
+    <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)">Contact your admin to get access</p>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="app-logo">
     <div class="app-logo-icon">E</div>
@@ -164,6 +198,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <button class="tab-btn" onclick="switchTab('done',this)">✓ Done / Resolved</button>
   <button class="tab-btn" onclick="switchTab('mine',this)">📝 Pending RR / RO</button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
+    <div class="user-chip" id="user-chip" style="display:none">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-email-display"></span>
+    </div>
+    <button class="btn btn-secondary btn-sm" id="logout-btn" onclick="doLogout()" style="display:none">Sign Out</button>
     <button class="btn btn-primary" id="new-btn" onclick="openNewModalCurrent()">
       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New
     </button>
@@ -515,7 +554,8 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 <script type="module">
 // ─── FIREBASE CONFIG ────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDNeq1-e3Yx_7AhViQwQXpwpwHddNQzLXo",
@@ -529,6 +569,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 const COLL = 'endorsements';
 const SETTINGS_DOC = 'app_settings/main';
 
@@ -540,6 +581,80 @@ var editingId = null, sortCol = null, sortDir = 1, currentTab = 'all', filteredD
 var _cellStart = null, _dragging = false, _selCells = new Set();
 var _confirmResolve = null;
 var _fbReady = false;
+var _firestoreUnsub = null;
+var _currentUser = null;
+
+// ─── AUTH FUNCTIONS ─────────────────────────────────────────
+function showLoginScreen(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('user-chip').style.display='none';
+  document.getElementById('logout-btn').style.display='none';
+}
+function hideLoginScreen(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('user-chip').style.display='flex';
+  document.getElementById('logout-btn').style.display='';
+}
+
+function doLogin(){
+  var email=document.getElementById('login-email').value.trim();
+  var pass=document.getElementById('login-pass').value;
+  var errEl=document.getElementById('login-err');
+  var btn=document.getElementById('login-btn');
+  errEl.textContent='';
+  if(!email||!pass){errEl.textContent='Please enter email and password.';return;}
+  btn.textContent='Signing in...';btn.disabled=true;
+  signInWithEmailAndPassword(auth,email,pass)
+    .then(function(){
+      btn.textContent='Sign In';btn.disabled=false;
+      document.getElementById('login-pass').value='';
+    })
+    .catch(function(e){
+      btn.textContent='Sign In';btn.disabled=false;
+      var msg='Invalid email or password.';
+      if(e.code==='auth/too-many-requests') msg='Too many attempts. Try again later.';
+      if(e.code==='auth/user-disabled') msg='This account has been disabled.';
+      errEl.textContent=msg;
+    });
+}
+
+function doLogout(){
+  if(_firestoreUnsub){_firestoreUnsub();_firestoreUnsub=null;}
+  _fbReady=false;
+  DATA=[];filteredData=[];
+  signOut(auth);
+}
+
+function togglePassVis(){
+  var p=document.getElementById('login-pass');
+  var e=document.getElementById('pass-eye');
+  if(p.type==='password'){p.type='text';e.textContent='🙈';}
+  else{p.type='password';e.textContent='👁';}
+}
+
+function setUserDisplay(user){
+  _currentUser=user;
+  var email=user.email||'';
+  var initials=email.charAt(0).toUpperCase();
+  document.getElementById('user-avatar').textContent=initials;
+  document.getElementById('user-email-display').textContent=email;
+}
+
+// ─── AUTH STATE LISTENER ─────────────────────────────────────
+onAuthStateChanged(auth, function(user){
+  if(user){
+    setUserDisplay(user);
+    hideLoginScreen();
+    startFirestore();
+  }else{
+    showLoginScreen();
+    hideLoader();
+    // Clear data on logout
+    DATA=[];filteredData=[];
+    document.getElementById('stats-row').innerHTML='';
+    document.getElementById('main-tbody').innerHTML='';
+  }
+});
 
 // ─── LOADING UI ─────────────────────────────────────────────
 function showLoader(msg){
@@ -1727,48 +1842,42 @@ document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(S
 document.getElementById('auto-alert').checked=SETTINGS.autoAlert||false;
 document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
 
-// ─── FIREBASE REAL-TIME LISTENER ─────────────────────────────
-showLoader('Connecting to Firebase...');
-
-onSnapshot(collection(db, COLL), function(snapshot){
-  // Rebuild DATA from Firestore
-  DATA=[];
-  idSeq=1;
-  snapshot.forEach(function(docSnap){
-    var r=docSnap.data();
-    // Restore _sel as false (not persisted)
-    r._sel=false;
-    DATA.push(r);
-    if(r.id>=idSeq) idSeq=r.id+1;
-  });
-
-  if(!_fbReady){
-    _fbReady=true;
-    hideLoader();
-    // Add sample data only if Firestore is completely empty
-    if(DATA.length===0){
-      var samples=[
-        {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Medium',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
-        {client:'GCASH',service:'Payment',concern:'Transaction timeout issue',platform:'Email',status:'Pending at NOC',priority:'High',startDate:'2026-05-02',endorsed:1,timerStart:null,timerAlerted:false,_sel:false,comments:[]}
-      ];
-      samples.forEach(function(s){
-        var nr=Object.assign({id:idSeq++},s);
-        DATA.push(nr);
-        saveOne(nr);
-      });
+// ─── FIRESTORE REAL-TIME LISTENER ────────────────────────────
+function startFirestore(){
+  if(_firestoreUnsub) return; // already listening
+  showLoader('Loading data...');
+  _firestoreUnsub = onSnapshot(collection(db, COLL), function(snapshot){
+    DATA=[];
+    idSeq=1;
+    snapshot.forEach(function(docSnap){
+      var r=docSnap.data();
+      r._sel=false;
+      DATA.push(r);
+      if(r.id>=idSeq) idSeq=r.id+1;
+    });
+    if(!_fbReady){
+      _fbReady=true;
+      hideLoader();
+      if(DATA.length===0){
+        var samples=[
+          {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Medium',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
+          {client:'GCASH',service:'Payment',concern:'Transaction timeout issue',platform:'Email',status:'Pending at NOC',priority:'High',startDate:'2026-05-02',endorsed:1,timerStart:null,timerAlerted:false,_sel:false,comments:[]}
+        ];
+        samples.forEach(function(s){
+          var nr=Object.assign({id:idSeq++},s);
+          DATA.push(nr);
+          saveOne(nr);
+        });
+      }
+      toast('Connected ✓','success');
     }
-    toast('Connected to Firebase ✓','success');
-  }
-  applyFilters();
-}, function(err){
-  hideLoader();
-  console.error('Firestore error',err);
-  toast('Firebase connection failed — working offline','error');
-  // Fallback to localStorage
-  DATA=JSON.parse(localStorage.getItem('end_data')||'[]');
-  idSeq=parseInt(localStorage.getItem('end_id')||'1');
-  applyFilters();
-});
+    applyFilters();
+  }, function(err){
+    hideLoader();
+    console.error('Firestore error',err);
+    toast('Connection error — check your network','error');
+  });
+}
 
 </script>
 </body>
