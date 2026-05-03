@@ -1533,7 +1533,7 @@ function openEditDID(id){
   renderPendingPreviews('did-attach-pending');
   renderDIDModalComments(r.comments||[]);
   setModalMeta('did-modal',r);
-  markRead(id);
+  markRead(id);renderDIDRows();
   document.getElementById('did-modal').classList.remove('hidden');
 }
 
@@ -1768,10 +1768,10 @@ function openEdit(id){
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments(r.comments||[]);
   setModalMeta('modal',r);
-  markRead(id);
+  markRead(id);renderRows();
   document.getElementById('record-modal').classList.remove('hidden');
 }
-function closeModal(){document.getElementById('record-modal').classList.add('hidden');}
+function closeModal(){if(_skipModalClose)return;document.getElementById('record-modal').classList.add('hidden');editingId=null;}
 
 function saveRecord(){
   var sel=document.getElementById('f-client-sel');var client=(sel&&sel.style.display!=='none'?sel.value:document.getElementById('f-client').value).trim().toUpperCase();
@@ -2137,6 +2137,10 @@ function openCommentsModal(id){
   renderPendingPreviews('cm-attach-pending');
   renderCmModalComments(r.comments||[]);
   markRead(id);
+  // Re-render table so badge clears immediately
+  if(currentTab==='did') renderDIDRows();
+  else if(currentTab==='mine') renderRRRows();
+  else renderRows();
   document.getElementById('comments-modal').classList.remove('hidden');
 }
 
