@@ -355,6 +355,13 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </div>
     </div>
 
+    <!-- DROPDOWN OPTIONS -->
+    <div class="admin-section">
+      <h3>🔽 Dropdown Options</h3>
+      <p class="sub">Manage options for Service, Platform, and Status dropdowns. Changes apply to all tabs immediately. Admin only.</p>
+      <div id="dropdown-options-wrap" style="display:flex;flex-direction:column;gap:16px"></div>
+    </div>
+
     <!-- CLIENT LIST -->
     <div class="admin-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -2234,6 +2241,7 @@ function startFirestore(){
       hideLoader();
       loadClientsGlobal();
       loadNicknames();
+      loadDropdownOptions();
       if(DATA.length===0){
         var samples=[
           {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Medium',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
@@ -2286,9 +2294,134 @@ function toggleClientGrid(){
   if(arrow) arrow.textContent=_clientGridExpanded?'▲':'▼';
   if(count) count.textContent=_clientGridExpanded?'':' ('+CLIENTS.length+' clients — click to expand)';
 }
+// ─── DROPDOWN OPTIONS ────────────────────────────────────────
+var DROPDOWN_OPTS = {
+  service:    {label:'Service',         defaults:['VOIP','SMS','Payment']},
+  platform:   {label:'Platform',        defaults:['MS Teams','Viber','WhatsApp','Telegram','Email']},
+  status_ip:  {label:'Status — In Progress', defaults:['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client']},
+  status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted']}
+};
+var _dropdownData = {}; // loaded from Firestore
+
+function loadDropdownOptions(){
+  onSnapshot(collection(db,'dropdown_options'), function(snap){
+    if(snap.empty){
+      // First time — seed defaults
+      Object.keys(DROPDOWN_OPTS).forEach(function(key){
+        setDoc(doc(db,'dropdown_options',key),{items:DROPDOWN_OPTS[key].defaults});
+      });
+      Object.keys(DROPDOWN_OPTS).forEach(function(key){_dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();});
+    }else{
+      snap.forEach(function(d){_dropdownData[d.id]=d.data().items||[];});
+    }
+    applyDropdownsToForms();
+    if(currentTab==='admin') renderDropdownOptionsPanel();
+  });
+}
+
+function applyDropdownsToForms(){
+  // Service dropdowns
+  var svcItems=_dropdownData['service']||DROPDOWN_OPTS.service.defaults;
+  ['f-svc-f','d-svc','f-svc'].forEach(function(id){
+    var el=document.getElementById(id);if(!el)return;
+    var cur=el.value;
+    var isFilter=id==='f-svc';
+    el.innerHTML=(isFilter?'<option value="">All Services</option>':'')
+      +svcItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
+    if(cur) el.value=cur;
+  });
+  // Platform dropdowns
+  var pltItems=_dropdownData['platform']||DROPDOWN_OPTS.platform.defaults;
+  ['f-plt-f','f-plt'].forEach(function(id){
+    var el=document.getElementById(id);if(!el)return;
+    var cur=el.value;
+    var isFilter=id==='f-plt';
+    el.innerHTML=(isFilter?'<option value="">All Platforms</option>':'<option value="">-- Select --</option>')
+      +pltItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
+    if(cur) el.value=cur;
+  });
+  // Status dropdowns (modal)
+  var ipItems=_dropdownData['status_ip']||DROPDOWN_OPTS.status_ip.defaults;
+  var doneItems=_dropdownData['status_done']||DROPDOWN_OPTS.status_done.defaults;
+  var allStatusItems=ipItems.concat(doneItems);
+  // Update DONE_ST dynamically
+  DONE_ST=doneItems.slice();
+  // Update status filter dropdown
+  var fst=document.getElementById('f-st');
+  if(fst){
+    var curSt=fst.value;
+    fst.innerHTML='<option value="">All Statuses</option>'
+      +'<option value="__inprogress__">⏳ All In Progress</option>'
+      +'<option value="__completed__">✅ All Completed</option>'
+      +'<optgroup label="In Progress">'+ipItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>'
+      +'<optgroup label="Completed">'+doneItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>';
+    if(curSt) fst.value=curSt;
+  }
+  // Update modal status dropdown
+  var fstf=document.getElementById('f-st-f');
+  if(fstf){
+    var curStf=fstf.value;
+    fstf.innerHTML='<optgroup label="In Progress">'+ipItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>'
+      +'<optgroup label="Completed">'+doneItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>';
+    if(curStf) fstf.value=curStf;
+    else fstf.value=ipItems[0]||'';
+  }
+}
+
+function renderDropdownOptionsPanel(){
+  var wrap=document.getElementById('dropdown-options-wrap');
+  if(!wrap)return;
+  wrap.innerHTML=Object.keys(DROPDOWN_OPTS).map(function(key){
+    var items=_dropdownData[key]||DROPDOWN_OPTS[key].defaults;
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:14px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      +'<strong style="font-size:13px">'+escHtml(DROPDOWN_OPTS[key].label)+'</strong>'
+      +'</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
+      +items.map(function(v){
+        return '<div class="client-tag">'+escHtml(v)
+          +'<button data-key="'+key+'" data-val="'+escHtml(v)+'" onclick="deleteDropdownOption(this)" title="Delete">×</button>'
+          +'</div>';
+      }).join('')
+      +'</div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<input class="fc" id="new-opt-'+key+'" placeholder="Add new option..." style="width:220px" onkeydown="if(event.key===\'Enter\')addDropdownOption(\''+key+'\')">'
+      +'<button class="btn btn-primary btn-sm" data-key="'+key+'" onclick="addDropdownOption(\''+key+'\')">+ Add</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function addDropdownOption(key){
+  var inp=document.getElementById('new-opt-'+key);
+  if(!inp)return;
+  var val=inp.value.trim();
+  if(!val){toast('Enter a value','error');return;}
+  var items=(_dropdownData[key]||DROPDOWN_OPTS[key].defaults).slice();
+  if(items.indexOf(val)>-1){toast('Already exists','info');inp.value='';return;}
+  items.push(val);
+  setDoc(doc(db,'dropdown_options',key),{items:items}).then(function(){
+    inp.value='';
+    toast('Added: '+val,'success');
+  }).catch(function(e){toast('Error: '+e.message,'error');});
+}
+
+function deleteDropdownOption(btn){
+  var key=btn.dataset.key;
+  var val=btn.dataset.val;
+  appConfirm('Remove "'+val+'" from '+DROPDOWN_OPTS[key].label+'?','Remove').then(function(ok){
+    if(!ok)return;
+    var items=(_dropdownData[key]||[]).filter(function(v){return v!==val;});
+    setDoc(doc(db,'dropdown_options',key),{items:items}).then(function(){
+      toast('Removed: '+val,'info');
+    });
+  });
+}
+
 function loadAdminData(){
   loadAdminUsers();
-  renderClientGrid(); // CLIENTS already live via onSnapshot
+  renderClientGrid();
+  renderDropdownOptionsPanel();
 }
 
 function loadAdminUsers(){
@@ -2853,6 +2986,9 @@ window.saveCommentEdit=saveCommentEdit;
 window.cancelCommentEdit=cancelCommentEdit;
 window.autoResize=autoResize;
 window.autoResizeId=autoResizeId;
+window.addDropdownOption=addDropdownOption;
+window.deleteDropdownOption=deleteDropdownOption;
+window.renderDropdownOptionsPanel=renderDropdownOptionsPanel;
 </script>
 </body>
 </html>
