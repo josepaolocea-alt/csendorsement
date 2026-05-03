@@ -1687,7 +1687,15 @@ function updateBulkBar(){
   if(btn) btn.style.display=(sel.length>0&&window._canEdit)?'':'none';
   if(btn&&sel.length>0) btn.textContent='🗑️ Delete '+sel.length+' Selected';
 }
-function toggleAll(chk){filteredData.forEach(function(r){r._sel=chk.checked;});renderRows();updateBulkBar();}
+function toggleAll(chk){
+  var checked=chk.checked;
+  filteredData.forEach(function(r){r._sel=checked;});
+  // Update existing row checkboxes directly — no re-render needed
+  document.querySelectorAll('#main-tbody input[type="checkbox"]').forEach(function(cb){
+    cb.checked=checked;
+  });
+  updateBulkBar();
+}
 function toggleRow(id,chk){var r=DATA.find(function(d){return d.id===id;});if(r){r._sel=chk.checked;updateBulkBar();}}
 function toggleEnd(id,chk){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.endorsed=chk.checked?1:0;saveOne(r);toast(chk.checked?'Marked endorsed':'Unmarked','info');}
 
