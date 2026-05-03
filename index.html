@@ -1798,7 +1798,7 @@ function saveRecord(){
       }
       DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
       saveOne(DATA[idx]);
-      writeLog('updated',r.client||'record','Updated: '+Object.keys(rec).filter(function(k){return rec[k]!==prev[k];}).join(', '));
+      writeLog('updated',prev.client||'record','Updated: '+Object.keys(rec).filter(function(k){return String(rec[k])!==String(prev[k]);}).join(', '));
     }
     toast(isCompleted?'Updated & timer stopped!':'Updated!','success');
   }else{
