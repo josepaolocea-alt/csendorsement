@@ -117,6 +117,20 @@ textarea.fc{resize:vertical;min-height:70px;}
 .comments-section{border-top:1px solid var(--border);margin-top:16px;padding-top:16px;}
 .comments-section h4{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
 .comment-badge{background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;}
+.meta-info{font-size:11px;color:var(--text3);display:flex;flex-direction:column;gap:2px;}
+.meta-info span{display:flex;align-items:center;gap:4px;}
+.meta-info strong{color:var(--text2);}
+.log-table{width:100%;border-collapse:collapse;font-size:12px;}
+.log-table th{padding:7px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--bg3);}
+.log-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;}
+.log-table tr:last-child td{border-bottom:none;}
+.log-action{display:inline-flex;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;}
+.log-login{background:rgba(168,85,247,.15);color:#c084fc;}
+.log-created{background:rgba(34,197,94,.15);color:#4ade80;}
+.log-updated{background:rgba(234,179,8,.15);color:#fbbf24;}
+.log-deleted{background:rgba(239,68,68,.15);color:#f87171;}
+.log-section-toggle{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;cursor:pointer;user-select:none;}
+
 .attach-zone{border:2px dashed var(--border2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;transition:.2s;position:relative;}
 .attach-zone.drag-over{border-color:var(--accent);background:rgba(91,124,255,.07);}
 .attach-input-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -367,6 +381,41 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <p style="font-size:11px;color:var(--text3);margin-top:8px">CSV format: one client name per row, no header needed. e.g. <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">MAYA</code></p>
     </div>
 
+    <!-- LOGS -->
+    <div class="admin-section">
+      <div class="log-section-toggle" onclick="toggleLogSection()">
+        <div>
+          <h3 style="margin-bottom:2px">📋 Activity Logs</h3>
+          <p class="sub" style="margin:0" id="log-count-label">Click to load logs</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center" onclick="event.stopPropagation()">
+          <select class="fsel" id="log-action-filter" onchange="renderLogs()" style="font-size:12px">
+            <option value="">All Actions</option>
+            <option value="login">Login</option>
+            <option value="created">Created</option>
+            <option value="updated">Updated</option>
+            <option value="deleted">Deleted</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="exportLogs()">⬇️ Export Logs</button>
+          <button class="btn btn-sm" onclick="clearAllLogs()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">🗑️ Clear All</button>
+          <span id="log-toggle-arrow" style="font-size:13px;color:var(--text3);cursor:pointer">▼</span>
+        </div>
+      </div>
+      <div id="log-section-body" style="display:none;overflow-x:auto;margin-top:10px">
+        <table class="log-table">
+          <thead><tr>
+            <th style="width:30px">#</th>
+            <th style="width:150px">Date & Time</th>
+            <th style="width:170px">User</th>
+            <th style="width:90px">Action</th>
+            <th style="width:150px">Record</th>
+            <th>Details</th>
+          </tr></thead>
+          <tbody id="log-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">No logs yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -377,6 +426,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-body">
       <div class="fg">
         <div class="fgrp"><label>Display Name</label><input class="fc" id="au-name" placeholder="e.g. Juan dela Cruz"></div>
+        <div class="fgrp"><label>Nickname / Alias <span style="color:var(--text3);font-weight:400">(shown in comments)</span></label><input class="fc" id="au-nick" placeholder="e.g. Juan"></div>
         <div class="fgrp"><label>Role</label>
           <select class="fc" id="au-role">
             <option value="Viewer">Viewer</option>
@@ -402,6 +452,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-body">
       <div class="fg">
         <div class="fgrp"><label>Display Name</label><input class="fc" id="eu-name" placeholder="e.g. Juan dela Cruz"></div>
+        <div class="fgrp"><label>Nickname / Alias <span style="color:var(--text3);font-weight:400">(shown in comments)</span></label><input class="fc" id="eu-nick" placeholder="e.g. Juan"></div>
         <div class="fgrp"><label>Role</label>
           <select class="fc" id="eu-role">
             <option value="Viewer">Viewer</option>
@@ -489,9 +540,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
       </div>
     </div>
-    <div class="modal-ftr">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveRecord()">Save</button>
+    <div class="modal-ftr" style="justify-content:space-between;align-items:center">
+      <div class="meta-info" id="modal-meta" style="display:none">
+        <span>👤 Created by: <strong id="modal-created-by">—</strong></span>
+        <span id="modal-updated-row" style="display:none">✏️ Last updated by: <strong id="modal-updated-by">—</strong> <span id="modal-updated-at" style="color:var(--text3)"></span></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveRecord()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -562,9 +619,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
       </div>
     </div>
-    <div class="modal-ftr">
-      <button class="btn btn-secondary" onclick="closeRRModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveRRRecord()">Save</button>
+    <div class="modal-ftr" style="justify-content:space-between;align-items:center">
+      <div class="meta-info" id="rr-modal-meta" style="display:none">
+        <span>👤 Created by: <strong id="rr-modal-created-by">—</strong></span>
+        <span id="rr-modal-updated-row" style="display:none">✏️ Last updated by: <strong id="rr-modal-updated-by">—</strong> <span id="rr-modal-updated-at" style="color:var(--text3)"></span></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeRRModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveRRRecord()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -620,9 +683,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
       </div>
     </div>
-    <div class="modal-ftr">
-      <button class="btn btn-secondary" onclick="closeDIDModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveDIDRecord()">Save</button>
+    <div class="modal-ftr" style="justify-content:space-between;align-items:center">
+      <div class="meta-info" id="did-modal-meta" style="display:none">
+        <span>👤 Created by: <strong id="did-modal-created-by">—</strong></span>
+        <span id="did-modal-updated-row" style="display:none">✏️ Last updated by: <strong id="did-modal-updated-by">—</strong> <span id="did-modal-updated-at" style="color:var(--text3)"></span></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeDIDModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveDIDRecord()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -748,10 +817,13 @@ function doLogin(){
 }
 
 function doLogout(){
-  if(_firestoreUnsub){_firestoreUnsub();_firestoreUnsub=null;}
-  _fbReady=false;
-  DATA=[];filteredData=[];
-  signOut(auth);
+  appConfirm('Are you sure you want to sign out?','Sign Out').then(function(ok){
+    if(!ok)return;
+    if(_firestoreUnsub){_firestoreUnsub();_firestoreUnsub=null;}
+    _fbReady=false;DATA=[];filteredData=[];
+    writeLog('login','Signed out',_currentUser?_currentUser.email:'',{});
+    signOut(auth);
+  });
 }
 
 function togglePassVis(){
@@ -797,6 +869,7 @@ onAuthStateChanged(auth, function(user){
     setUserDisplay(user);
     hideLoginScreen();
     startFirestore();
+    writeLog('login',user.email,'Signed in as '+(_currentUserRole||'user'),{});
   }else{
     showLoginScreen();
     hideLoader();
@@ -1230,6 +1303,7 @@ function openNewRRModal(){
   document.getElementById('rr-inv').value='None';
   document.getElementById('rr-completed').checked=false;
   document.getElementById('rr-disregard').checked=false;
+  clearModalMeta('rr-modal');
   document.getElementById('rr-modal').classList.remove('hidden');
 }
 function openEditRR(id){
@@ -1249,6 +1323,7 @@ function openEditRR(id){
   document.getElementById('rr-inv').value=r.rrInv||'None';
   document.getElementById('rr-completed').checked=!!r.rrCompleted;
   document.getElementById('rr-disregard').checked=!!r.rrDisregard;
+  setModalMeta('rr-modal',r);
   document.getElementById('rr-modal').classList.remove('hidden');
 }
 function closeRRModal(){document.getElementById('rr-modal').classList.add('hidden');}
@@ -1273,11 +1348,12 @@ function saveRRRecord(){
   };
   if(editingRRId){
     var idx=DATA.findIndex(function(d){return d.id===editingRRId;});
-    if(idx>=0){DATA[idx]=Object.assign({},DATA[idx],rec);saveOne(DATA[idx]);}
+    if(idx>=0){DATA[idx]=Object.assign({},DATA[idx],rec,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});saveOne(DATA[idx]);writeLog('updated',rec.rrSubject||'RR record','Updated RR entry');}
     toast('Updated!','success');
   }else{
-    var nr=Object.assign({id:idSeq++,_sel:false},rec);
+    var nr=Object.assign({id:idSeq++,_sel:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     DATA.push(nr);saveOne(nr);
+    writeLog('created',nr.rrSubject||'RR record','Created RR entry');
     toast('Added!','success');
   }
   closeRRModal();applyFilters();
@@ -1411,7 +1487,7 @@ var editingDIDId=null;
 function openNewDIDModal(){
   editingDIDId=null;
   document.getElementById('did-modal-title').textContent='New DID Order / Cancel';
-  document.getElementById('d-client').value='';
+  var dcs=document.getElementById('d-client-sel');if(dcs){dcs.value='';}document.getElementById('d-client').value='';
   document.getElementById('d-svc').value='VOIP';
   document.getElementById('d-desc').value='';
   document.getElementById('d-remarks').value='';
@@ -1424,6 +1500,7 @@ function openNewDIDModal(){
   _pendingAttachments['did-attach-pending']=[];
   renderPendingPreviews('did-attach-pending');
   renderDIDModalComments([]);
+  clearModalMeta('did-modal');
   document.getElementById('did-modal').classList.remove('hidden');
 }
 
@@ -1444,6 +1521,7 @@ function openEditDID(id){
   _pendingAttachments['did-attach-pending']=[];
   renderPendingPreviews('did-attach-pending');
   renderDIDModalComments(r.comments||[]);
+  setModalMeta('did-modal',r);
   document.getElementById('did-modal').classList.remove('hidden');
 }
 
@@ -1474,14 +1552,16 @@ function saveDIDRecord(){
       if(isDone&&!prev.resolvedDate) rec.resolvedDate=today;
       else if(!isDone) rec.resolvedDate='';
       else rec.resolvedDate=prev.resolvedDate;
-      DATA[idx]=Object.assign({},prev,rec);
+      DATA[idx]=Object.assign({},prev,rec,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
       saveOne(DATA[idx]);
+      writeLog('updated',prev.client||'DID record','Updated DID entry');
     }
     toast('Updated!','success');
   }else{
     if(isDone) rec.resolvedDate=today;
-    var nd=Object.assign({id:idSeq++,_sel:false,comments:[]},rec);
+    var nd=Object.assign({id:idSeq++,_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     DATA.push(nd);saveOne(nd);
+    writeLog('created',nd.client||'DID record','Created DID entry');
     toast('Added!','success');
   }
   closeDIDModal();applyFilters();
@@ -1603,7 +1683,7 @@ function toggleAutoPanel(){
 function openNewModal(){
   editingId=null;
   document.getElementById('modal-title').textContent='New Endorsement';
-  document.getElementById('f-client').value='';
+  var fcs=document.getElementById('f-client-sel');if(fcs){fcs.value='';}document.getElementById('f-client').value='';
   document.getElementById('f-svc-f').value='VOIP';
   document.getElementById('f-concern').value='';
   document.getElementById('f-remarks').value='';
@@ -1623,6 +1703,7 @@ function openNewModal(){
   _pendingAttachments['endorse-attach-pending']=[];
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments([]);
+  clearModalMeta('modal');
   document.getElementById('record-modal').classList.remove('hidden');
 }
 function openEdit(id){
@@ -1658,6 +1739,7 @@ function openEdit(id){
   _pendingAttachments['endorse-attach-pending']=[];
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments(r.comments||[]);
+  setModalMeta('modal',r);
   document.getElementById('record-modal').classList.remove('hidden');
 }
 function closeModal(){document.getElementById('record-modal').classList.add('hidden');}
@@ -1705,14 +1787,16 @@ function saveRecord(){
         // Keep existing timer as-is — don't reset it
         timerUpdate={timerStart:prev.timerStart,timerAlerted:prev.timerAlerted||false};
       }
-      DATA[idx]=Object.assign({},prev,rec,timerUpdate);
+      DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
       saveOne(DATA[idx]);
+      writeLog('updated',r.client||'record','Updated: '+Object.keys(rec).filter(function(k){return rec[k]!==prev[k];}).join(', '));
     }
     toast(isCompleted?'Updated & timer stopped!':'Updated!','success');
   }else{
     if(isCompleted){rec.resolvedDate=today;rec.timerStart=null;rec.timerAlerted=false;}
-    var ne=Object.assign({id:idSeq++,_sel:false,timerStart:isCompleted?null:Date.now(),timerAlerted:false},rec);
+    var ne=Object.assign({id:idSeq++,_sel:false,timerStart:isCompleted?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     DATA.push(ne);saveOne(ne);
+    writeLog('created',ne.client||'new record','Created new endorsement');
     toast('Added'+(isCompleted?'':' & timer started!'),'success');
   }
   closeModal();applyFilters();
@@ -1722,8 +1806,10 @@ function delRec(id){
   if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
   appConfirm('Delete this record?','Delete').then(function(ok){
     if(!ok)return;
+    var dr=DATA.find(function(r){return r.id===id;});
     DATA=DATA.filter(function(r){return r.id!==id;});
     deleteOne(id);
+    writeLog('deleted',dr?(dr.client||dr.rrSubject||dr.desc||'record'):'record','Deleted record');
     applyFilters();
     toast('Deleted','info');
   });
@@ -2026,6 +2112,7 @@ function startFirestore(){
       _fbReady=true;
       hideLoader();
       loadClientsGlobal();
+      loadNicknames();
       if(DATA.length===0){
         var samples=[
           {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Medium',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
@@ -2110,6 +2197,7 @@ function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt
 
 function openAddUserModal(){
   document.getElementById('au-name').value='';
+  document.getElementById('au-nick').value='';
   document.getElementById('au-email').value='';
   document.getElementById('au-role').value='Viewer';
   document.getElementById('add-user-modal').classList.remove('hidden');
@@ -2122,7 +2210,7 @@ function saveUserRecord(){
   var role=document.getElementById('au-role').value;
   if(!email){toast('Email is required','error');return;}
   var id=email.replace(/[^a-z0-9]/g,'_');
-  setDoc(doc(db,'users',id),{name:name||email,email:email,role:role,addedAt:Date.now()})
+  setDoc(doc(db,'users',id),{name:name||email,nickname:document.getElementById('au-nick').value.trim(),email:email,role:role,addedAt:Date.now()})
     .then(function(){
       toast('User saved! Remember to create their account in Firebase Auth.','success');
       closeAddUserModal();
@@ -2137,6 +2225,7 @@ function openEditUser(uid){
       if(d.id===uid){
         var u=d.data();
         document.getElementById('eu-name').value=u.name||'';
+        document.getElementById('eu-nick').value=u.nickname||'';
         document.getElementById('eu-email').value=u.email||'';
         document.getElementById('eu-role').value=u.role||'Viewer';
         document.getElementById('edit-user-modal').classList.remove('hidden');
@@ -2152,6 +2241,7 @@ function saveEditUser(){
   var role=document.getElementById('eu-role').value;
   setDoc(doc(db,'users',_editingUserId),{
     name:name,
+    nickname:document.getElementById('eu-nick').value.trim(),
     role:role
   },{merge:true}).then(function(){
     toast('User updated!','success');
@@ -2308,6 +2398,132 @@ function loadClientsGlobal(){
   });
 }
 
+// ─── NICKNAME / DISPLAY NAME ────────────────────────────────
+var _userNickCache = {}; // email → nickname
+
+function getUserDisplay(email){
+  if(!email) return 'Unknown';
+  return _userNickCache[email] || email;
+}
+
+function loadNicknames(){
+  getDocs(collection(db,'users')).then(function(snap){
+    snap.forEach(function(d){
+      var u=d.data();
+      if(u.email) _userNickCache[u.email]=u.nickname||u.name||u.email;
+    });
+  });
+}
+
+// ─── LOGS ────────────────────────────────────────────────────
+var LOGS = [];
+var _logSectionOpen = false;
+
+function writeLog(action, record, details, extra){
+  var entry={
+    ts:Date.now(),
+    user:_currentUser?_currentUser.email:'system',
+    action:action,
+    record:String(record||''),
+    details:String(details||''),
+    id:'log_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)
+  };
+  setDoc(doc(db,'logs',entry.id),entry).catch(function(){});
+}
+
+function toggleLogSection(){
+  _logSectionOpen=!_logSectionOpen;
+  var body=document.getElementById('log-section-body');
+  var arrow=document.getElementById('log-toggle-arrow');
+  if(body) body.style.display=_logSectionOpen?'':'none';
+  if(arrow) arrow.textContent=_logSectionOpen?'▲':'▼';
+  if(_logSectionOpen) loadLogs();
+}
+
+function loadLogs(){
+  document.getElementById('log-count-label').textContent='Loading...';
+  getDocs(collection(db,'logs')).then(function(snap){
+    LOGS=[];
+    snap.forEach(function(d){LOGS.push(d.data());});
+    LOGS.sort(function(a,b){return b.ts-a.ts;});
+    renderLogs();
+  }).catch(function(e){
+    document.getElementById('log-count-label').textContent='Error loading logs';
+  });
+}
+
+function renderLogs(){
+  var filter=document.getElementById('log-action-filter')?document.getElementById('log-action-filter').value:'';
+  var filtered=filter?LOGS.filter(function(l){return l.action===filter;}):LOGS;
+  document.getElementById('log-count-label').textContent=filtered.length+' log'+(filtered.length!==1?'s':'');
+  var tbody=document.getElementById('log-tbody');
+  if(!tbody)return;
+  if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">No logs found</td></tr>';return;}
+  tbody.innerHTML=filtered.slice(0,200).map(function(l,i){
+    var d=new Date(l.ts);
+    var dt=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    var cls={login:'log-login',created:'log-created',updated:'log-updated',deleted:'log-deleted'}[l.action]||'log-login';
+    var icon={login:'🔑',created:'✅',updated:'✏️',deleted:'🗑️'}[l.action]||'•';
+    return '<tr>'
+      +'<td style="color:var(--text3)">'+(i+1)+'</td>'
+      +'<td style="color:var(--text2)">'+dt+'</td>'
+      +'<td style="font-weight:500">'+escHtml(getUserDisplay(l.user))+'</td>'
+      +'<td><span class="log-action '+cls+'">'+icon+' '+l.action+'</span></td>'
+      +'<td style="color:var(--text2)">'+escHtml(l.record||'—')+'</td>'
+      +'<td style="color:var(--text3);max-width:300px;overflow:hidden;text-overflow:ellipsis" title="'+escHtml(l.details||'')+'">'+escHtml(l.details||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function exportLogs(){
+  var headers=['#','Date & Time','User','Action','Record','Details'];
+  var rows=[headers.join(',')].concat(LOGS.map(function(l,i){
+    var d=new Date(l.ts);
+    var dt=d.toLocaleDateString('en-US')+' '+d.toLocaleTimeString('en-US');
+    return [i+1,dt,l.user,l.action,l.record,l.details].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+  }));
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download='activity_logs_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  toast('Logs exported','info');
+}
+
+function clearAllLogs(){
+  appConfirm('Delete ALL activity logs? This cannot be undone.','Clear All Logs').then(function(ok){
+    if(!ok)return;
+    getDocs(collection(db,'logs')).then(function(snap){
+      var promises=[];snap.forEach(function(d){promises.push(deleteDoc(doc(db,'logs',d.id)));});
+      return Promise.all(promises);
+    }).then(function(){
+      LOGS=[];renderLogs();toast('All logs cleared','info');
+    });
+  });
+}
+
+// ─── CREATED BY / UPDATED BY ─────────────────────────────────
+function setModalMeta(pfx, r){
+  var meta=document.getElementById(pfx+'-meta');
+  var createdEl=document.getElementById(pfx+'-created-by');
+  var updatedRow=document.getElementById(pfx+'-updated-row');
+  var updatedEl=document.getElementById(pfx+'-updated-by');
+  var updatedAt=document.getElementById(pfx+'-updated-at');
+  if(!meta)return;
+  meta.style.display='';
+  if(createdEl) createdEl.textContent=getUserDisplay(r.createdBy)||'—';
+  if(r.updatedBy&&updatedRow&&updatedEl&&updatedAt){
+    updatedRow.style.display='';
+    updatedEl.textContent=getUserDisplay(r.updatedBy);
+    var d=r.updatedAt?new Date(r.updatedAt):null;
+    updatedAt.textContent=d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):'';
+  }else if(updatedRow){updatedRow.style.display='none';}
+}
+
+function clearModalMeta(pfx){
+  var meta=document.getElementById(pfx+'-meta');
+  if(meta) meta.style.display='none';
+}
+
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
 window.addClientName=addClientName;
 window.addComment=addComment;
@@ -2328,6 +2544,10 @@ window.confirmResolve=confirmResolve;
 window.delRec=delRec;
 window.doLogin=doLogin;
 window.doLogout=doLogout;
+window.clearAllLogs=clearAllLogs;
+window.exportLogs=exportLogs;
+window.toggleLogSection=toggleLogSection;
+window.renderLogs=renderLogs;
 window.closeAddUserModal=closeAddUserModal;
 window.closeEditUserModal=closeEditUserModal;
 window.downloadSampleCSV=downloadSampleCSV;
