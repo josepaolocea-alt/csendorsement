@@ -1832,7 +1832,9 @@ function exportCSV(){
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
   a.download='endorsements_'+new Date().toISOString().split('T')[0]+'.csv';
-  a.click();toast('Exported','success');
+  a.click();
+  writeLog('exported','Endorsements CSV','Exported '+filteredData.length+' records');
+  toast('Exported','success');
 }
 
 function appConfirm(msg,okLabel){
@@ -2474,7 +2476,7 @@ function writeLog(action, record, details, extra){
     details:String(details||''),
     id:'log_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)
   };
-  setDoc(doc(db,'logs',entry.id),entry).catch(function(){});
+  setDoc(doc(db,'logs',entry.id),entry).catch(function(e){console.error('writeLog failed:',e);});
 }
 
 function toggleLogSection(){
