@@ -1410,7 +1410,7 @@ function renderRows(){
       +'<td><div class="row-acts">'
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEdit('+r.id+')" title="Edit">&#9998;</button>':'')
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
-      +'💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')
+      +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})() 
       +'</button>'
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
@@ -1475,7 +1475,7 @@ function renderDIDRows(){
       +'<td><div class="row-acts">'
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>':'')
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
-      +'💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')
+      +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})() 
       +'</button>'
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
@@ -1533,10 +1533,11 @@ function openEditDID(id){
   renderPendingPreviews('did-attach-pending');
   renderDIDModalComments(r.comments||[]);
   setModalMeta('did-modal',r);
+  markRead(id);
   document.getElementById('did-modal').classList.remove('hidden');
 }
 
-function closeDIDModal(){document.getElementById('did-modal').classList.add('hidden');}
+function closeDIDModal(){if(_skipModalClose)return;document.getElementById('did-modal').classList.add('hidden');}
 
 function onDIDPriorityChange(){}
 
@@ -1594,6 +1595,7 @@ function addDIDComment(){
       if(!r.comments)r.comments=[];
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
       saveOne(r);
+      markRead(r.id);
       document.getElementById('d-comment-text').value='';
       renderDIDModalComments(r.comments);
       renderDIDRows();
@@ -1603,7 +1605,9 @@ function addDIDComment(){
     var dClient=document.getElementById('d-client-sel');
     var dVal=(dClient&&dClient.style.display!=='none'?dClient.value:document.getElementById('d-client').value).trim().toUpperCase();
     if(!dVal){toast('Please fill in the Client / Vendor field first','error');return;}
+    _skipModalClose=true;
     saveDIDRecord();
+    _skipModalClose=false;
     var newRec=DATA[DATA.length-1];
     if(newRec){
       if(!newRec.comments)newRec.comments=[];
@@ -1764,6 +1768,7 @@ function openEdit(id){
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments(r.comments||[]);
   setModalMeta('modal',r);
+  markRead(id);
   document.getElementById('record-modal').classList.remove('hidden');
 }
 function closeModal(){document.getElementById('record-modal').classList.add('hidden');}
@@ -1909,6 +1914,22 @@ function onPriorityChange(){
 }
 
 var _commentModalId=null;
+var _skipModalClose=false;
+
+// ─── UNREAD COMMENT TRACKING ─────────────────────────────────
+// Stores: { recordId: lastReadTimestamp } in localStorage per user
+function _unreadKey(){return 'unread_'+((_currentUser&&_currentUser.email)||'anon');}
+function getReadTimes(){try{return JSON.parse(localStorage.getItem(_unreadKey())||'{}');}catch(e){return {};}}
+function markRead(recordId){var rt=getReadTimes();rt[String(recordId)]=Date.now();localStorage.setItem(_unreadKey(),JSON.stringify(rt));}
+function getUnreadCount(r){
+  if(!r.comments||!r.comments.length) return 0;
+  var myEmail=_currentUser?_currentUser.email:'';
+  var rt=getReadTimes();
+  var lastRead=rt[String(r.id)]||0;
+  return r.comments.filter(function(cm){
+    return cm.user!==myEmail && cm.ts>lastRead;
+  }).length;
+}
 
 function fmtCommentTime(ts){
   var d=new Date(ts);
@@ -2079,6 +2100,7 @@ function addComment(){
       if(!r.comments)r.comments=[];
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
       saveOne(r);
+      markRead(r.id);
       document.getElementById('f-comment-text').value='';
       renderModalComments(r.comments);
       renderRows();
@@ -2089,8 +2111,10 @@ function addComment(){
     var client=document.getElementById('f-client-sel');
     var clientVal=(client&&client.style.display!=='none'?client.value:document.getElementById('f-client').value).trim().toUpperCase();
     if(!clientVal){toast('Please fill in the Client / Vendor field first','error');return;}
+    _skipModalClose=true;
     saveRecord();
-    // After saveRecord, editingId is still null for new — find the record just added by highest id
+    _skipModalClose=false;
+    // After saveRecord, editingId is now set — find the record just added
     var newRec=DATA[DATA.length-1];
     if(newRec){
       if(!newRec.comments)newRec.comments=[];
@@ -2112,6 +2136,7 @@ function openCommentsModal(id){
   _pendingAttachments['cm-attach-pending']=[];
   renderPendingPreviews('cm-attach-pending');
   renderCmModalComments(r.comments||[]);
+  markRead(id);
   document.getElementById('comments-modal').classList.remove('hidden');
 }
 
@@ -2130,6 +2155,7 @@ function addCommentFromModal(){
   if(!r.comments)r.comments=[];
   r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
   saveOne(r);
+  markRead(r.id);
   document.getElementById('cm-comment-text').value='';
   renderCmModalComments(r.comments);
   if(currentTab==='did') renderDIDRows(); else if(currentTab==='mine') renderRRRows(); else renderRows();
