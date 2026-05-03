@@ -423,8 +423,8 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp"><label>Service</label>
           <select class="fc" id="f-svc-f"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
         </div>
-        <div class="fgrp full"><label>Concern / Description</label><textarea class="fc" id="f-concern" placeholder="Describe the issue..."></textarea></div>
-        <div class="fgrp full"><label>Remarks</label><textarea class="fc" id="f-remarks" placeholder="Internal remarks (not shown in table)..." style="min-height:55px"></textarea></div>
+        <div class="fgrp full"><label>Concern</label><textarea class="fc" id="f-concern" placeholder="Describe the issue..." style="min-height:55px"></textarea></div>
+        <div class="fgrp full"><label>Description</label><textarea class="fc" id="f-remarks" placeholder="Additional description / notes..." style="min-height:90px"></textarea></div>
         <div class="fgrp"><label>Platform</label>
           <select class="fc" id="f-plt-f"><option value="">-- Select --</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
         </div>
@@ -501,7 +501,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           </select>
         </div>
         <div class="fgrp"><label>Effective Date</label><input class="fc" id="rr-eff-date" type="date"></div>
-        <div class="fgrp full"><label>Remarks</label><textarea class="fc" id="rr-remarks" placeholder="Instructions, references, notes..."></textarea></div>
+        <div class="fgrp full"><label>Description</label><textarea class="fc" id="rr-remarks" placeholder="Instructions, references, notes..." style="min-height:90px"></textarea></div>
         <div class="fgrp"><label>RR Date</label><input class="fc" id="rr-date" type="date"></div>
         <div class="fgrp"><label>RR by</label>
           <select class="fc" id="rr-by">
@@ -575,8 +575,8 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp"><label>Service</label>
           <select class="fc" id="d-svc"><option>VOIP</option><option>SMS</option></select>
         </div>
-        <div class="fgrp full"><label>Description</label><textarea class="fc" id="d-desc" placeholder="e.g. #9954130700: DID Disconnection Notice — AM"></textarea></div>
-        <div class="fgrp full"><label>Remarks</label><textarea class="fc" id="d-remarks" placeholder="Internal remarks..." style="min-height:55px"></textarea></div>
+        <div class="fgrp full"><label>Concern</label><textarea class="fc" id="d-desc" placeholder="e.g. #9954130700: DID Disconnection Notice — AM" style="min-height:55px"></textarea></div>
+        <div class="fgrp full"><label>Description</label><textarea class="fc" id="d-remarks" placeholder="Additional description / notes..." style="min-height:90px"></textarea></div>
         <div class="fgrp"><label>Status</label>
           <select class="fc" id="d-status">
             <optgroup label="In Progress">
@@ -756,18 +756,29 @@ function setUserDisplay(user){
   var initials=email.charAt(0).toUpperCase();
   document.getElementById('user-avatar').textContent=initials;
   document.getElementById('user-email-display').textContent=email;
-  // Load user role from Firestore users collection
+
+  // Check/create user record in Firestore
+  var uid=email.replace(/[^a-z0-9]/gi,'_');
   getDocs(collection(db,'users')).then(function(snap){
+    var found=null;
     snap.forEach(function(d){
-      var u=d.data();
-      if(u.email===email){
-        _currentUserRole=u.role||'Viewer';
-        if(_currentUserRole==='Admin'){
-          document.getElementById('admin-tab-btn').style.display='';
-        }
-      }
+      if(d.data().email===email) found=d.data();
     });
-  }).catch(function(){});
+    if(!found){
+      // First-ever user becomes Admin automatically
+      var role=snap.empty?'Admin':'Viewer';
+      setDoc(doc(db,'users',uid),{name:email,email:email,role:role,addedAt:Date.now()}).then(function(){
+        _currentUserRole=role;
+        if(role==='Admin') document.getElementById('admin-tab-btn').style.display='';
+        toast(snap.empty?'You are set as Admin (first user)':'Account created as Viewer','info');
+      });
+    }else{
+      _currentUserRole=found.role||'Viewer';
+      if(_currentUserRole==='Admin') document.getElementById('admin-tab-btn').style.display='';
+    }
+  }).catch(function(e){
+    console.error('User check failed',e);
+  });
 }
 
 // ─── AUTH STATE LISTENER ─────────────────────────────────────
