@@ -398,6 +398,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
             <option value="updated">✏️ Updated</option>
             <option value="deleted">🗑️ Deleted</option>
             <option value="csv_import">📤 CSV Import</option>
+            <option value="exported">⬇️ Exported</option>
             <option value="login">🔑 Login</option>
           </select>
           <input type="date" class="fc" id="log-date-filter" onchange="renderLogs()" style="width:150px;font-size:12px" title="Filter by date">
@@ -2112,6 +2113,7 @@ function exportByDateRange(){
   a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
   a.download='endorsements_'+from+'_to_'+to+'.csv';
   a.click();
+  writeLog('exported','Date Range CSV','Exported '+range.length+' records ('+from+' to '+to+')');
   toast('Exported '+range.length+' record'+(range.length>1?'s':''),'success');
 }
 
@@ -2512,8 +2514,8 @@ function renderLogs(){
   var tbody=document.getElementById('log-tbody');
   if(!tbody)return;
   if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">No logs found</td></tr>';return;}
-  var actionLabels={login:'🔑 Login',created:'➕ Added',updated:'✏️ Updated',deleted:'🗑️ Deleted',csv_import:'📤 CSV Import'};
-  var actionCls={login:'log-login',created:'log-created',updated:'log-updated',deleted:'log-deleted',csv_import:'log-updated'};
+  var actionLabels={login:'🔑 Login',created:'➕ Added',updated:'✏️ Updated',deleted:'🗑️ Deleted',csv_import:'📤 CSV Import',exported:'⬇️ Exported'};
+  var actionCls={login:'log-login',created:'log-created',updated:'log-updated',deleted:'log-deleted',csv_import:'log-updated',exported:'log-created'};
   tbody.innerHTML=filtered.slice(0,300).map(function(l,i){
     var d=new Date(l.ts);
     var dt=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -2549,6 +2551,7 @@ function exportLogs(){
   a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
   a.download='activity_logs_'+new Date().toISOString().split('T')[0]+'.csv';
   a.click();
+  writeLog('exported','Activity Logs CSV','Exported activity logs');
   toast('Logs exported','info');
 }
 
