@@ -1782,33 +1782,34 @@ function saveRecord(){
     endorsed:parseInt(document.getElementById('f-end').value)||0
   };
   if(editingId){
-    var idx=DATA.findIndex(function(d){return d.id===editingId;});
-    if(idx>=0){
-      var prev=DATA[idx];
-      if(isCompleted&&!prev.resolvedDate) rec.resolvedDate=today;
-      else if(!isCompleted) rec.resolvedDate='';
-      else rec.resolvedDate=prev.resolvedDate;
-      // Timer: stop if newly completed, keep existing timer if not
-      var timerUpdate;
-      if(isCompleted){
-        timerUpdate={timerStart:null,timerAlerted:false};
-      }else{
-        // Keep existing timer as-is — don't reset it
-        timerUpdate={timerStart:prev.timerStart,timerAlerted:prev.timerAlerted||false};
+    try{
+      var idx=DATA.findIndex(function(d){return d.id===editingId;});
+      if(idx>=0){
+        var prev=DATA[idx];
+        if(isCompleted&&!prev.resolvedDate) rec.resolvedDate=today;
+        else if(!isCompleted) rec.resolvedDate='';
+        else rec.resolvedDate=prev.resolvedDate;
+        var timerUpdate;
+        if(isCompleted){
+          timerUpdate={timerStart:null,timerAlerted:false};
+        }else{
+          timerUpdate={timerStart:prev.timerStart,timerAlerted:prev.timerAlerted||false};
+        }
+        DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
+        saveOne(DATA[idx]);
+        try{writeLog('updated',prev.client||'record','Updated: '+Object.keys(rec).filter(function(k){return String(rec[k])!==String(prev[k]);}).join(', '));}catch(le){}
       }
-      DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
-      saveOne(DATA[idx]);
-      writeLog('updated',prev.client||'record','Updated: '+Object.keys(rec).filter(function(k){return String(rec[k])!==String(prev[k]);}).join(', '));
-    }
-    toast(isCompleted?'Updated & timer stopped!':'Updated!','success');
+      toast(isCompleted?'Updated & timer stopped!':'Updated!','success');
+    }catch(e){console.error('saveRecord edit error:',e);toast('Saved but error occurred: '+e.message,'error');}
   }else{
     if(isCompleted){rec.resolvedDate=today;rec.timerStart=null;rec.timerAlerted=false;}
     var ne=Object.assign({id:idSeq++,_sel:false,timerStart:isCompleted?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     DATA.push(ne);saveOne(ne);
-    writeLog('created',ne.client||'new record','Created new endorsement');
+    try{writeLog('created',ne.client||'new record','Created new endorsement');}catch(le){}
     toast('Added'+(isCompleted?'':' & timer started!'),'success');
   }
-  closeModal();applyFilters();
+  try{closeModal();}catch(e){}
+  applyFilters();
 }
 
 function delRec(id){
