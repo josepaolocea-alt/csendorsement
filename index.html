@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CYN Endorsement</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+:root{--sf:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;--mono:'DM Mono',monospace;}
+[data-theme="dark"]{--bg:#0d0d0f;--bg2:#141416;--bg3:#1c1c20;--bg4:#242428;--bg5:#2c2c32;--border:#2a2a30;--border2:#333340;--text:#f0f0f5;--text2:#9090a0;--text3:#55555f;--accent:#5b7cff;--accent2:#3d5ce0;--shadow:0 2px 16px rgba(0,0,0,0.6);}
+[data-theme="light"]{--bg:#f4f4f8;--bg2:#ffffff;--bg3:#f0f0f4;--bg4:#e8e8ee;--bg5:#dddde5;--border:#e0e0e8;--border2:#d0d0da;--text:#0d0d1a;--text2:#55556a;--text3:#9090a8;--accent:#4466ff;--accent2:#2244dd;--shadow:0 2px 16px rgba(0,0,0,0.08);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sf);background:var(--bg);color:var(--text);font-size:13.5px;min-height:100vh;transition:background .25s,color .25s;}
+.topbar{position:sticky;top:0;z-index:100;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;}
+.app-logo{display:flex;align-items:center;gap:9px;margin-right:6px;}
+.app-logo-icon{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;}
+.app-title{font-size:14px;font-weight:700;letter-spacing:-.3px;}
+.divider{width:1px;height:20px;background:var(--border);margin:0 2px;}
+.tab-btn{padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--text2);font-family:var(--sf);font-size:13px;font-weight:500;cursor:pointer;transition:.15s;}
+.tab-btn:hover{background:var(--bg3);color:var(--text);}
+.tab-btn.active{background:var(--bg4);color:var(--text);}
+.ml-auto{margin-left:auto;}
+.btn{padding:7px 14px;border-radius:8px;border:none;font-family:var(--sf);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--bg4);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-icon{width:30px;height:30px;padding:0;border-radius:7px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:.15s;}
+.btn-icon:hover{background:var(--bg4);color:var(--text);}
+.main{padding:14px 20px;}
+.auto-panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;}
+.auto-panel h3{font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text2);}
+.auto-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.auto-label{font-size:12px;color:var(--text2);}
+.stats-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.stat-chip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px;}
+.stat-chip strong{color:var(--text);font-size:13px;}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.search-wrap{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;flex:1;min-width:180px;max-width:300px;}
+.search-wrap input{background:none;border:none;color:var(--text);font-family:var(--sf);font-size:13px;outline:none;width:100%;}
+.search-wrap input::placeholder{color:var(--text3);}
+.kbd{display:inline-flex;align-items:center;padding:1px 5px;background:var(--bg4);border:1px solid var(--border2);border-radius:4px;font-size:10px;color:var(--text3);font-family:var(--mono);}
+.fsel{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-family:var(--sf);font-size:13px;outline:none;cursor:pointer;}
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--bg3);}
+th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:relative;}
+th:hover{color:var(--text);}
+th.sort-asc::after{content:' \25B2';color:var(--accent);font-size:9px;}
+th.sort-desc::after{content:' \25BC';color:var(--accent);font-size:9px;}
+.col-rz{position:absolute;right:0;top:0;width:5px;height:100%;cursor:col-resize;z-index:5;}
+.col-rz:hover,.col-rz.rz-active{background:var(--accent);opacity:.5;}
+td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;cursor:cell;user-select:none;}
+td.cell-sel{background:rgba(91,124,255,.15)!important;outline:1px solid var(--accent);outline-offset:-1px;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg3);}
+tr.row-done td{opacity:.5;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:currentColor;}
+.svc-voip{background:rgba(239,68,68,.15);color:#ef4444;}
+.svc-sms{background:rgba(59,130,246,.15);color:#60a5fa;}
+.svc-payment{background:rgba(34,197,94,.15);color:#4ade80;}
+.plt-msteams{background:rgba(100,130,255,.15);color:#818cf8;}
+.plt-viber{background:rgba(168,85,247,.15);color:#c084fc;}
+.plt-whatsapp{background:rgba(34,197,94,.15);color:#4ade80;}
+.plt-telegram{background:rgba(56,189,248,.15);color:#38bdf8;}
+.plt-email{background:rgba(239,68,68,.15);color:#f87171;}
+.plt-def{background:var(--bg4);color:var(--text2);}
+.st-red{background:rgba(239,68,68,.12);color:#f87171;}
+.st-blue{background:rgba(59,130,246,.12);color:#60a5fa;}
+.st-green{background:rgba(34,197,94,.12);color:#4ade80;}
+.st-yellow{background:rgba(234,179,8,.12);color:#facc15;}
+.pri-high{background:rgba(239,68,68,.15);color:#f87171;}
+.pri-med{background:rgba(234,179,8,.15);color:#fbbf24;}
+.pri-low{background:rgba(34,197,94,.15);color:#4ade80;}
+.timer-cell{display:flex;align-items:center;gap:5px;}
+.tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:56px;text-align:center;}
+.tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
+.tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;animation:pr 1s infinite;}
+@keyframes pr{0%,100%{opacity:1}50%{opacity:.5}}
+.row-acts{display:flex;gap:4px;}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+.modal-hdr{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1;}
+.modal-hdr h3{font-size:15px;font-weight:600;}
+.modal-cls{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:2px 7px;border-radius:6px;font-family:var(--sf);}
+.modal-cls:hover{background:var(--bg3);}
+.modal-body{padding:18px 20px;}
+.modal-ftr{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--bg2);}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fgrp{display:flex;flex-direction:column;gap:5px;}
+.fgrp.full{grid-column:1/-1;}
+.fgrp label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.fc{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:8px;font-family:var(--sf);font-size:13px;outline:none;transition:.15s;width:100%;}
+.fc:focus{border-color:var(--accent);background:var(--bg2);}
+textarea.fc{resize:vertical;min-height:70px;}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 15px;font-size:13px;display:flex;align-items:center;gap:9px;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:sli .2s ease;min-width:210px;}
+.toast.success{border-left:3px solid #4ade80;}
+.toast.error{border-left:3px solid #f87171;}
+.toast.info{border-left:3px solid var(--accent);}
+@keyframes sli{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
+.hidden{display:none!important;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px;}
+.empty{text-align:center;padding:50px;color:var(--text3);}
+.comment-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+.comment-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;}
+.comment-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.comment-author{font-size:11px;font-weight:600;color:var(--accent);}
+.comment-time{font-size:11px;color:var(--text3);}
+.comment-text{font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;}
+.comment-new{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;}
+.comment-new label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.comments-section{border-top:1px solid var(--border);margin-top:16px;padding-top:16px;}
+.comments-section h4{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.comment-badge{background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;}
+.attach-zone{border:2px dashed var(--border2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;transition:.2s;position:relative;}
+.attach-zone.drag-over{border-color:var(--accent);background:rgba(91,124,255,.07);}
+.attach-input-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.attach-input-row textarea{flex:1;min-width:180px;}
+.attach-previews{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.attach-thumb{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--bg3);}
+.attach-thumb img{width:90px;height:70px;object-fit:cover;display:block;}
+.attach-thumb .file-icon{width:90px;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:22px;color:var(--accent);}
+.attach-thumb .file-name{font-size:10px;color:var(--text2);padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:86px;text-align:center;}
+.attach-thumb .rm-btn{position:absolute;top:2px;right:2px;width:18px;height:18px;background:rgba(239,68,68,.8);color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:1;}
+.comment-attach-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.ca-item{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);cursor:pointer;}
+.ca-item img{width:80px;height:60px;object-fit:cover;display:block;}
+.ca-item .ca-file{width:80px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:18px;background:var(--bg4);}
+.ca-item .ca-name{font-size:9px;color:var(--text2);padding:2px 4px;text-align:center;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.7);}
+
+.rr-bm{background:rgba(239,68,68,.15);color:#f87171;}
+.rr-am{background:rgba(234,179,8,.15);color:#fbbf24;}
+.rr-prod{background:rgba(180,120,40,.15);color:#c8924a;}
+.rr-ro{background:rgba(34,197,94,.15);color:#4ade80;}
+.rr-done{background:rgba(34,197,94,.15);color:#4ade80;}
+.rr-notyet{background:rgba(239,68,68,.15);color:#f87171;}
+.rr-yellow{background:rgba(234,179,8,.15);color:#fbbf24;}
+.rr-gray{background:var(--bg4);color:var(--text3);}
+.rr-green{background:rgba(34,197,94,.15);color:#4ade80;}
+tr.rr-completed-row td{background:rgba(34,197,94,.06)!important;color:#4ade80!important;}
+tr.rr-completed-row td .badge{opacity:.85;}
+tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through;opacity:.6;}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="app-logo">
+    <div class="app-logo-icon">E</div>
+    <span class="app-title">CYN Endorsement</span>
+  </div>
+  <div class="divider"></div>
+  <button class="tab-btn active" onclick="switchTab('all',this)">★ All Tasks</button>
+  <button class="tab-btn" onclick="switchTab('did',this)">📋 DID Order / Cancel</button>
+  <button class="tab-btn" onclick="switchTab('done',this)">✓ Done / Resolved</button>
+  <button class="tab-btn" onclick="switchTab('mine',this)">📝 Pending RR / RO</button>
+  <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
+    <button class="btn btn-primary" id="new-btn" onclick="openNewModalCurrent()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New
+    </button>
+    <button class="btn-icon" onclick="toggleTheme()" id="theme-btn">☀️</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="auto-panel hidden" id="auto-panel">
+    <h3>⚙️ Settings</h3>
+    <div class="auto-row">
+      <span class="auto-label">Default timer:</span>
+      <select class="fsel" id="default-timer" onchange="onTimerChange()">
+        <option value="3600">1 Hour</option>
+        <option value="1800">30 Minutes</option>
+        <option value="900">15 Minutes</option>
+        <option value="600">10 Minutes</option>
+        <option value="300">5 Minutes</option>
+        <option value="custom">Custom...</option>
+      </select>
+      <input class="fc" id="custom-mins" type="number" min="1" placeholder="Minutes" style="width:110px;display:none" oninput="saveSettings()">
+      <span class="auto-label" style="margin-left:8px">Auto-alert on expire:</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="auto-alert" onchange="saveSettings()" style="accent-color:var(--accent)"> Enable
+      </label>
+      <span class="auto-label" style="margin-left:8px">Alarm tone:</span>
+      <select class="fsel" id="alarm-tone" onchange="saveSettings()">
+        <option value="beep">🔔 Classic Beep</option>
+        <option value="siren">🚨 Siren</option>
+        <option value="bell">🔕 Bell</option>
+        <option value="pulse">💓 Pulse</option>
+        <option value="alarm">⏰ Alarm Clock</option>
+        <option value="ding">✨ Ding Ding</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="testAlert()">🔔 Test</button>
+    </div>
+    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <span class="auto-label">📅 Export by date range:</span>
+      <input class="fc" id="export-from" type="date" style="width:145px" title="From date">
+      <span class="auto-label">to</span>
+      <input class="fc" id="export-to" type="date" style="width:145px" title="To date">
+      <select class="fsel" id="export-date-field">
+        <option value="startDate">Start Date</option>
+        <option value="resolvedDate">Resolved Date</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="exportByDateRange()">⬇️ Export Range</button>
+    </div>
+  </div>
+
+  <div class="stats-row" id="stats-row"></div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search-input" placeholder="Quick search..." oninput="applyFilters()">
+      <span class="kbd">Ctrl+F</span>
+    </div>
+    <select class="fsel" id="f-svc" onchange="applyFilters()"><option value="">All Services</option><option>VOIP</option><option>SMS</option><option>Payment</option></select>
+    <select class="fsel" id="f-st" onchange="applyFilters()">
+      <option value="">All Statuses</option>
+      <option value="__inprogress__">⏳ All In Progress</option>
+      <option value="__completed__">✅ All Completed</option>
+      <optgroup label="In Progress">
+        <option>Pending at CS</option><option>Pending at NOC</option><option>Pending at TSE</option><option>Pending at L2</option><option>Pending at CTO</option><option>Pending at AM</option><option>Pending at Product</option><option>Pending at Accounting</option><option>Pending at Vendor</option><option>Pending at Developer</option><option>Advised Client</option>
+      </optgroup>
+      <optgroup label="Completed">
+        <option>Done</option><option>Commercial Concern</option><option>Resolved</option><option>Posted</option>
+      </optgroup>
+    </select>
+    <select class="fsel" id="f-pri" onchange="applyFilters()"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <select class="fsel" id="f-plt" onchange="applyFilters()"><option value="">All Platforms</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
+    <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()">⚙️ Settings ▾</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇️ Export</button>
+    <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">🗑️ Delete Selected</button>
+    <span style="font-size:12px;color:var(--text3)" id="rec-count"></span>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table id="main-table">
+        <thead id="main-thead"><tr>
+          <th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>
+          <th onclick="sortBy('client')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('service')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('concern')" id="th-concern">Concern<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('platform')" id="th-platform">Platform<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('status')" id="th-status">Status<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('startDate')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('resolvedDate')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('priority')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('endorsed')" id="th-endorsed">Endorsed<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th style="width:100px">Actions</th>
+        </tr></thead>
+        <tbody id="main-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- NEW/EDIT MODAL -->
+<div class="modal-ov hidden" id="record-modal">
+  <div class="modal">
+    <div class="modal-hdr"><h3 id="modal-title">New Endorsement</h3><button class="modal-cls" onclick="closeModal()">x</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgrp"><label>Client / Vendor *</label><input class="fc" id="f-client" placeholder="e.g. MAYA" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="fgrp"><label>Service</label>
+          <select class="fc" id="f-svc-f"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
+        </div>
+        <div class="fgrp full"><label>Concern / Description</label><textarea class="fc" id="f-concern" placeholder="Describe the issue..."></textarea></div>
+        <div class="fgrp full"><label>Remarks</label><textarea class="fc" id="f-remarks" placeholder="Internal remarks (not shown in table)..." style="min-height:55px"></textarea></div>
+        <div class="fgrp"><label>Platform</label>
+          <select class="fc" id="f-plt-f"><option value="">-- Select --</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
+        </div>
+        <div class="fgrp"><label>Status</label>
+          <select class="fc" id="f-st-f">
+            <optgroup label="In Progress">
+              <option>Pending at CS</option><option>Pending at NOC</option><option>Pending at TSE</option><option>Pending at L2</option><option>Pending at CTO</option><option>Pending at AM</option><option>Pending at Product</option><option>Pending at Accounting</option><option>Pending at Vendor</option><option>Pending at Developer</option><option>Advised Client</option>
+            </optgroup>
+            <optgroup label="Completed">
+              <option>Done</option><option>Commercial Concern</option><option>Resolved</option><option>Posted</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="fgrp"><label>Priority</label>
+          <select class="fc" id="f-pri-f" onchange="onPriorityChange()"><option>High</option><option selected>Medium</option><option>Low</option></select>
+        </div>
+        <div class="fgrp"><label>Start Date</label><input class="fc" id="f-date" type="date"></div>
+        <div class="fgrp" id="f-resolved-wrap"><label>Resolved Date</label><div id="f-resolved-display" style="font-size:13px;color:#4ade80;padding:8px 0;font-family:var(--mono)">—</div></div>
+        <div class="fgrp"><label>Timer Duration</label>
+          <select class="fc" id="f-timer-sel" onchange="onModalTimerChange()">
+            <option value="1800">30 Minutes</option>
+            <option value="3600" selected>1 Hour</option>
+            <option value="7200">2 Hours</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+        <div class="fgrp" id="f-timer-custom-wrap" style="display:none">
+          <label>Custom Duration (HH:MM)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input class="fc" id="f-timer-hh" type="number" min="0" max="23" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerHH(this)">
+            <span style="font-size:18px;font-weight:700;color:var(--text2)">:</span>
+            <input class="fc" id="f-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerMM(this)">
+          </div>
+          <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 01:00 = 1 hour &nbsp;|&nbsp; 00:30 = 30 min</span>
+        </div>
+        <div class="fgrp"><label>Endorsed</label><select class="fc" id="f-end"><option value="0">No</option><option value="1">Yes</option></select></div>
+      </div>
+    </div>
+    <div class="modal-body" style="padding-top:0">
+      <div class="comments-section">
+        <h4>💬 Comments <span class="comment-badge" id="modal-comment-count">0</span></h4>
+        <div class="comment-list" id="modal-comment-list"></div>
+        <div class="comment-new">
+          <label>Add Comment / Attachment</label>
+          <div class="attach-zone" id="endorse-attach-zone" ondragover="onDragOver(event,'endorse-attach-zone')" ondragleave="onDragLeave('endorse-attach-zone')" ondrop="onDrop(event,'endorse-attach-zone','endorse-attach-pending')">
+            <textarea class="fc" id="f-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px" onpaste="onPasteAttach(event,'endorse-attach-pending')"></textarea>
+            <div class="attach-previews" id="endorse-attach-pending"></div>
+            <div class="attach-input-row">
+              <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'endorse-attach-pending')"></label>
+              <button class="btn btn-primary btn-sm" onclick="addComment()">Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRecord()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- RR / RO MODAL -->
+<div class="modal-ov hidden" id="rr-modal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-hdr"><h3 id="rr-modal-title">New RR / RO Entry</h3><button class="modal-cls" onclick="closeRRModal()">x</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgrp full"><label>Subject *</label><input class="fc" id="rr-subject" placeholder="e.g. ROUTE REQUEST - CID CYN DIDLOGIC - THREE (3) PLDT FCS"></div>
+        <div class="fgrp"><label>Priority</label>
+          <select class="fc" id="rr-priority">
+            <option value="">— None —</option>
+            <option value="Critical">⚡ Critical</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>Effective Date</label><input class="fc" id="rr-eff-date" type="date"></div>
+        <div class="fgrp full"><label>Remarks</label><textarea class="fc" id="rr-remarks" placeholder="Instructions, references, notes..."></textarea></div>
+        <div class="fgrp"><label>RR Date</label><input class="fc" id="rr-date" type="date"></div>
+        <div class="fgrp"><label>RR by</label>
+          <select class="fc" id="rr-by">
+            <option value="">— Select —</option>
+            <optgroup label="BM">
+              <option>Ma'am Kath</option><option>Sir Jason</option><option>Ma'am Shayne</option>
+            </optgroup>
+            <optgroup label="AM">
+              <option>Jem Santos</option><option>Robert Pinote</option>
+            </optgroup>
+            <optgroup label="Product">
+              <option>Raffy Ching</option><option>Mark Deviente</option><option>Vi Quibingco</option><option>Paul Fabella</option><option>Jessa Lubiano</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="fgrp"><label>RO by</label>
+          <select class="fc" id="ro-by">
+            <option value="">— Select —</option>
+            <option>Sir Rod</option><option>L2 Aries</option><option>L2 Efren</option><option>L2 Franz</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>Status</label>
+          <select class="fc" id="rr-status">
+            <option>Not Yet</option><option>Done</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>Advised to Client</label>
+          <select class="fc" id="rr-advised">
+            <option>Not Yet</option><option>Done</option><option>No need</option><option>AM will advise</option><option>Coordinated to AM</option><option>Coordinated to Prod</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>Posted</label>
+          <select class="fc" id="rr-posted">
+            <option>None</option><option>Not Yet</option><option>Posted MRC</option><option>Removed MRC</option>
+          </select>
+        </div>
+        <div class="fgrp"><label>Updated Inventory</label>
+          <select class="fc" id="rr-inv">
+            <option>None</option><option>Not Yet</option><option>Done</option>
+          </select>
+        </div>
+        <div class="fgrp" style="flex-direction:row;align-items:center;gap:10px">
+          <input type="checkbox" id="rr-completed" style="accent-color:#4ade80;width:16px;height:16px;cursor:pointer">
+          <label style="text-transform:none;font-size:13px;color:var(--text);cursor:pointer" for="rr-completed">✅ Completed (row turns green)</label>
+        </div>
+        <div class="fgrp" style="flex-direction:row;align-items:center;gap:10px">
+          <input type="checkbox" id="rr-disregard" style="accent-color:#f87171;width:16px;height:16px;cursor:pointer">
+          <label style="text-transform:none;font-size:13px;color:var(--text);cursor:pointer" for="rr-disregard">🚫 Disregard (row strikethrough)</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeRRModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRRRecord()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DID ORDER MODAL -->
+<div class="modal-ov hidden" id="did-modal">
+  <div class="modal">
+    <div class="modal-hdr"><h3 id="did-modal-title">New DID Order / Cancel</h3><button class="modal-cls" onclick="closeDIDModal()">x</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgrp"><label>Client / Vendor *</label><input class="fc" id="d-client" placeholder="e.g. DIDLOGIC" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="fgrp"><label>Service</label>
+          <select class="fc" id="d-svc"><option>VOIP</option><option>SMS</option></select>
+        </div>
+        <div class="fgrp full"><label>Description</label><textarea class="fc" id="d-desc" placeholder="e.g. #9954130700: DID Disconnection Notice — AM"></textarea></div>
+        <div class="fgrp full"><label>Remarks</label><textarea class="fc" id="d-remarks" placeholder="Internal remarks..." style="min-height:55px"></textarea></div>
+        <div class="fgrp"><label>Status</label>
+          <select class="fc" id="d-status">
+            <optgroup label="In Progress">
+              <option>Pending AM</option><option>Pending CS</option><option>In Progress</option>
+            </optgroup>
+            <optgroup label="Completed">
+              <option>Done</option><option>Cancel by Client</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="fgrp"><label>Start Date</label><input class="fc" id="d-date" type="date"></div>
+        <div class="fgrp" id="d-resolved-wrap"><label>Resolved Date</label><div id="d-resolved-display" style="font-size:13px;color:var(--text3);padding:8px 0;font-family:var(--mono)">—</div></div>
+        <div class="fgrp"><label>Priority</label>
+          <select class="fc" id="d-priority" onchange="onDIDPriorityChange()"><option>High</option><option selected>Normal</option><option>Low</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-body" style="padding-top:0">
+      <div class="comments-section">
+        <h4>💬 Comments <span class="comment-badge" id="did-modal-comment-count">0</span></h4>
+        <div class="comment-list" id="did-modal-comment-list"></div>
+        <div class="comment-new">
+          <label>Add Comment / Attachment</label>
+          <div class="attach-zone" id="did-attach-zone" ondragover="onDragOver(event,'did-attach-zone')" ondragleave="onDragLeave('did-attach-zone')" ondrop="onDrop(event,'did-attach-zone','did-attach-pending')">
+            <textarea class="fc" id="d-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px" onpaste="onPasteAttach(event,'did-attach-pending')"></textarea>
+            <div class="attach-previews" id="did-attach-pending"></div>
+            <div class="attach-input-row">
+              <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'did-attach-pending')"></label>
+              <button class="btn btn-primary btn-sm" onclick="addDIDComment()">Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeDIDModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDIDRecord()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMMENTS MODAL -->
+<div class="modal-ov hidden" id="comments-modal" style="z-index:550">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hdr">
+      <h3 id="comments-modal-title">💬 Comments</h3>
+      <button class="modal-cls" onclick="closeCommentsModal()">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="comment-list" id="cm-list"></div>
+      <div class="comment-new">
+        <label>Add Comment / Attachment</label>
+        <div class="attach-zone" id="cm-attach-zone" ondragover="onDragOver(event,'cm-attach-zone')" ondragleave="onDragLeave('cm-attach-zone')" ondrop="onDrop(event,'cm-attach-zone','cm-attach-pending')">
+          <textarea class="fc" id="cm-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px" onpaste="onPasteAttach(event,'cm-attach-pending')"></textarea>
+          <div class="attach-previews" id="cm-attach-pending"></div>
+          <div class="attach-input-row">
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'cm-attach-pending')"></label>
+            <button class="btn btn-primary btn-sm" onclick="addCommentFromModal()">Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeCommentsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-ov hidden" id="confirm-modal" style="z-index:600">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-hdr"><h3>Confirm</h3><button class="modal-cls" onclick="confirmResolve(false)">x</button></div>
+    <div class="modal-body"><p id="confirm-msg" style="line-height:1.6"></p></div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="confirmResolve(false)">Cancel</button>
+      <button class="btn" id="confirm-ok" style="background:#ef4444;color:#fff" onclick="confirmResolve(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- Firebase Loading Overlay -->
+<div id="fb-loader" style="display:flex;position:fixed;inset:0;background:rgba(13,13,15,.92);z-index:9000;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(4px)">
+  <div style="width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite"></div>
+  <p style="color:var(--text2);font-size:14px">Connecting...</p>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<script type="module">
+// ─── FIREBASE CONFIG ────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDNeq1-e3Yx_7AhViQwQXpwpwHddNQzLXo",
+  authDomain: "cs-endorsement.firebaseapp.com",
+  projectId: "cs-endorsement",
+  storageBucket: "cs-endorsement.firebasestorage.app",
+  messagingSenderId: "73262340807",
+  appId: "1:73262340807:web:6b487173b1a2ed80917ce2",
+  measurementId: "G-RX9RWJRLYZ"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const COLL = 'endorsements';
+const SETTINGS_DOC = 'app_settings/main';
+
+// ─── GLOBALS ────────────────────────────────────────────────
+var DATA = [];
+var idSeq = 1;
+var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep'};
+var editingId = null, sortCol = null, sortDir = 1, currentTab = 'all', filteredData = [];
+var _cellStart = null, _dragging = false, _selCells = new Set();
+var _confirmResolve = null;
+var _fbReady = false;
+
+// ─── LOADING UI ─────────────────────────────────────────────
+function showLoader(msg){
+  var l=document.getElementById('fb-loader');
+  if(l){l.style.display='flex';l.querySelector('p').textContent=msg||'Connecting...';}
+}
+function hideLoader(){
+  var l=document.getElementById('fb-loader');
+  if(l) l.style.display='none';
+}
+
+// ─── SAVE to Firestore ───────────────────────────────────────
+async function save(){
+  // Save each record as its own document for real-time sync
+  // We batch-write only changed records — for simplicity write all
+  var promises = DATA.map(function(r){
+    var docId = String(r.id);
+    return setDoc(doc(db, COLL, docId), r);
+  });
+  try{ await Promise.all(promises); }
+  catch(e){ console.error('Save error',e); toast('Save failed — check connection','error'); }
+}
+
+async function saveOne(r){
+  try{
+    await setDoc(doc(db, COLL, String(r.id)), r);
+  }catch(e){
+    console.error('SaveOne error',e);
+    toast('Save failed — check connection','error');
+  }
+}
+
+async function deleteOne(id){
+  try{
+    await deleteDoc(doc(db, COLL, String(id)));
+  }catch(e){
+    console.error('Delete error',e);
+  }
+}
+
+function saveSettings(){
+  var sel=document.getElementById('default-timer').value;
+  var ci=document.getElementById('custom-mins');
+  ci.style.display=sel==='custom'?'':'none';
+  SETTINGS.defaultTimer=sel==='custom'?(parseInt(ci.value)||30)*60:parseInt(sel);
+  SETTINGS.autoAlert=document.getElementById('auto-alert').checked;
+  SETTINGS.alarmTone=document.getElementById('alarm-tone').value;
+  localStorage.setItem('end_settings',JSON.stringify(SETTINGS));
+  // Also persist settings to Firestore
+  setDoc(doc(db, 'app_settings', 'main'), SETTINGS).catch(function(){});
+}
+function onTimerChange(){
+  var sel=document.getElementById('default-timer').value;
+  document.getElementById('custom-mins').style.display=sel==='custom'?'':'none';
+  saveSettings();
+}
+
+function toggleTheme(){
+  var h=document.documentElement,isDark=h.getAttribute('data-theme')==='dark';
+  h.setAttribute('data-theme',isDark?'light':'dark');
+  document.getElementById('theme-btn').textContent=isDark?'🌙':'☀️';
+}
+
+function switchTab(tab,el){
+  currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  // Reset filters when switching tabs
+  document.getElementById('search-input').value='';
+  document.getElementById('f-svc').value='';
+  document.getElementById('f-st').value='';
+  document.getElementById('f-pri').value='';
+  document.getElementById('f-plt').value='';
+  applyFilters();
+}
+
+function openNewModalCurrent(){
+  if(currentTab==='did') openNewDIDModal();
+  else if(currentTab==='mine') openNewRRModal();
+  else openNewModal();
+}
+
+var DONE_ST=['Done','Commercial Concern','Resolved','Posted'];
+var DID_DONE_ST=['Done','Cancel by Client'];
+var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','In Progress'];
+
+function didStBadge(s){
+  var greenSt=['Done','Cancel by Client'];
+  var cls=greenSt.indexOf(s)>-1?'st-green':'st-red';
+  return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
+}
+function didPriBadge(p){
+  var cls={High:'pri-high',Normal:'pri-med',Low:'pri-low'}[p]||'pri-med';
+  return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';
+}
+
+function svcBadge(s){var cls={VOIP:'svc-voip',SMS:'svc-sms',Payment:'svc-payment'}[s]||'svc-voip';return '<span class="badge '+cls+'">'+(s||'VOIP')+'</span>';}
+function pltBadge(p){if(!p)return '';var cls={'MS Teams':'plt-msteams','Viber':'plt-viber','WhatsApp':'plt-whatsapp','Telegram':'plt-telegram','Email':'plt-email'}[p]||'plt-def';return '<span class="badge '+cls+'">'+p+'</span>';}
+function stBadge(s){
+  var redSt=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Advised Client'];
+  var blueSt=['Pending at Vendor','Pending at Developer'];
+  var greenSt=['Done','Commercial Concern','Resolved','Posted'];
+  var cls='st-yellow';
+  if(redSt.indexOf(s)>-1)cls='st-red';
+  else if(blueSt.indexOf(s)>-1)cls='st-blue';
+  else if(greenSt.indexOf(s)>-1)cls='st-green';
+  return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
+}
+function priBadge(p){var cls={High:'pri-high',Medium:'pri-med',Low:'pri-low'}[p]||'pri-med';return '<span class="badge '+cls+'">'+(p||'Medium')+'</span>';}
+function fmtDate(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+
+function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.defaultTimer;}
+function calcRem(r){if(!r.timerStart)return null;var elapsed=Math.floor((Date.now()-r.timerStart)/1000);return Math.max(0,getTimerSecs(r)-elapsed);}
+function fmtTime(s){if(s===null)return '--:--';var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;if(h>0)return h+':'+pad(m)+':'+pad(sc);return pad(m)+':'+pad(sc);}
+function pad(n){return n<10?'0'+n:String(n);}
+
+function timerHTML(r){
+  var rem=r.timerStart?calcRem(r):null;
+  var cls='tbadge'+(rem===null?'':(rem===0?' texp':rem<300?' twarn':''));
+  var ts=rem===null?'--:--':fmtTime(rem);
+  var btns=r.timerStart
+    ?'<button class="btn-icon btn-sm" onclick="resetTmr('+r.id+')" title="Reset">&#8635;</button><button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>'
+    :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
+  return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'">'+ts+'</span>'+btns+'</div>';
+}
+
+function startTmr(id){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);renderRows();}
+function resetTmr(id){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);}
+function stopTmr(id){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;saveOne(r);renderRows();}
+
+function clampTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>23)el.value=23;}
+function clampTimerMM(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>59)el.value=59;}
+
+function testAlert(){playAlert();toast('Alert sound test!','info');}
+function playAlert(){
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    var tone=SETTINGS.alarmTone||'beep';
+    if(tone==='beep'){
+      // Classic triple beep
+      [0,350,700].forEach(function(d){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.frequency.value=880;o.type='square';
+        g.gain.setValueAtTime(0,ctx.currentTime+d/1000);
+        g.gain.linearRampToValueAtTime(0.4,ctx.currentTime+d/1000+0.05);
+        g.gain.linearRampToValueAtTime(0,ctx.currentTime+d/1000+0.3);
+        o.start(ctx.currentTime+d/1000);o.stop(ctx.currentTime+d/1000+0.35);
+      });
+    }else if(tone==='siren'){
+      // Rising siren loop x3
+      [0,800,1600].forEach(function(d){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(400,ctx.currentTime+d/1000);
+        o.frequency.linearRampToValueAtTime(1200,ctx.currentTime+d/1000+0.6);
+        g.gain.setValueAtTime(0.35,ctx.currentTime+d/1000);
+        g.gain.linearRampToValueAtTime(0,ctx.currentTime+d/1000+0.7);
+        o.start(ctx.currentTime+d/1000);o.stop(ctx.currentTime+d/1000+0.75);
+      });
+    }else if(tone==='bell'){
+      // Soft bell resonance
+      [0,600,1200].forEach(function(d){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sine';o.frequency.value=1047;
+        g.gain.setValueAtTime(0.5,ctx.currentTime+d/1000);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+d/1000+0.9);
+        o.start(ctx.currentTime+d/1000);o.stop(ctx.currentTime+d/1000+1);
+        // Harmonic
+        var o2=ctx.createOscillator(),g2=ctx.createGain();
+        o2.connect(g2);g2.connect(ctx.destination);
+        o2.type='sine';o2.frequency.value=2093;
+        g2.gain.setValueAtTime(0.2,ctx.currentTime+d/1000);
+        g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+d/1000+0.6);
+        o2.start(ctx.currentTime+d/1000);o2.stop(ctx.currentTime+d/1000+0.65);
+      });
+    }else if(tone==='pulse'){
+      // Rapid pulse beats
+      for(var i=0;i<8;i++){
+        (function(idx){
+          var o=ctx.createOscillator(),g=ctx.createGain();
+          o.connect(g);g.connect(ctx.destination);
+          o.type='sine';o.frequency.value=660;
+          var t=ctx.currentTime+idx*0.18;
+          g.gain.setValueAtTime(0,t);
+          g.gain.linearRampToValueAtTime(0.45,t+0.04);
+          g.gain.linearRampToValueAtTime(0,t+0.13);
+          o.start(t);o.stop(t+0.15);
+        })(i);
+      }
+    }else if(tone==='alarm'){
+      // Alarm clock - alternating high/low
+      for(var i=0;i<6;i++){
+        (function(idx){
+          var o=ctx.createOscillator(),g=ctx.createGain();
+          o.connect(g);g.connect(ctx.destination);
+          o.type='square';
+          o.frequency.value=idx%2===0?1000:800;
+          var t=ctx.currentTime+idx*0.22;
+          g.gain.setValueAtTime(0.35,t);
+          g.gain.setValueAtTime(0,t+0.18);
+          o.start(t);o.stop(t+0.2);
+        })(i);
+      }
+    }else if(tone==='ding'){
+      // Cheerful ding ding ding
+      var notes=[1047,1319,1568,1319,1047];
+      notes.forEach(function(freq,i){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sine';o.frequency.value=freq;
+        var t=ctx.currentTime+i*0.22;
+        g.gain.setValueAtTime(0.4,t);
+        g.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+        o.start(t);o.stop(t+0.42);
+      });
+    }
+  }catch(e){}
+}
+
+setInterval(function(){
+  var changed=false;
+  DATA.forEach(function(r){
+    if(!r.timerStart)return;
+    var rem=calcRem(r);
+    if(rem===0&&!r.timerAlerted){r.timerAlerted=true;playAlert();toast('Timer expired: '+r.client,'error');changed=true;}
+    var badge=document.getElementById('tb-'+r.id);
+    if(badge){
+      badge.textContent=fmtTime(rem);
+      badge.className='tbadge'+(rem===0?' texp':rem<300?' twarn':'');
+    }
+  });
+  if(changed){DATA.forEach(function(r){if(r.timerAlerted)saveOne(r);});}
+},1000);
+
+function applyFilters(){
+  if(currentTab==='did'){applyDIDFilters();return;}
+  if(currentTab==='mine'){applyRRFilters();return;}
+  var q=document.getElementById('search-input').value.toLowerCase();
+  var fs=document.getElementById('f-svc').value;
+  var fst=document.getElementById('f-st').value;
+  var fp=document.getElementById('f-pri').value;
+  var fpl=document.getElementById('f-plt').value;
+  var IN_PROGRESS_ST=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client'];
+  var COMPLETED_ST=['Done','Commercial Concern','Resolved','Posted'];
+  var filteringByStatus=fst&&fst!=='';
+  filteredData=DATA.filter(function(r){
+    if(r._type==='did'){
+      if(currentTab==='done') return DID_DONE_ST.indexOf(r.status)>-1;
+      return false;
+    }
+    if(r._type==='rr') return false; // RR only in mine tab
+    var isDone=DONE_ST.indexOf(r.status)>-1;
+    if(!filteringByStatus){
+      if(currentTab==='done'&&!isDone)return false;
+      if(currentTab==='all'&&isDone)return false;
+    }
+    var mq=!q||[r.client,r.service,r.concern,r.platform,r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
+    var stMatch=!fst||(
+      fst==='__inprogress__'?IN_PROGRESS_ST.indexOf(r.status)>-1:
+      fst==='__completed__'?COMPLETED_ST.indexOf(r.status)>-1:
+      r.status===fst
+    );
+    return mq&&(!fs||r.service===fs)&&stMatch&&(!fp||r.priority===fp)&&(!fpl||r.platform===fpl);
+  });
+  if(sortCol){
+    filteredData.sort(function(a,b){
+      var va=String(a[sortCol]||'').toLowerCase(),vb=String(b[sortCol]||'').toLowerCase();
+      return va.localeCompare(vb)*sortDir;
+    });
+  }
+  renderRows();updateStats();
+  document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+}
+
+function applyDIDFilters(){
+  var q=document.getElementById('search-input').value.toLowerCase();
+  filteredData=DATA.filter(function(r){
+    if(r._type!=='did')return false;
+    var isDone=DID_DONE_ST.indexOf(r.status)>-1;
+    if(isDone)return false;
+    return !q||[r.client,r.service,r.desc,r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
+  });
+  renderDIDRows();updateDIDStats();
+  document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+}
+
+// ─── RR / RO ────────────────────────────────────────────────
+var RR_BM=['Ma\'am Kath','Sir Jason','Ma\'am Shayne'];
+var RR_AM=['Jem Santos','Robert Pinote'];
+var RR_PROD=['Raffy Ching','Mark Deviente','Vi Quibingco','Paul Fabella','Jessa Lubiano'];
+var RR_RO=['Sir Rod','L2 Aries','L2 Efren','L2 Franz'];
+var RR_ADVISED=['Not Yet','Done','No need','AM will advise','Coordinated to AM','Coordinated to Prod'];
+var RR_POSTED=['None','Not Yet','Posted MRC','Removed MRC'];
+var RR_INV=['None','Not Yet','Done'];
+
+function rrBadge(val,type){
+  if(!val||val==='None')return '<span class="badge rr-gray">'+(val||'—')+'</span>';
+  if(type==='status') return val==='Done'?'<span class="badge rr-done">Done</span>':'<span class="badge rr-notyet">Not Yet</span>';
+  if(type==='advised'){
+    if(val==='Done') return '<span class="badge rr-done">Done</span>';
+    if(val==='Not Yet') return '<span class="badge rr-notyet">Not Yet</span>';
+    return '<span class="badge rr-yellow">'+val+'</span>';
+  }
+  if(type==='posted'){
+    if(val==='Not Yet') return '<span class="badge rr-notyet">Not Yet</span>';
+    if(val==='Posted MRC'||val==='Removed MRC') return '<span class="badge rr-green">'+val+'</span>';
+    return '<span class="badge rr-gray">'+val+'</span>';
+  }
+  if(type==='inv'){
+    if(val==='Done') return '<span class="badge rr-done">Done</span>';
+    if(val==='Not Yet') return '<span class="badge rr-notyet">Not Yet</span>';
+    return '<span class="badge rr-gray">'+val+'</span>';
+  }
+  if(type==='rrby'){
+    if(RR_BM.indexOf(val)>-1) return '<span class="badge rr-bm">'+val+'</span>';
+    if(RR_AM.indexOf(val)>-1) return '<span class="badge rr-am">'+val+'</span>';
+    if(RR_PROD.indexOf(val)>-1) return '<span class="badge rr-prod">'+val+'</span>';
+    return '<span class="badge rr-gray">'+val+'</span>';
+  }
+  if(type==='roby') return '<span class="badge rr-ro">'+val+'</span>';
+  if(val==='Critical') return '<span class="badge rr-notyet">⚡ Critical</span>';
+  return '<span class="badge rr-gray">'+val+'</span>';
+}
+
+var RR_THEAD='<tr>'
+  +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
+  +'<th style="width:70px">Priority</th>'
+  +'<th style="min-width:200px">Subject</th>'
+  +'<th style="width:110px">Eff. Date</th>'
+  +'<th style="min-width:180px">Remarks</th>'
+  +'<th style="width:105px">RR Date</th>'
+  +'<th style="width:130px">RR by</th>'
+  +'<th style="width:120px">RO by</th>'
+  +'<th style="width:90px">Status</th>'
+  +'<th style="width:130px">Advised Client</th>'
+  +'<th style="width:110px">Posted</th>'
+  +'<th style="width:120px">Updated Inv.</th>'
+  +'<th style="width:70px;text-align:center">✅</th>'
+  +'<th style="width:70px;text-align:center">🚫</th>'
+  +'<th style="width:60px">Actions</th>'
+  +'</tr>';
+
+function renderRRRows(){
+  document.getElementById('main-thead').innerHTML=RR_THEAD;
+  var tbody=document.getElementById('main-tbody');
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="15" class="empty">No RR/RO records found</td></tr>';return;}
+  tbody.innerHTML=filteredData.map(function(r){
+    var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
+    return '<tr class="'+rowCls+'" id="row-'+r.id+'">'
+      +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
+      +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
+      +'<td style="font-weight:600;max-width:220px;white-space:normal" title="'+(r.rrSubject||'')+'">'+(r.rrSubject||'')+'</td>'
+      +'<td>'+fmtDate(r.rrEffDate)+'</td>'
+      +'<td style="max-width:200px;white-space:normal;color:var(--text2);font-size:12px">'+(r.rrRemarks||'')+'</td>'
+      +'<td>'+fmtDate(r.rrDate)+'</td>'
+      +'<td>'+rrBadge(r.rrBy||'','rrby')+'</td>'
+      +'<td>'+rrBadge(r.roBy||'','roby')+'</td>'
+      +'<td>'+rrBadge(r.rrStatus||'Not Yet','status')+'</td>'
+      +'<td>'+rrBadge(r.rrAdvised||'Not Yet','advised')+'</td>'
+      +'<td>'+rrBadge(r.rrPosted||'None','posted')+'</td>'
+      +'<td>'+rrBadge(r.rrInv||'None','inv')+'</td>'
+      +'<td style="text-align:center"><input type="checkbox" style="accent-color:#4ade80;width:15px;height:15px;cursor:pointer" '+(r.rrCompleted?'checked':'')+' onchange="toggleRRField('+r.id+',\'rrCompleted\',this.checked);renderRRRows()"></td>'
+      +'<td style="text-align:center"><input type="checkbox" style="accent-color:#f87171;width:15px;height:15px;cursor:pointer" '+(r.rrDisregard?'checked':'')+' onchange="toggleRRField('+r.id+',\'rrDisregard\',this.checked);renderRRRows()"></td>'
+      +'<td><div class="row-acts">'
+      +'<button class="btn-icon btn-sm" onclick="openEditRR('+r.id+')" title="Edit">&#9998;</button>'
+      +'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>'
+      +'</div></td>'
+      +'</tr>';
+  }).join('');
+  initResizers();
+}
+
+function toggleRRField(id,field,val){
+  var r=DATA.find(function(d){return d.id===id;});
+  if(r){r[field]=val;saveOne(r);}
+}
+
+function updateRRStats(){
+  var rr=DATA.filter(function(r){return r._type==='rr';});
+  var total=rr.length,done=rr.filter(function(r){return r.rrCompleted;}).length,pending=total-done;
+  document.getElementById('stats-row').innerHTML=
+    '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
+    +'<div class="stat-chip">Pending <strong>'+pending+'</strong></div>'
+    +'<div class="stat-chip">Completed <strong>'+done+'</strong></div>';
+}
+
+function applyRRFilters(){
+  var q=document.getElementById('search-input').value.toLowerCase();
+  filteredData=DATA.filter(function(r){
+    if(r._type!=='rr')return false;
+    return !q||[r.rrSubject,r.rrRemarks,r.rrBy,r.roBy,r.rrStatus].join(' ').toLowerCase().indexOf(q)>-1;
+  });
+  renderRRRows();updateRRStats();
+  document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+}
+
+var editingRRId=null;
+function openNewRRModal(){
+  editingRRId=null;
+  var today=new Date().toISOString().split('T')[0];
+  document.getElementById('rr-modal-title').textContent='New RR / RO Entry';
+  document.getElementById('rr-subject').value='';
+  document.getElementById('rr-priority').value='';
+  document.getElementById('rr-eff-date').value=today;
+  document.getElementById('rr-remarks').value='';
+  document.getElementById('rr-date').value=today;
+  document.getElementById('rr-by').value='';
+  document.getElementById('ro-by').value='';
+  document.getElementById('rr-status').value='Not Yet';
+  document.getElementById('rr-advised').value='Not Yet';
+  document.getElementById('rr-posted').value='None';
+  document.getElementById('rr-inv').value='None';
+  document.getElementById('rr-completed').checked=false;
+  document.getElementById('rr-disregard').checked=false;
+  document.getElementById('rr-modal').classList.remove('hidden');
+}
+function openEditRR(id){
+  editingRRId=id;
+  var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  document.getElementById('rr-modal-title').textContent='Edit RR / RO Entry';
+  document.getElementById('rr-subject').value=r.rrSubject||'';
+  document.getElementById('rr-priority').value=r.rrPriority||'';
+  document.getElementById('rr-eff-date').value=r.rrEffDate||'';
+  document.getElementById('rr-remarks').value=r.rrRemarks||'';
+  document.getElementById('rr-date').value=r.rrDate||'';
+  document.getElementById('rr-by').value=r.rrBy||'';
+  document.getElementById('ro-by').value=r.roBy||'';
+  document.getElementById('rr-status').value=r.rrStatus||'Not Yet';
+  document.getElementById('rr-advised').value=r.rrAdvised||'Not Yet';
+  document.getElementById('rr-posted').value=r.rrPosted||'None';
+  document.getElementById('rr-inv').value=r.rrInv||'None';
+  document.getElementById('rr-completed').checked=!!r.rrCompleted;
+  document.getElementById('rr-disregard').checked=!!r.rrDisregard;
+  document.getElementById('rr-modal').classList.remove('hidden');
+}
+function closeRRModal(){document.getElementById('rr-modal').classList.add('hidden');}
+function saveRRRecord(){
+  var subject=document.getElementById('rr-subject').value.trim();
+  if(!subject){toast('Subject is required','error');return;}
+  var rec={
+    _type:'rr',
+    rrSubject:subject,
+    rrPriority:document.getElementById('rr-priority').value,
+    rrEffDate:document.getElementById('rr-eff-date').value,
+    rrRemarks:document.getElementById('rr-remarks').value,
+    rrDate:document.getElementById('rr-date').value,
+    rrBy:document.getElementById('rr-by').value,
+    roBy:document.getElementById('ro-by').value,
+    rrStatus:document.getElementById('rr-status').value,
+    rrAdvised:document.getElementById('rr-advised').value,
+    rrPosted:document.getElementById('rr-posted').value,
+    rrInv:document.getElementById('rr-inv').value,
+    rrCompleted:document.getElementById('rr-completed').checked,
+    rrDisregard:document.getElementById('rr-disregard').checked
+  };
+  if(editingRRId){
+    var idx=DATA.findIndex(function(d){return d.id===editingRRId;});
+    if(idx>=0){DATA[idx]=Object.assign({},DATA[idx],rec);saveOne(DATA[idx]);}
+    toast('Updated!','success');
+  }else{
+    var nr=Object.assign({id:idSeq++,_sel:false},rec);
+    DATA.push(nr);saveOne(nr);
+    toast('Added!','success');
+  }
+  closeRRModal();applyFilters();
+}
+
+function renderRows(){
+  document.getElementById('main-thead').innerHTML=END_THEAD;
+  var tbody=document.getElementById('main-tbody');
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
+  tbody.innerHTML=filteredData.map(function(r){
+    if(r._type==='did'){
+      return '<tr class="row-done" id="row-'+r.id+'">'
+        +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
+        +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
+        +'<td title="'+(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+(r.desc||'')+'</td>'
+        +'<td></td>'
+        +'<td>'+didStBadge(r.status)+'</td>'
+        +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
+        +'<td style="color:#4ade80">'+fmtDate(r.resolvedDate)+'</td>'
+        +'<td>'+didPriBadge(r.priority)+'</td>'
+        +'<td></td>'
+        +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
+        +'<td><div class="row-acts">'
+        +'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>'
+        +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')+'</button>'
+        +'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>'
+        +'</div></td>'
+        +'</tr>';
+    }
+    var isDone=DONE_ST.indexOf(r.status)>-1;
+    return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'">'
+      +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
+      +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
+      +'<td>'+svcBadge(r.service)+'</td>'
+      +'<td title="'+(r.concern||'')+'" style="max-width:260px;color:var(--text2)">'+(r.concern||'')+'</td>'
+      +'<td>'+pltBadge(r.platform)+'</td>'
+      +'<td>'+stBadge(r.status)+'</td>'
+      +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
+      +'<td style="color:'+(r.resolvedDate?'#4ade80':'var(--text3)')+'">'+( r.resolvedDate?fmtDate(r.resolvedDate):'—')+'</td>'
+      +'<td>'+priBadge(r.priority)+'</td>'
+      +'<td>'+timerHTML(r)+'</td>'
+      +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
+      +'<td><div class="row-acts">'
+      +'<button class="btn-icon btn-sm" onclick="openEdit('+r.id+')" title="Edit">&#9998;</button>'
+      +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
+      +'💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')
+      +'</button>'
+      +'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>'
+      +'</div></td>'
+      +'</tr>';
+  }).join('');
+  initResizers();
+}
+
+function updateStats(){
+  var endData=DATA.filter(function(r){return r._type!=='did';});
+  var total=endData.length,done=endData.filter(function(r){return DONE_ST.indexOf(r.status)>-1;}).length;
+  var pending=total-done,high=endData.filter(function(r){return r.priority==='High';}).length;
+  document.getElementById('stats-row').innerHTML=
+    '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
+    +'<div class="stat-chip">Pending <strong>'+pending+'</strong></div>'
+    +'<div class="stat-chip">Completed <strong>'+done+'</strong></div>'
+    +'<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
+}
+
+var DID_THEAD='<tr>'
+  +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
+  +'<th onclick="sortBy(\'client\')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'desc\')" id="th-desc">Description<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'status\')" id="th-status">Status<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'startDate\')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'resolvedDate\')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'service\')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th style="width:100px">Actions</th>'
+  +'</tr>';
+
+var END_THEAD='<tr>'
+  +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
+  +'<th onclick="sortBy(\'client\')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'service\')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'concern\')" id="th-concern">Concern<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'platform\')" id="th-platform">Platform<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'status\')" id="th-status">Status<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'startDate\')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'resolvedDate\')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'endorsed\')" id="th-endorsed">Endorsed<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th style="width:100px">Actions</th>'
+  +'</tr>';
+
+function renderDIDRows(){
+  document.getElementById('main-thead').innerHTML=DID_THEAD;
+  var tbody=document.getElementById('main-tbody');
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="9" class="empty">No DID records found</td></tr>';return;}
+  tbody.innerHTML=filteredData.map(function(r){
+    var isDone=DID_DONE_ST.indexOf(r.status)>-1;
+    return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'">'
+      +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
+      +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
+      +'<td title="'+(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+(r.desc||'')+'</td>'
+      +'<td>'+didStBadge(r.status)+'</td>'
+      +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
+      +'<td style="color:'+(r.resolvedDate?'#4ade80':'var(--text3)')+'">'+( r.resolvedDate?fmtDate(r.resolvedDate):'—')+'</td>'
+      +'<td>'+didPriBadge(r.priority)+'</td>'
+      +'<td>'+svcBadge(r.service)+'</td>'
+      +'<td><div class="row-acts">'
+      +'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>'
+      +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
+      +'💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')
+      +'</button>'
+      +'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>'
+      +'</div></td>'
+      +'</tr>';
+  }).join('');
+  initResizers();
+}
+
+function updateDIDStats(){
+  var didData=DATA.filter(function(r){return r._type==='did';});
+  var total=didData.length,done=didData.filter(function(r){return DID_DONE_ST.indexOf(r.status)>-1;}).length;
+  var pending=total-done;
+  document.getElementById('stats-row').innerHTML=
+    '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
+    +'<div class="stat-chip">In Progress <strong>'+pending+'</strong></div>'
+    +'<div class="stat-chip">Completed <strong>'+done+'</strong></div>';
+}
+
+var editingDIDId=null;
+function openNewDIDModal(){
+  editingDIDId=null;
+  document.getElementById('did-modal-title').textContent='New DID Order / Cancel';
+  document.getElementById('d-client').value='';
+  document.getElementById('d-svc').value='VOIP';
+  document.getElementById('d-desc').value='';
+  document.getElementById('d-remarks').value='';
+  document.getElementById('d-status').value='Pending AM';
+  document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('d-priority').value='Normal';
+  document.getElementById('d-resolved-display').textContent='—';
+  document.getElementById('d-resolved-display').style.color='var(--text3)';
+  document.getElementById('d-comment-text').value='';
+  _pendingAttachments['did-attach-pending']=[];
+  renderPendingPreviews('did-attach-pending');
+  renderDIDModalComments([]);
+  document.getElementById('did-modal').classList.remove('hidden');
+}
+
+function openEditDID(id){
+  editingDIDId=id;
+  var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  document.getElementById('did-modal-title').textContent='Edit DID Order / Cancel';
+  document.getElementById('d-client').value=r.client||'';
+  document.getElementById('d-svc').value=r.service||'VOIP';
+  document.getElementById('d-desc').value=r.desc||'';
+  document.getElementById('d-remarks').value=r.remarks||'';
+  document.getElementById('d-status').value=r.status||'Pending AM';
+  document.getElementById('d-date').value=r.startDate||'';
+  document.getElementById('d-priority').value=r.priority||'Normal';
+  document.getElementById('d-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
+  document.getElementById('d-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
+  document.getElementById('d-comment-text').value='';
+  _pendingAttachments['did-attach-pending']=[];
+  renderPendingPreviews('did-attach-pending');
+  renderDIDModalComments(r.comments||[]);
+  document.getElementById('did-modal').classList.remove('hidden');
+}
+
+function closeDIDModal(){document.getElementById('did-modal').classList.add('hidden');}
+
+function onDIDPriorityChange(){}
+
+function saveDIDRecord(){
+  var client=document.getElementById('d-client').value.trim();
+  if(!client){toast('Client / Vendor is required','error');return;}
+  var newStatus=document.getElementById('d-status').value;
+  var isDone=DID_DONE_ST.indexOf(newStatus)>-1;
+  var today=new Date().toISOString().split('T')[0];
+  var rec={
+    _type:'did',
+    client:client,
+    service:document.getElementById('d-svc').value,
+    desc:document.getElementById('d-desc').value,
+    remarks:document.getElementById('d-remarks').value,
+    status:newStatus,
+    startDate:document.getElementById('d-date').value,
+    priority:document.getElementById('d-priority').value
+  };
+  if(editingDIDId){
+    var idx=DATA.findIndex(function(d){return d.id===editingDIDId;});
+    if(idx>=0){
+      var prev=DATA[idx];
+      if(isDone&&!prev.resolvedDate) rec.resolvedDate=today;
+      else if(!isDone) rec.resolvedDate='';
+      else rec.resolvedDate=prev.resolvedDate;
+      DATA[idx]=Object.assign({},prev,rec);
+      saveOne(DATA[idx]);
+    }
+    toast('Updated!','success');
+  }else{
+    if(isDone) rec.resolvedDate=today;
+    var nd=Object.assign({id:idSeq++,_sel:false,comments:[]},rec);
+    DATA.push(nd);saveOne(nd);
+    toast('Added!','success');
+  }
+  closeDIDModal();applyFilters();
+}
+
+function renderDIDModalComments(comments){
+  var count=document.getElementById('did-modal-comment-count');
+  if(count) count.textContent=comments.length;
+  _renderCommentList(comments,'did-modal-comment-list');
+}
+
+function addDIDComment(){
+  var text=document.getElementById('d-comment-text').value.trim();
+  var attachments=collectAndClearPending('did-attach-pending');
+  if(!text&&!attachments.length){toast('Write a comment or attach a file','error');return;}
+  if(editingDIDId){
+    var r=DATA.find(function(d){return d.id===editingDIDId;});
+    if(r){
+      if(!r.comments)r.comments=[];
+      r.comments.push({ts:Date.now(),text:text,attachments:attachments});
+      saveOne(r);
+      document.getElementById('d-comment-text').value='';
+      renderDIDModalComments(r.comments);
+      renderDIDRows();
+      toast('Comment added','success');
+    }
+  }else{
+    toast('Save the record first to add comments','info');
+  }
+}
+
+function sortBy(field){
+  if(sortCol===field)sortDir*=-1;else{sortCol=field;sortDir=1;}
+  document.querySelectorAll('th[id^="th-"]').forEach(function(t){t.classList.remove('sort-asc','sort-desc');});
+  var th=document.getElementById('th-'+field);if(th)th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+  applyFilters();
+}
+
+function initResizers(){
+  document.querySelectorAll('.col-rz').forEach(function(div){
+    div.onmousedown=function(e){
+      e.preventDefault();e.stopPropagation();
+      var th=div.parentElement,startX=e.pageX,startW=th.getBoundingClientRect().width;
+      div.classList.add('rz-active');
+      document.body.style.cursor='col-resize';document.body.style.userSelect='none';
+      var onMove=function(e){th.style.minWidth=Math.max(60,startW+e.pageX-startX)+'px';};
+      var onUp=function(){div.classList.remove('rz-active');document.body.style.cursor='';document.body.style.userSelect='';window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
+      window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);
+    };
+  });
+}
+
+// Cell selection
+document.addEventListener('mousedown',function(e){
+  var td=e.target.closest('#main-table td');
+  if(!td||td.querySelector('input,button,select'))return;
+  document.querySelectorAll('.cell-sel').forEach(function(c){c.classList.remove('cell-sel');});
+  _selCells.clear();_dragging=true;_cellStart=td;
+  td.classList.add('cell-sel');_selCells.add(td);e.preventDefault();
+});
+document.addEventListener('mousemove',function(e){
+  if(!_dragging||!_cellStart)return;
+  var td=e.target.closest('#main-table td');if(!td)return;
+  var rows=Array.from(document.getElementById('main-table').querySelectorAll('tbody tr'));
+  var allRows=rows.map(function(r){return Array.from(r.cells);});
+  var gc=function(cell){for(var r=0;r<allRows.length;r++)for(var c=0;c<allRows[r].length;c++)if(allRows[r][c]===cell)return{r:r,c:c};return null;};
+  var s=gc(_cellStart),e2=gc(td);if(!s||!e2)return;
+  document.querySelectorAll('.cell-sel').forEach(function(c){c.classList.remove('cell-sel');});_selCells.clear();
+  var r1=Math.min(s.r,e2.r),r2=Math.max(s.r,e2.r),c1=Math.min(s.c,e2.c),c2=Math.max(s.c,e2.c);
+  for(var r=r1;r<=r2;r++)for(var c=c1;c<=c2;c++){var cell=allRows[r]&&allRows[r][c];if(cell){cell.classList.add('cell-sel');_selCells.add(cell);}}
+});
+document.addEventListener('mouseup',function(){_dragging=false;});
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();document.getElementById('search-input').focus();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='c'&&_selCells.size>0){
+    var rows=Array.from(document.getElementById('main-table').querySelectorAll('tbody tr'));
+    var allRows=rows.map(function(r){return Array.from(r.cells);});
+    var minR=9999,maxR=-1,minC=9999,maxC=-1;
+    _selCells.forEach(function(cell){for(var r=0;r<allRows.length;r++)for(var c=0;c<allRows[r].length;c++)if(allRows[r][c]===cell){minR=Math.min(minR,r);maxR=Math.max(maxR,r);minC=Math.min(minC,c);maxC=Math.max(maxC,c);}});
+    var lines=[];
+    for(var r=minR;r<=maxR;r++){var cols=[];for(var c=minC;c<=maxC;c++)if(c>0)cols.push((allRows[r]&&allRows[r][c]?allRows[r][c].innerText:'').trim());lines.push(cols.join('\t'));}
+    navigator.clipboard.writeText(lines.join('\n')).then(function(){toast('Copied!','success');}).catch(function(){});
+    e.preventDefault();
+  }
+  if(e.key==='Escape'){document.querySelectorAll('.cell-sel').forEach(function(c){c.classList.remove('cell-sel');});_selCells.clear();}
+});
+
+function updateBulkBar(){
+  var sel=DATA.filter(function(r){return r._sel;});
+  var btn=document.getElementById('bulk-delete-btn');
+  if(btn) btn.style.display=sel.length>0?'':'none';
+  if(btn&&sel.length>0) btn.textContent='🗑️ Delete '+sel.length+' Selected';
+}
+function toggleAll(chk){filteredData.forEach(function(r){r._sel=chk.checked;});renderRows();updateBulkBar();}
+function toggleRow(id,chk){var r=DATA.find(function(d){return d.id===id;});if(r){r._sel=chk.checked;updateBulkBar();}}
+function toggleEnd(id,chk){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.endorsed=chk.checked?1:0;saveOne(r);toast(chk.checked?'Marked endorsed':'Unmarked','info');}
+
+function bulkDelete(){
+  var sel=DATA.filter(function(r){return r._sel;});
+  if(!sel.length)return;
+  appConfirm('Delete '+sel.length+' selected record'+(sel.length>1?'s':'')+'?','Delete').then(function(ok){
+    if(!ok)return;
+    var ids=sel.map(function(r){return r.id;});
+    var toDelete=DATA.filter(function(r){return ids.indexOf(r.id)>-1;});
+    DATA=DATA.filter(function(r){return ids.indexOf(r.id)===-1;});
+    toDelete.forEach(function(r){deleteOne(r.id);});
+    applyFilters();updateBulkBar();toast('Deleted '+ids.length+' record'+(ids.length>1?'s':''),'info');
+  });
+}
+
+function toggleAutoPanel(){
+  var panel=document.getElementById('auto-panel');
+  var btn=document.getElementById('auto-toggle-btn');
+  var hidden=panel.classList.toggle('hidden');
+  btn.textContent=hidden?'⚙️ Settings ▾':'⚙️ Settings ▴';
+}
+
+function openNewModal(){
+  editingId=null;
+  document.getElementById('modal-title').textContent='New Endorsement';
+  document.getElementById('f-client').value='';
+  document.getElementById('f-svc-f').value='VOIP';
+  document.getElementById('f-concern').value='';
+  document.getElementById('f-remarks').value='';
+  document.getElementById('f-plt-f').value='';
+  document.getElementById('f-st-f').value='Pending at CS';
+  document.getElementById('f-pri-f').value='Medium';
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-resolved-display').textContent='—';
+  document.getElementById('f-resolved-display').style.color='var(--text3)';
+  // Set timer based on default priority (Medium → custom)
+  document.getElementById('f-timer-sel').value='custom';
+  document.getElementById('f-timer-hh').value='1';
+  document.getElementById('f-timer-mm').value='0';
+  document.getElementById('f-timer-custom-wrap').style.display='';
+  document.getElementById('f-end').value='0';
+  document.getElementById('f-comment-text').value='';
+  _pendingAttachments['endorse-attach-pending']=[];
+  renderPendingPreviews('endorse-attach-pending');
+  renderModalComments([]);
+  document.getElementById('record-modal').classList.remove('hidden');
+}
+function openEdit(id){
+  editingId=id;
+  var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  document.getElementById('modal-title').textContent='Edit Endorsement';
+  document.getElementById('f-client').value=r.client||'';
+  document.getElementById('f-svc-f').value=r.service||'VOIP';
+  document.getElementById('f-concern').value=r.concern||'';
+  document.getElementById('f-remarks').value=r.remarks||'';
+  document.getElementById('f-plt-f').value=r.platform||'';
+  document.getElementById('f-st-f').value=r.status||'Pending at CS';
+  document.getElementById('f-pri-f').value=r.priority||'Medium';
+  document.getElementById('f-date').value=r.startDate||'';
+  document.getElementById('f-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
+  document.getElementById('f-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
+  var tov=r.timerOverride||0;
+  var knownVals=[1800,3600,7200];
+  if(tov&&knownVals.indexOf(tov)===-1){
+    document.getElementById('f-timer-sel').value='custom';
+    document.getElementById('f-timer-hh').value=Math.floor(tov/3600)||0;
+    document.getElementById('f-timer-mm').value=Math.floor((tov%3600)/60)||0;
+    document.getElementById('f-timer-custom-wrap').style.display='';
+  }else{
+    document.getElementById('f-timer-sel').value=tov||3600;
+    document.getElementById('f-timer-hh').value='0';
+    document.getElementById('f-timer-mm').value='0';
+    document.getElementById('f-timer-custom-wrap').style.display='none';
+  }
+  document.getElementById('f-end').value=r.endorsed||0;
+  document.getElementById('f-comment-text').value='';
+  _pendingAttachments['endorse-attach-pending']=[];
+  renderPendingPreviews('endorse-attach-pending');
+  renderModalComments(r.comments||[]);
+  document.getElementById('record-modal').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('record-modal').classList.add('hidden');}
+
+function saveRecord(){
+  var client=document.getElementById('f-client').value.trim();
+  if(!client){toast('Client / Vendor is required','error');return;}
+  var timerSel=document.getElementById('f-timer-sel').value;
+  var timerSecs;
+  if(timerSel==='custom'){
+    var hh=parseInt(document.getElementById('f-timer-hh').value)||0;
+    var mm=parseInt(document.getElementById('f-timer-mm').value)||0;
+    timerSecs=(hh*3600)+(mm*60);
+    if(timerSecs<60)timerSecs=60;
+  }else{
+    timerSecs=parseInt(timerSel)||3600;
+  }
+  var newStatus=document.getElementById('f-st-f').value;
+  var isCompleted=DONE_ST.indexOf(newStatus)>-1;
+  var today=new Date().toISOString().split('T')[0];
+  var rec={
+    client:client,
+    service:document.getElementById('f-svc-f').value,
+    concern:document.getElementById('f-concern').value,
+    remarks:document.getElementById('f-remarks').value,
+    platform:document.getElementById('f-plt-f').value,
+    status:newStatus,
+    priority:document.getElementById('f-pri-f').value,
+    startDate:document.getElementById('f-date').value,
+    timerOverride:timerSecs,
+    endorsed:parseInt(document.getElementById('f-end').value)||0
+  };
+  if(editingId){
+    var idx=DATA.findIndex(function(d){return d.id===editingId;});
+    if(idx>=0){
+      var prev=DATA[idx];
+      if(isCompleted&&!prev.resolvedDate) rec.resolvedDate=today;
+      else if(!isCompleted) rec.resolvedDate='';
+      else rec.resolvedDate=prev.resolvedDate;
+      // Auto-stop timer when completed
+      var timerUpdate=isCompleted?{timerStart:null,timerAlerted:false}:{timerStart:Date.now(),timerAlerted:false};
+      DATA[idx]=Object.assign({},prev,rec,timerUpdate);
+      saveOne(DATA[idx]);
+    }
+    toast(isCompleted?'Updated & timer stopped!':'Updated & timer restarted!','success');
+  }else{
+    if(isCompleted){rec.resolvedDate=today;rec.timerStart=null;rec.timerAlerted=false;}
+    var ne=Object.assign({id:idSeq++,_sel:false,timerStart:isCompleted?null:Date.now(),timerAlerted:false},rec);
+    DATA.push(ne);saveOne(ne);
+    toast('Added'+(isCompleted?'':' & timer started!'),'success');
+  }
+  closeModal();applyFilters();
+}
+
+function delRec(id){
+  appConfirm('Delete this record?','Delete').then(function(ok){
+    if(!ok)return;
+    DATA=DATA.filter(function(r){return r.id!==id;});
+    deleteOne(id);
+    applyFilters();
+    toast('Deleted','info');
+  });
+}
+
+function exportCSV(){
+  var headers=['Client/Vendor','Service','Concern','Platform','Status','Start Date','Resolved Date','Priority','Endorsed'];
+  var rows=[headers.join(',')].concat(filteredData.map(function(r){
+    return [r.client,r.service,r.concern,r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,r.endorsed?'Yes':'No'].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+  }));
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download='endorsements_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();toast('Exported','success');
+}
+
+function appConfirm(msg,okLabel){
+  return new Promise(function(resolve){
+    _confirmResolve=resolve;
+    document.getElementById('confirm-msg').textContent=msg;
+    document.getElementById('confirm-ok').textContent=okLabel||'Confirm';
+    document.getElementById('confirm-modal').classList.remove('hidden');
+  });
+}
+function confirmResolve(val){
+  document.getElementById('confirm-modal').classList.add('hidden');
+  if(_confirmResolve){_confirmResolve(val);_confirmResolve=null;}
+}
+
+function toast(msg,type){
+  type=type||'info';
+  var el=document.createElement('div');el.className='toast '+type;
+  el.innerHTML='<span>'+({success:'✅',error:'❌',info:'ℹ️'}[type]||'ℹ️')+'</span><span>'+msg+'</span>';
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(function(){el.remove();},3500);
+}
+
+function onModalTimerChange(){
+  var v=document.getElementById('f-timer-sel').value;
+  document.getElementById('f-timer-custom-wrap').style.display=v==='custom'?'':'none';
+}
+
+function onPriorityChange(){
+  var pri=document.getElementById('f-pri-f').value;
+  var timerSel=document.getElementById('f-timer-sel');
+  var customWrap=document.getElementById('f-timer-custom-wrap');
+  if(pri==='High'){
+    timerSel.value='1800'; // 30 minutes
+    customWrap.style.display='none';
+  }else{
+    timerSel.value='custom';
+    customWrap.style.display='';
+    // Default custom to 1:00 if fields are empty/zero
+    var hh=document.getElementById('f-timer-hh');
+    var mm=document.getElementById('f-timer-mm');
+    if((!hh.value||hh.value==='0')&&(!mm.value||mm.value==='0')){
+      hh.value='1';mm.value='0';
+    }
+  }
+}
+
+var _commentModalId=null;
+
+function fmtCommentTime(ts){
+  var d=new Date(ts);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ─── ATTACHMENT SYSTEM ──────────────────────────────────────
+var _pendingAttachments={}; // keyed by zone id
+
+function getExt(name){return name.split('.').pop().toLowerCase();}
+function fileIcon(name){
+  var e=getExt(name);
+  var icons={pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📋',pptx:'📋',zip:'🗜️',rar:'🗜️',mp4:'🎬',mov:'🎬',mp3:'🎵',wav:'🎵',txt:'📃',csv:'📊'};
+  return icons[e]||'📎';
+}
+function isImage(name){return /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(name);}
+
+function readFileAsBase64(file){
+  return new Promise(function(res,rej){
+    var r=new FileReader();
+    r.onload=function(e){res(e.target.result);};
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function renderPendingPreviews(zoneId){
+  var list=_pendingAttachments[zoneId]||[];
+  var el=document.getElementById(zoneId);
+  if(!el)return;
+  el.innerHTML=list.map(function(a,i){
+    if(a.isImage){
+      return '<div class="attach-thumb">'
+        +'<img src="'+a.data+'" title="'+a.name+'">'
+        +'<div class="file-name">'+a.name+'</div>'
+        +'<button class="rm-btn" onclick="removePending(\''+zoneId+'\','+i+')">×</button>'
+        +'</div>';
+    }
+    return '<div class="attach-thumb">'
+      +'<div class="file-icon">'+fileIcon(a.name)+'</div>'
+      +'<div class="file-name">'+a.name+'</div>'
+      +'<button class="rm-btn" onclick="removePending(\''+zoneId+'\','+i+')">×</button>'
+      +'</div>';
+  }).join('');
+}
+
+function removePending(zoneId,idx){
+  if(_pendingAttachments[zoneId]) _pendingAttachments[zoneId].splice(idx,1);
+  renderPendingPreviews(zoneId);
+}
+
+async function addFilesToPending(files,zoneId){
+  if(!_pendingAttachments[zoneId]) _pendingAttachments[zoneId]=[];
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    if(f.size>5*1024*1024){toast(f.name+' is over 5MB — skipped','error');continue;}
+    try{
+      var data=await readFileAsBase64(f);
+      _pendingAttachments[zoneId].push({name:f.name,data:data,isImage:isImage(f.name),type:f.type});
+    }catch(e){toast('Failed to read '+f.name,'error');}
+  }
+  renderPendingPreviews(zoneId);
+}
+
+function onFileInput(e,zoneId){addFilesToPending(e.target.files,zoneId);e.target.value='';}
+function onDragOver(e,zoneId){e.preventDefault();document.getElementById(zoneId.replace('-pending','-zone')||zoneId).classList.add('drag-over');}
+function onDragLeave(zoneId){var el=document.getElementById(zoneId);if(el)el.classList.remove('drag-over');}
+function onDrop(e,zoneId,pendingId){
+  e.preventDefault();
+  var el=document.getElementById(zoneId);if(el)el.classList.remove('drag-over');
+  if(e.dataTransfer.files.length) addFilesToPending(e.dataTransfer.files,pendingId);
+}
+function onPasteAttach(e,zoneId){
+  var items=e.clipboardData&&e.clipboardData.items;
+  if(!items)return;
+  var files=[];
+  for(var i=0;i<items.length;i++){
+    if(items[i].kind==='file'){
+      var f=items[i].getAsFile();
+      if(f) files.push(f);
+    }
+  }
+  if(files.length){e.preventDefault();addFilesToPending(files,zoneId);}
+}
+
+function collectAndClearPending(zoneId){
+  var list=(_pendingAttachments[zoneId]||[]).slice();
+  _pendingAttachments[zoneId]=[];
+  renderPendingPreviews(zoneId);
+  return list;
+}
+
+function renderCommentAttachments(attachments){
+  if(!attachments||!attachments.length)return '';
+  return '<div class="comment-attach-preview">'+attachments.map(function(a){
+    if(a.isImage){
+      return '<div class="ca-item" onclick="openLightbox(\''+a.data+'\',\''+a.name+'\')" title="'+a.name+'">'
+        +'<img src="'+a.data+'">'
+        +'<div class="ca-name">'+a.name+'</div>'
+        +'</div>';
+    }
+    return '<a class="ca-item" href="'+a.data+'" download="'+a.name+'" title="Download '+a.name+'">'
+      +'<div class="ca-file">'+fileIcon(a.name)+'</div>'
+      +'<div class="ca-name">'+a.name+'</div>'
+      +'</a>';
+  }).join('')+'</div>';
+}
+
+function openLightbox(src,name){
+  var lb=document.createElement('div');
+  lb.className='lightbox';
+  lb.innerHTML='<img src="'+src+'" alt="'+name+'">';
+  lb.onclick=function(){document.body.removeChild(lb);};
+  document.body.appendChild(lb);
+}
+
+// ─── END ATTACHMENT SYSTEM ──────────────────────────────────
+
+function _renderCommentList(comments,containerId){
+  var el=document.getElementById(containerId);
+  if(!el)return;
+  if(!comments.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No comments yet</div>';return;}
+  var sorted=comments.slice().sort(function(a,b){return b.ts-a.ts;});
+  el.innerHTML=sorted.map(function(c){
+    return '<div class="comment-item">'
+      +'<div class="comment-meta"><span class="comment-author">💬 Comment</span><span class="comment-time">'+fmtCommentTime(c.ts)+'</span></div>'
+      +(c.text?'<div class="comment-text">'+c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'')
+      +renderCommentAttachments(c.attachments)
+      +'</div>';
+  }).join('');
+}
+
+function renderModalComments(comments){
+  var count=document.getElementById('modal-comment-count');
+  if(count) count.textContent=comments.length;
+  _renderCommentList(comments,'modal-comment-list');
+}
+
+function renderCmModalComments(comments){
+  _renderCommentList(comments,'cm-list');
+}
+
+function addComment(){
+  var text=document.getElementById('f-comment-text').value.trim();
+  var attachments=collectAndClearPending('endorse-attach-pending');
+  if(!text&&!attachments.length){toast('Write a comment or attach a file','error');return;}
+  if(editingId){
+    var r=DATA.find(function(d){return d.id===editingId;});
+    if(r){
+      if(!r.comments)r.comments=[];
+      r.comments.push({ts:Date.now(),text:text,attachments:attachments});
+      saveOne(r);
+      document.getElementById('f-comment-text').value='';
+      renderModalComments(r.comments);
+      renderRows();
+      toast('Comment added','success');
+    }
+  }else{
+    toast('Save the record first to add comments','info');
+  }
+}
+
+function openCommentsModal(id){
+  _commentModalId=id;
+  var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  document.getElementById('comments-modal-title').textContent='💬 '+(r.client||r.rrSubject||'Comments');
+  document.getElementById('cm-comment-text').value='';
+  _pendingAttachments['cm-attach-pending']=[];
+  renderPendingPreviews('cm-attach-pending');
+  renderCmModalComments(r.comments||[]);
+  document.getElementById('comments-modal').classList.remove('hidden');
+}
+
+function closeCommentsModal(){
+  document.getElementById('comments-modal').classList.add('hidden');
+  _commentModalId=null;
+}
+
+function addCommentFromModal(){
+  var text=document.getElementById('cm-comment-text').value.trim();
+  var attachments=collectAndClearPending('cm-attach-pending');
+  if(!text&&!attachments.length){toast('Write a comment or attach a file','error');return;}
+  if(!_commentModalId)return;
+  var r=DATA.find(function(d){return d.id===_commentModalId;});
+  if(!r)return;
+  if(!r.comments)r.comments=[];
+  r.comments.push({ts:Date.now(),text:text,attachments:attachments});
+  saveOne(r);
+  document.getElementById('cm-comment-text').value='';
+  renderCmModalComments(r.comments);
+  if(currentTab==='did') renderDIDRows(); else if(currentTab==='mine') renderRRRows(); else renderRows();
+  toast('Comment added','success');
+}
+
+function exportByDateRange(){
+  var from=document.getElementById('export-from').value;
+  var to=document.getElementById('export-to').value;
+  var field=document.getElementById('export-date-field').value;
+  if(!from||!to){toast('Please set both From and To dates','error');return;}
+  if(from>to){toast('From date must be before To date','error');return;}
+  var range=DATA.filter(function(r){
+    var d=r[field];
+    return d&&d>=from&&d<=to;
+  });
+  if(!range.length){toast('No records found in that date range','info');return;}
+  var headers=['Client/Vendor','Service','Concern','Remarks','Platform','Status','Start Date','Resolved Date','Priority','Endorsed'];
+  var rows=[headers.join(',')].concat(range.map(function(r){
+    return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,r.endorsed?'Yes':'No']
+      .map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+  }));
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download='endorsements_'+from+'_to_'+to+'.csv';
+  a.click();
+  toast('Exported '+range.length+' record'+(range.length>1?'s':''),'success');
+}
+
+// Load settings from localStorage (fast, local)
+SETTINGS=JSON.parse(localStorage.getItem('end_settings')||'{"defaultTimer":3600,"autoAlert":false,"alarmTone":"beep"}');
+document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
+document.getElementById('auto-alert').checked=SETTINGS.autoAlert||false;
+document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
+
+// ─── FIREBASE REAL-TIME LISTENER ─────────────────────────────
+showLoader('Connecting to Firebase...');
+
+onSnapshot(collection(db, COLL), function(snapshot){
+  // Rebuild DATA from Firestore
+  DATA=[];
+  idSeq=1;
+  snapshot.forEach(function(docSnap){
+    var r=docSnap.data();
+    // Restore _sel as false (not persisted)
+    r._sel=false;
+    DATA.push(r);
+    if(r.id>=idSeq) idSeq=r.id+1;
+  });
+
+  if(!_fbReady){
+    _fbReady=true;
+    hideLoader();
+    // Add sample data only if Firestore is completely empty
+    if(DATA.length===0){
+      var samples=[
+        {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Medium',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
+        {client:'GCASH',service:'Payment',concern:'Transaction timeout issue',platform:'Email',status:'Pending at NOC',priority:'High',startDate:'2026-05-02',endorsed:1,timerStart:null,timerAlerted:false,_sel:false,comments:[]}
+      ];
+      samples.forEach(function(s){
+        var nr=Object.assign({id:idSeq++},s);
+        DATA.push(nr);
+        saveOne(nr);
+      });
+    }
+    toast('Connected to Firebase ✓','success');
+  }
+  applyFilters();
+}, function(err){
+  hideLoader();
+  console.error('Firestore error',err);
+  toast('Firebase connection failed — working offline','error');
+  // Fallback to localStorage
+  DATA=JSON.parse(localStorage.getItem('end_data')||'[]');
+  idSeq=parseInt(localStorage.getItem('end_id')||'1');
+  applyFilters();
+});
+
+</script>
+</body>
+</html>
