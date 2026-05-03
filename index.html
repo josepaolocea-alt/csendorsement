@@ -778,7 +778,7 @@ const SETTINGS_DOC = 'app_settings/main';
 var DATA = [];
 var idSeq = 1;
 var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep'};
-var editingId = null, sortCol = null, sortDir = 1, currentTab = 'all', filteredData = [];
+var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _cellStart = null, _dragging = false, _selCells = new Set();
 var _confirmResolve = null;
 var _fbReady = false;
@@ -1182,6 +1182,8 @@ function applyDIDFilters(){
     if(isDone)return false;
     return !q||[r.client,r.service,r.desc,r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
   });
+  // Sort by startDate descending (newest first)
+  filteredData.sort(function(a,b){return (b.startDate||'').localeCompare(a.startDate||'');});
   renderDIDRows();updateDIDStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
 }
@@ -1292,6 +1294,8 @@ function applyRRFilters(){
     if(r._type!=='rr')return false;
     return !q||[r.rrSubject,r.rrRemarks,r.rrBy,r.roBy,r.rrStatus].join(' ').toLowerCase().indexOf(q)>-1;
   });
+  // Sort by rrDate descending (newest first)
+  filteredData.sort(function(a,b){return (b.rrDate||'').localeCompare(a.rrDate||'');});
   renderRRRows();updateRRStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
 }
