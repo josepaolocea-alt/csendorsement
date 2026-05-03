@@ -2030,7 +2030,7 @@ function startFirestore(){
 // ─── ADMIN: USER MANAGEMENT ──────────────────────────────────
 function loadAdminData(){
   loadAdminUsers();
-  loadClientsAdmin();
+  renderClientGrid(); // CLIENTS already live via onSnapshot
 }
 
 function loadAdminUsers(){
@@ -2228,6 +2228,8 @@ function loadClientsGlobal(){
     snap.forEach(function(d){CLIENTS.push(d.data().name);});
     CLIENTS.sort();
     populateClientDropdowns();
+    // Always re-render the admin grid if it's visible
+    if(currentTab==='admin') renderClientGrid();
   });
 }
 
