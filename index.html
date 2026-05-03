@@ -1431,7 +1431,7 @@ function openEditDID(id){
   editingDIDId=id;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   document.getElementById('did-modal-title').textContent='Edit DID Order / Cancel';
-  var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){dcs.value=r.client||'';}document.getElementById('d-client').value=r.client||'';
+  var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){setClientDropdown('d-client-sel','d-client',r.client||'');}else{document.getElementById('d-client').value=r.client||'';}
   document.getElementById('d-svc').value=r.service||'VOIP';
   document.getElementById('d-desc').value=r.desc||'';
   document.getElementById('d-remarks').value=r.remarks||'';
@@ -1501,7 +1501,7 @@ function addDIDComment(){
     var r=DATA.find(function(d){return d.id===editingDIDId;});
     if(r){
       if(!r.comments)r.comments=[];
-      r.comments.push({ts:Date.now(),text:text,attachments:attachments});
+      r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
       saveOne(r);
       document.getElementById('d-comment-text').value='';
       renderDIDModalComments(r.comments);
@@ -1629,7 +1629,8 @@ function openEdit(id){
   editingId=id;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   document.getElementById('modal-title').textContent='Edit Endorsement';
-  var fcs=document.getElementById('f-client-sel');if(fcs&&fcs.style.display!=='none'){fcs.value=r.client||'';}document.getElementById('f-client').value=r.client||'';
+  // Set client dropdown — add the current client as an option if not in list
+  setClientDropdown('f-client-sel','f-client',r.client||'');
   document.getElementById('f-svc-f').value=r.service||'VOIP';
   document.getElementById('f-concern').value=r.concern||'';
   document.getElementById('f-remarks').value=r.remarks||'';
@@ -1696,12 +1697,18 @@ function saveRecord(){
       if(isCompleted&&!prev.resolvedDate) rec.resolvedDate=today;
       else if(!isCompleted) rec.resolvedDate='';
       else rec.resolvedDate=prev.resolvedDate;
-      // Auto-stop timer when completed
-      var timerUpdate=isCompleted?{timerStart:null,timerAlerted:false}:{timerStart:Date.now(),timerAlerted:false};
+      // Timer: stop if newly completed, keep existing timer if not
+      var timerUpdate;
+      if(isCompleted){
+        timerUpdate={timerStart:null,timerAlerted:false};
+      }else{
+        // Keep existing timer as-is — don't reset it
+        timerUpdate={timerStart:prev.timerStart,timerAlerted:prev.timerAlerted||false};
+      }
       DATA[idx]=Object.assign({},prev,rec,timerUpdate);
       saveOne(DATA[idx]);
     }
-    toast(isCompleted?'Updated & timer stopped!':'Updated & timer restarted!','success');
+    toast(isCompleted?'Updated & timer stopped!':'Updated!','success');
   }else{
     if(isCompleted){rec.resolvedDate=today;rec.timerStart=null;rec.timerAlerted=false;}
     var ne=Object.assign({id:idSeq++,_sel:false,timerStart:isCompleted?null:Date.now(),timerAlerted:false},rec);
@@ -1904,7 +1911,7 @@ function _renderCommentList(comments,containerId){
   var sorted=comments.slice().sort(function(a,b){return b.ts-a.ts;});
   el.innerHTML=sorted.map(function(c){
     return '<div class="comment-item">'
-      +'<div class="comment-meta"><span class="comment-author">💬 Comment</span><span class="comment-time">'+fmtCommentTime(c.ts)+'</span></div>'
+      +'<div class="comment-meta"><span class="comment-author">💬 '+(c.user||'Unknown')+'</span><span class="comment-time">'+fmtCommentTime(c.ts)+'</span></div>'
       +(c.text?'<div class="comment-text">'+c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'')
       +renderCommentAttachments(c.attachments)
       +'</div>';
@@ -1929,7 +1936,7 @@ function addComment(){
     var r=DATA.find(function(d){return d.id===editingId;});
     if(r){
       if(!r.comments)r.comments=[];
-      r.comments.push({ts:Date.now(),text:text,attachments:attachments});
+      r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
       saveOne(r);
       document.getElementById('f-comment-text').value='';
       renderModalComments(r.comments);
@@ -1965,7 +1972,7 @@ function addCommentFromModal(){
   var r=DATA.find(function(d){return d.id===_commentModalId;});
   if(!r)return;
   if(!r.comments)r.comments=[];
-  r.comments.push({ts:Date.now(),text:text,attachments:attachments});
+  r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
   saveOne(r);
   document.getElementById('cm-comment-text').value='';
   renderCmModalComments(r.comments);
@@ -2180,7 +2187,29 @@ function renderClientGrid(){
   }).join('');
 }
 
-function syncClientInput(selId, inputId){
+function setClientDropdown(selId, inputId, value){
+  var sel=document.getElementById(selId);
+  var inp=document.getElementById(inputId);
+  if(!sel) return;
+  if(CLIENTS.length===0){
+    // No clients in list — use text input
+    sel.style.display='none';
+    if(inp){inp.style.display='';inp.value=value;}
+    return;
+  }
+  sel.style.display='';
+  if(inp) inp.style.display='none';
+  // If current value not in CLIENTS list, add it temporarily
+  if(value && CLIENTS.indexOf(value)===-1){
+    var opt=document.createElement('option');
+    opt.value=value;opt.textContent=value;
+    sel.appendChild(opt);
+  }
+  sel.value=value;
+  if(inp) inp.value=value;
+}
+
+function syncClientInput(selId,inputId){
   var sel=document.getElementById(selId);
   var inp=document.getElementById(inputId);
   if(!sel||!inp)return;
@@ -2309,6 +2338,7 @@ window.removeClient=removeClient;
 window.saveEditUser=saveEditUser;
 window.saveUserRecord=saveUserRecord;
 window.syncClientInput=syncClientInput;
+window.setClientDropdown=setClientDropdown;
 window.uploadClientCSV=uploadClientCSV;
 window.exportByDateRange=exportByDateRange;
 window.exportCSV=exportCSV;
