@@ -2166,14 +2166,12 @@ function addClientName(){
   var inp=document.getElementById('new-client-input');
   var name=inp.value.trim().toUpperCase();
   if(!name){toast('Enter a client name','error');return;}
-  if(CLIENTS.indexOf(name)>-1){toast('Client already exists','info');return;}
+  if(CLIENTS.indexOf(name)>-1){toast('Client already exists','info');inp.value='';return;}
   var id=name.replace(/[^A-Z0-9]/g,'_');
   setDoc(doc(db,'clients',id),{name:name}).then(function(){
-    CLIENTS.push(name);CLIENTS.sort();
     inp.value='';
-    renderClientGrid();
-    populateClientDropdowns();
     toast('Client added: '+name,'success');
+    // onSnapshot will automatically update CLIENTS, renderClientGrid, and populateClientDropdowns
   }).catch(function(e){toast('Error: '+e.message,'error');});
 }
 
@@ -2182,10 +2180,8 @@ function removeClient(name){
     if(!ok)return;
     var id=name.replace(/[^A-Z0-9]/g,'_');
     deleteDoc(doc(db,'clients',id)).then(function(){
-      CLIENTS=CLIENTS.filter(function(c){return c!==name;});
-      renderClientGrid();
-      populateClientDropdowns();
       toast('Removed: '+name,'info');
+      // onSnapshot will update CLIENTS automatically
     });
   });
 }
@@ -2195,20 +2191,21 @@ function uploadClientCSV(e){
   var r=new FileReader();
   r.onload=function(ev){
     var lines=ev.target.result.split(/\r?\n/);
-    var added=0,skipped=0;
-    var promises=[];
+    var toAdd=[],skipped=0;
     lines.forEach(function(line){
       var name=line.trim().toUpperCase();
       if(!name){skipped++;return;}
       if(CLIENTS.indexOf(name)>-1){skipped++;return;}
+      toAdd.push(name);
+    });
+    if(!toAdd.length){toast('No new clients to import'+(skipped?' ('+skipped+' skipped)':''),'info');return;}
+    var promises=toAdd.map(function(name){
       var id=name.replace(/[^A-Z0-9]/g,'_');
-      promises.push(setDoc(doc(db,'clients',id),{name:name}).then(function(){
-        CLIENTS.push(name);added++;
-      }));
+      return setDoc(doc(db,'clients',id),{name:name});
     });
     Promise.all(promises).then(function(){
-      CLIENTS.sort();renderClientGrid();populateClientDropdowns();
-      toast('Imported '+added+' clients'+(skipped?' ('+skipped+' skipped)':''),'success');
+      toast('Imported '+toAdd.length+' clients'+(skipped?' ('+skipped+' skipped)':''),'success');
+      // onSnapshot will update CLIENTS automatically
     });
   };
   r.readAsText(file);
