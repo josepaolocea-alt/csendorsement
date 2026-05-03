@@ -144,6 +144,21 @@ textarea.fc{resize:vertical;min-height:70px;}
 .login-err{color:#f87171;font-size:12px;text-align:center;min-height:18px;margin-bottom:6px;}
 .user-chip{display:flex;align-items:center;gap:7px;padding:4px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text2);}
 .user-avatar{width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.admin-section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;}
+.admin-section h3{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.admin-section p.sub{font-size:12px;color:var(--text3);margin-bottom:14px;}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px;}
+.admin-table th{padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--bg3);}
+.admin-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.admin-table tr:last-child td{border-bottom:none;}
+.admin-table tr:hover td{background:var(--bg3);}
+.role-badge{display:inline-flex;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.role-admin{background:rgba(239,68,68,.15);color:#f87171;}
+.role-viewer{background:rgba(91,124,255,.15);color:#818cf8;}
+.client-tag{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:12px;color:var(--text2);}
+.client-tag button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;line-height:1;padding:0;}
+.client-tag button:hover{color:#f87171;}
+.client-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
 
 .rr-bm{background:rgba(239,68,68,.15);color:#f87171;}
 .rr-am{background:rgba(234,179,8,.15);color:#fbbf24;}
@@ -197,6 +212,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <button class="tab-btn" onclick="switchTab('did',this)">📋 DID Order / Cancel</button>
   <button class="tab-btn" onclick="switchTab('done',this)">✓ Done / Resolved</button>
   <button class="tab-btn" onclick="switchTab('mine',this)">📝 Pending RR / RO</button>
+  <button class="tab-btn" id="admin-tab-btn" style="display:none" onclick="switchTab('admin',this)">🛡️ Admin</button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar">?</div>
@@ -301,15 +317,109 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </table>
     </div>
   </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="admin-panel" style="display:none">
+
+    <!-- USER MANAGEMENT -->
+    <div class="admin-section">
+      <h3>👥 User Management</h3>
+      <p class="sub">Users are created here and stored in Firestore. Passwords are managed via Firebase Authentication.</p>
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr>
+            <th>Name</th><th>Email</th><th>Role</th><th>Added</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="admin-users-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">Loading users...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Add User</button>
+      </div>
+    </div>
+
+    <!-- CLIENT LIST -->
+    <div class="admin-section">
+      <h3>🏢 Client / Vendor List</h3>
+      <p class="sub">Clients added here will appear in the dropdown for all tabs. Default selection is "— Select Client —".</p>
+      <div class="client-grid" id="client-grid">
+        <span style="color:var(--text3);font-size:12px">Loading clients...</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input class="fc" id="new-client-input" placeholder="Type client name..." style="width:220px" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')addClientName()">
+        <button class="btn btn-primary btn-sm" onclick="addClientName()">+ Add Client</button>
+        <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+          ⬆️ Upload CSV
+          <input type="file" accept=".csv" style="display:none" onchange="uploadClientCSV(event)">
+        </label>
+        <button class="btn btn-secondary btn-sm" onclick="downloadSampleCSV()">📄 Sample CSV</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">CSV format: one client name per row, no header needed. e.g. <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">MAYA</code></p>
+    </div>
+
+  </div>
 </div>
 
-<!-- NEW/EDIT MODAL -->
+<!-- ADD USER MODAL -->
+<div class="modal-ov hidden" id="add-user-modal" style="z-index:550">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr"><h3 id="add-user-title">Add User</h3><button class="modal-cls" onclick="closeAddUserModal()">x</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgrp"><label>Display Name</label><input class="fc" id="au-name" placeholder="e.g. Juan dela Cruz"></div>
+        <div class="fgrp"><label>Role</label>
+          <select class="fc" id="au-role">
+            <option value="Viewer">Viewer</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="fgrp full"><label>Email</label><input class="fc" id="au-email" type="email" placeholder="user@example.com"></div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:12px">⚠️ After saving, go to <strong>Firebase Console → Authentication → Add user</strong> and create the account with this email and a temporary password, then share it with the user.</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUserRecord()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="modal-ov hidden" id="edit-user-modal" style="z-index:550">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr"><h3>Edit User</h3><button class="modal-cls" onclick="closeEditUserModal()">x</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgrp"><label>Display Name</label><input class="fc" id="eu-name" placeholder="e.g. Juan dela Cruz"></div>
+        <div class="fgrp"><label>Role</label>
+          <select class="fc" id="eu-role">
+            <option value="Viewer">Viewer</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="fgrp full"><label>Email</label><input class="fc" id="eu-email" type="email" disabled style="opacity:.6"></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeEditUserModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditUser()">Save Changes</button>
+    </div>
+  </div>
+</div>
 <div class="modal-ov hidden" id="record-modal">
   <div class="modal">
     <div class="modal-hdr"><h3 id="modal-title">New Endorsement</h3><button class="modal-cls" onclick="closeModal()">x</button></div>
     <div class="modal-body">
       <div class="fg">
-        <div class="fgrp"><label>Client / Vendor *</label><input class="fc" id="f-client" placeholder="e.g. MAYA" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="fgrp"><label>Client / Vendor *</label>
+          <select class="fc" id="f-client-sel" onchange="syncClientInput('f-client-sel','f-client')">
+            <option value="">— Select Client —</option>
+          </select>
+          <input class="fc" id="f-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase()" style="margin-top:5px;display:none">
+        </div>
         <div class="fgrp"><label>Service</label>
           <select class="fc" id="f-svc-f"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
         </div>
@@ -456,7 +566,12 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-hdr"><h3 id="did-modal-title">New DID Order / Cancel</h3><button class="modal-cls" onclick="closeDIDModal()">x</button></div>
     <div class="modal-body">
       <div class="fg">
-        <div class="fgrp"><label>Client / Vendor *</label><input class="fc" id="d-client" placeholder="e.g. DIDLOGIC" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="fgrp"><label>Client / Vendor *</label>
+          <select class="fc" id="d-client-sel" onchange="syncClientInput('d-client-sel','d-client')">
+            <option value="">— Select Client —</option>
+          </select>
+          <input class="fc" id="d-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase()" style="margin-top:5px;display:none">
+        </div>
         <div class="fgrp"><label>Service</label>
           <select class="fc" id="d-svc"><option>VOIP</option><option>SMS</option></select>
         </div>
@@ -554,7 +669,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 <script type="module">
 // ─── FIREBASE CONFIG ────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -583,6 +698,9 @@ var _confirmResolve = null;
 var _fbReady = false;
 var _firestoreUnsub = null;
 var _currentUser = null;
+var _currentUserRole = 'Viewer';
+var CLIENTS = []; // loaded from Firestore
+var _editingUserId = null;
 
 // ─── AUTH FUNCTIONS ─────────────────────────────────────────
 function showLoginScreen(){
@@ -638,6 +756,18 @@ function setUserDisplay(user){
   var initials=email.charAt(0).toUpperCase();
   document.getElementById('user-avatar').textContent=initials;
   document.getElementById('user-email-display').textContent=email;
+  // Load user role from Firestore users collection
+  getDocs(collection(db,'users')).then(function(snap){
+    snap.forEach(function(d){
+      var u=d.data();
+      if(u.email===email){
+        _currentUserRole=u.role||'Viewer';
+        if(_currentUserRole==='Admin'){
+          document.getElementById('admin-tab-btn').style.display='';
+        }
+      }
+    });
+  }).catch(function(){});
 }
 
 // ─── AUTH STATE LISTENER ─────────────────────────────────────
@@ -722,7 +852,13 @@ function switchTab(tab,el){
   currentTab=tab;
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   el.classList.add('active');
-  // Reset filters when switching tabs
+  var isAdmin=tab==='admin';
+  document.getElementById('stats-row').style.display=isAdmin?'none':'';
+  document.querySelector('.toolbar').style.display=isAdmin?'none':'';
+  document.querySelector('.table-wrap').style.display=isAdmin?'none':'';
+  document.getElementById('admin-panel').style.display=isAdmin?'':'none';
+  document.getElementById('new-btn').style.display=isAdmin?'none':'';
+  if(isAdmin){loadAdminData();return;}
   document.getElementById('search-input').value='';
   document.getElementById('f-svc').value='';
   document.getElementById('f-st').value='';
@@ -1273,7 +1409,7 @@ function openEditDID(id){
   editingDIDId=id;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   document.getElementById('did-modal-title').textContent='Edit DID Order / Cancel';
-  document.getElementById('d-client').value=r.client||'';
+  var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){dcs.value=r.client||'';}document.getElementById('d-client').value=r.client||'';
   document.getElementById('d-svc').value=r.service||'VOIP';
   document.getElementById('d-desc').value=r.desc||'';
   document.getElementById('d-remarks').value=r.remarks||'';
@@ -1294,7 +1430,7 @@ function closeDIDModal(){document.getElementById('did-modal').classList.add('hid
 function onDIDPriorityChange(){}
 
 function saveDIDRecord(){
-  var client=document.getElementById('d-client').value.trim();
+  var sel=document.getElementById('d-client-sel');var client=(sel&&sel.style.display!=='none'?sel.value:document.getElementById('d-client').value).trim().toUpperCase();
   if(!client){toast('Client / Vendor is required','error');return;}
   var newStatus=document.getElementById('d-status').value;
   var isDone=DID_DONE_ST.indexOf(newStatus)>-1;
@@ -1470,7 +1606,7 @@ function openEdit(id){
   editingId=id;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   document.getElementById('modal-title').textContent='Edit Endorsement';
-  document.getElementById('f-client').value=r.client||'';
+  var fcs=document.getElementById('f-client-sel');if(fcs&&fcs.style.display!=='none'){fcs.value=r.client||'';}document.getElementById('f-client').value=r.client||'';
   document.getElementById('f-svc-f').value=r.service||'VOIP';
   document.getElementById('f-concern').value=r.concern||'';
   document.getElementById('f-remarks').value=r.remarks||'';
@@ -1503,7 +1639,7 @@ function openEdit(id){
 function closeModal(){document.getElementById('record-modal').classList.add('hidden');}
 
 function saveRecord(){
-  var client=document.getElementById('f-client').value.trim();
+  var sel=document.getElementById('f-client-sel');var client=(sel&&sel.style.display!=='none'?sel.value:document.getElementById('f-client').value).trim().toUpperCase();
   if(!client){toast('Client / Vendor is required','error');return;}
   var timerSel=document.getElementById('f-timer-sel').value;
   var timerSecs;
@@ -1858,6 +1994,7 @@ function startFirestore(){
     if(!_fbReady){
       _fbReady=true;
       hideLoader();
+      loadClientsGlobal();
       if(DATA.length===0){
         var samples=[
           {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Medium',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
@@ -1879,7 +2016,215 @@ function startFirestore(){
   });
 }
 
+// ─── ADMIN: USER MANAGEMENT ──────────────────────────────────
+function loadAdminData(){
+  loadAdminUsers();
+  loadClientsAdmin();
+}
+
+function loadAdminUsers(){
+  var tbody=document.getElementById('admin-users-tbody');
+  getDocs(collection(db,'users')).then(function(snap){
+    if(snap.empty){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">No users yet. Add one below.</td></tr>';return;}
+    var rows=[];
+    snap.forEach(function(d){
+      var u=d.data();
+      var roleCls=u.role==='Admin'?'role-admin':'role-viewer';
+      var added=u.addedAt?new Date(u.addedAt).toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}):'—';
+      rows.push('<tr>'
+        +'<td style="font-weight:600">'+escHtml(u.name||u.email)+'</td>'
+        +'<td style="color:var(--text2)">'+escHtml(u.email)+'</td>'
+        +'<td><span class="role-badge '+roleCls+'">'+escHtml(u.role||'Viewer')+'</span></td>'
+        +'<td style="color:var(--text3)">'+added+'</td>'
+        +'<td><button class="btn btn-secondary btn-sm" onclick="openEditUser(\''+d.id+'\')">✏️ Edit</button></td>'
+        +'</tr>');
+    });
+    tbody.innerHTML=rows.join('');
+  }).catch(function(e){
+    tbody.innerHTML='<tr><td colspan="5" style="color:#f87171;padding:20px">Error loading users: '+e.message+'</td></tr>';
+  });
+}
+
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function openAddUserModal(){
+  document.getElementById('au-name').value='';
+  document.getElementById('au-email').value='';
+  document.getElementById('au-role').value='Viewer';
+  document.getElementById('add-user-modal').classList.remove('hidden');
+}
+function closeAddUserModal(){document.getElementById('add-user-modal').classList.add('hidden');}
+
+function saveUserRecord(){
+  var name=document.getElementById('au-name').value.trim();
+  var email=document.getElementById('au-email').value.trim().toLowerCase();
+  var role=document.getElementById('au-role').value;
+  if(!email){toast('Email is required','error');return;}
+  var id=email.replace(/[^a-z0-9]/g,'_');
+  setDoc(doc(db,'users',id),{name:name||email,email:email,role:role,addedAt:Date.now()})
+    .then(function(){
+      toast('User saved! Remember to create their account in Firebase Auth.','success');
+      closeAddUserModal();
+      loadAdminUsers();
+    }).catch(function(e){toast('Error: '+e.message,'error');});
+}
+
+function openEditUser(uid){
+  _editingUserId=uid;
+  getDocs(collection(db,'users')).then(function(snap){
+    snap.forEach(function(d){
+      if(d.id===uid){
+        var u=d.data();
+        document.getElementById('eu-name').value=u.name||'';
+        document.getElementById('eu-email').value=u.email||'';
+        document.getElementById('eu-role').value=u.role||'Viewer';
+        document.getElementById('edit-user-modal').classList.remove('hidden');
+      }
+    });
+  });
+}
+function closeEditUserModal(){document.getElementById('edit-user-modal').classList.add('hidden');_editingUserId=null;}
+
+function saveEditUser(){
+  if(!_editingUserId)return;
+  var name=document.getElementById('eu-name').value.trim();
+  var role=document.getElementById('eu-role').value;
+  setDoc(doc(db,'users',_editingUserId),{
+    name:name,
+    role:role
+  },{merge:true}).then(function(){
+    toast('User updated!','success');
+    closeEditUserModal();
+    loadAdminUsers();
+    // Re-check current user's role
+    if(_currentUser) setUserDisplay(_currentUser);
+  }).catch(function(e){toast('Error: '+e.message,'error');});
+}
+
+// ─── ADMIN: CLIENT LIST ──────────────────────────────────────
+function loadClientsAdmin(){
+  getDocs(collection(db,'clients')).then(function(snap){
+    CLIENTS=[];
+    snap.forEach(function(d){CLIENTS.push(d.data().name);});
+    CLIENTS.sort();
+    renderClientGrid();
+    populateClientDropdowns();
+  });
+}
+
+function renderClientGrid(){
+  var grid=document.getElementById('client-grid');
+  if(!grid)return;
+  if(!CLIENTS.length){grid.innerHTML='<span style="color:var(--text3);font-size:12px">No clients yet. Add one below.</span>';return;}
+  grid.innerHTML=CLIENTS.map(function(c){
+    return '<div class="client-tag">'+escHtml(c)
+      +'<button onclick="removeClient(\''+escHtml(c)+'\')" title="Remove">×</button>'
+      +'</div>';
+  }).join('');
+}
+
+function syncClientInput(selId, inputId){
+  var sel=document.getElementById(selId);
+  var inp=document.getElementById(inputId);
+  if(!sel||!inp)return;
+  inp.value=sel.value;
+}
+
+function populateClientDropdowns(){
+  var ids=['f-client-sel','d-client-sel'];
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var inputId=id.replace('-sel','');
+    var inp=document.getElementById(inputId);
+    if(CLIENTS.length===0){
+      // No clients — show manual input, hide dropdown
+      el.style.display='none';
+      if(inp)inp.style.display='';
+      return;
+    }
+    el.style.display='';
+    var cur=el.value;
+    el.innerHTML='<option value="">— Select Client —</option>'
+      +CLIENTS.map(function(c){return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>';}).join('');
+    if(cur) el.value=cur;
+  });
+}
+
+function addClientName(){
+  var inp=document.getElementById('new-client-input');
+  var name=inp.value.trim().toUpperCase();
+  if(!name){toast('Enter a client name','error');return;}
+  if(CLIENTS.indexOf(name)>-1){toast('Client already exists','info');return;}
+  var id=name.replace(/[^A-Z0-9]/g,'_');
+  setDoc(doc(db,'clients',id),{name:name}).then(function(){
+    CLIENTS.push(name);CLIENTS.sort();
+    inp.value='';
+    renderClientGrid();
+    populateClientDropdowns();
+    toast('Client added: '+name,'success');
+  }).catch(function(e){toast('Error: '+e.message,'error');});
+}
+
+function removeClient(name){
+  appConfirm('Remove client "'+name+'"?','Remove').then(function(ok){
+    if(!ok)return;
+    var id=name.replace(/[^A-Z0-9]/g,'_');
+    deleteDoc(doc(db,'clients',id)).then(function(){
+      CLIENTS=CLIENTS.filter(function(c){return c!==name;});
+      renderClientGrid();
+      populateClientDropdowns();
+      toast('Removed: '+name,'info');
+    });
+  });
+}
+
+function uploadClientCSV(e){
+  var file=e.target.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    var lines=ev.target.result.split(/\r?\n/);
+    var added=0,skipped=0;
+    var promises=[];
+    lines.forEach(function(line){
+      var name=line.trim().toUpperCase();
+      if(!name){skipped++;return;}
+      if(CLIENTS.indexOf(name)>-1){skipped++;return;}
+      var id=name.replace(/[^A-Z0-9]/g,'_');
+      promises.push(setDoc(doc(db,'clients',id),{name:name}).then(function(){
+        CLIENTS.push(name);added++;
+      }));
+    });
+    Promise.all(promises).then(function(){
+      CLIENTS.sort();renderClientGrid();populateClientDropdowns();
+      toast('Imported '+added+' clients'+(skipped?' ('+skipped+' skipped)':''),'success');
+    });
+  };
+  r.readAsText(file);
+  e.target.value='';
+}
+
+function downloadSampleCSV(){
+  var content='MAYA\nGCASH\n88CASH\nDIDLOGIC\nSMART\nGLOBE';
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/csv'}));
+  a.download='sample_clients.csv';
+  a.click();
+  toast('Sample CSV downloaded','info');
+}
+
+// Load clients on startup (for dropdowns in all tabs)
+function loadClientsGlobal(){
+  onSnapshot(collection(db,'clients'),function(snap){
+    CLIENTS=[];
+    snap.forEach(function(d){CLIENTS.push(d.data().name);});
+    CLIENTS.sort();
+    populateClientDropdowns();
+  });
+}
+
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
+window.addClientName=addClientName;
 window.addComment=addComment;
 window.addCommentFromModal=addCommentFromModal;
 window.addDIDComment=addDIDComment;
@@ -1897,6 +2242,17 @@ window.confirmResolve=confirmResolve;
 window.delRec=delRec;
 window.doLogin=doLogin;
 window.doLogout=doLogout;
+window.closeAddUserModal=closeAddUserModal;
+window.closeEditUserModal=closeEditUserModal;
+window.downloadSampleCSV=downloadSampleCSV;
+window.loadAdminData=loadAdminData;
+window.openAddUserModal=openAddUserModal;
+window.openEditUser=openEditUser;
+window.removeClient=removeClient;
+window.saveEditUser=saveEditUser;
+window.saveUserRecord=saveUserRecord;
+window.syncClientInput=syncClientInput;
+window.uploadClientCSV=uploadClientCSV;
 window.exportByDateRange=exportByDateRange;
 window.exportCSV=exportCSV;
 window.initResizers=initResizers;
