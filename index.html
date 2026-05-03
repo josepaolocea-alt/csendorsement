@@ -863,6 +863,8 @@ function setUserDisplay(user){
       _currentUserRole=found.role||'Viewer';
       applyRolePermissions(_currentUserRole);
       writeLog('login',email,'Signed in — role: '+_currentUserRole);
+      // Re-render any open comment modals now that user is confirmed
+      if(_commentModalId){var rc=DATA.find(function(d){return d.id===_commentModalId;});if(rc)renderCmModalComments(rc.comments||[]);}
     }
   }).catch(function(e){
     console.error('User check failed',e);
@@ -2433,18 +2435,24 @@ var _userNickCache = {}; // email → nickname
 
 function getUserDisplay(email){
   if(!email) return 'Unknown';
-  return _userNickCache[email] || email;
+  var cached=_userNickCache[email];
+  // If cached value is same as email (no real name set), return short version of email
+  if(!cached||cached===email) return email.split('@')[0]; // e.g. "jpgc06.2023"
+  return cached; // nickname or display name
 }
 
 function loadNicknames(){
   getDocs(collection(db,'users')).then(function(snap){
     snap.forEach(function(d){
       var u=d.data();
-      if(u.email) _userNickCache[u.email]=u.nickname||u.name||u.email;
+      // Only cache if a real nickname/name is set that differs from email
+      if(u.email){
+        var display=u.nickname||(u.name&&u.name!==u.email?u.name:null);
+        if(display) _userNickCache[u.email]=display;
+      }
     });
-    // Re-render current view so comment authors update from "Unknown"
+    // Re-render current view so comment authors update
     applyFilters();
-    // Also re-render any open comment lists
     if(editingId){var rr=DATA.find(function(d){return d.id===editingId;});if(rr)renderModalComments(rr.comments||[]);}
     if(editingDIDId){var rd=DATA.find(function(d){return d.id===editingDIDId;});if(rd)renderDIDModalComments(rd.comments||[]);}
     if(_commentModalId){var rc=DATA.find(function(d){return d.id===_commentModalId;});if(rc)renderCmModalComments(rc.comments||[]);}
