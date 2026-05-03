@@ -377,6 +377,8 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <input type="file" accept=".csv" style="display:none" onchange="uploadClientCSV(event)">
         </label>
         <button class="btn btn-secondary btn-sm" onclick="downloadSampleCSV()">📄 Sample CSV</button>
+        <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+        <button class="btn btn-sm" onclick="clearAllClients()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">🗑️ Clear All</button>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-top:8px">CSV format: one client name per row, no header needed. e.g. <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">MAYA</code></p>
     </div>
@@ -2414,6 +2416,19 @@ function uploadClientCSV(e){
   e.target.value='';
 }
 
+function clearAllClients(){
+  appConfirm('Delete ALL '+CLIENTS.length+' clients? This cannot be undone.','Clear All').then(function(ok){
+    if(!ok)return;
+    getDocs(collection(db,'clients')).then(function(snap){
+      var promises=[];
+      snap.forEach(function(d){promises.push(deleteDoc(doc(db,'clients',d.id)));});
+      return Promise.all(promises);
+    }).then(function(){
+      toast('All clients cleared','info');
+      // onSnapshot will update CLIENTS automatically
+    });
+  });
+}
 function downloadSampleCSV(){
   var content='MAYA\nGCASH\n88CASH\nDIDLOGIC\nSMART\nGLOBE';
   var a=document.createElement('a');
@@ -2683,6 +2698,7 @@ window.toggleLogSection=toggleLogSection;
 window.renderLogs=renderLogs;
 window.closeAddUserModal=closeAddUserModal;
 window.closeEditUserModal=closeEditUserModal;
+window.clearAllClients=clearAllClients;
 window.downloadSampleCSV=downloadSampleCSV;
 window.loadAdminData=loadAdminData;
 window.openAddUserModal=openAddUserModal;
