@@ -1999,20 +1999,30 @@ function openLightbox(src,name){
 function _renderCommentList(comments,containerId,recordId,source){
   var el=document.getElementById(containerId);
   if(!el)return;
-  if(!comments||!comments.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No comments yet</div>';return;}
+  if(!comments||!comments.length){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No comments yet</div>';
+    return;
+  }
   var sorted=comments.slice().sort(function(a,b){return b.ts-a.ts;});
   var isAdminOrSemi=_currentUserRole==='Admin'||_currentUserRole==='Semi-Admin';
   var currentEmail=_currentUser?_currentUser.email:'';
-  el.innerHTML=sorted.map(function(c,i){
+  el.innerHTML=sorted.map(function(c){
     var isOwner=c.user===currentEmail;
-    var editBtns='';
-    if(isOwner) editBtns+='<button onclick="editComment(''+containerId+'','+c.ts+',''+escHtml(source||'')+'',''+escHtml(recordId||'')+'')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:0 4px" title="Edit your comment">✏️</button>';
-    if(isAdminOrSemi) editBtns+='<button onclick="deleteComment(''+containerId+'','+c.ts+',''+escHtml(source||'')+'',''+escHtml(recordId||'')+'')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#f87171;padding:0 4px" title="Delete comment">🗑️</button>';
-    return '<div class="comment-item" id="ci_'+c.ts+'">'
+    var safeTs=String(c.ts);
+    var safeRid=String(recordId||'').replace(/"/g,'');
+    var safeSrc=String(source||'').replace(/"/g,'');
+    var safeCont=String(containerId||'').replace(/"/g,'');
+    var editBtn=isOwner
+      ?'<button data-ts="'+safeTs+'" data-rid="'+safeRid+'" data-src="'+safeSrc+'" data-cid="'+safeCont+'" onclick="editComment(this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:0 4px" title="Edit">✏️</button>'
+      :'';
+    var delBtn=isAdminOrSemi
+      ?'<button data-ts="'+safeTs+'" data-rid="'+safeRid+'" data-src="'+safeSrc+'" data-cid="'+safeCont+'" onclick="deleteComment(this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:#f87171;padding:0 4px" title="Delete">🗑️</button>'
+      :'';
+    return '<div class="comment-item" id="ci_'+safeTs+'">'
       +'<div class="comment-meta"><span class="comment-author">💬 '+getUserDisplay(c.user||'')+'</span>'
-      +'<div style="display:flex;align-items:center;gap:4px"><span class="comment-time">'+fmtCommentTime(c.ts)+'</span>'+editBtns+'</div>'
+      +'<div style="display:flex;align-items:center;gap:4px"><span class="comment-time">'+fmtCommentTime(c.ts)+'</span>'+editBtn+delBtn+'</div>'
       +'</div>'
-      +(c.text?'<div class="comment-text" id="ct_'+c.ts+'">'+c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'')
+      +(c.text?'<div class="comment-text" id="ct_'+safeTs+'">'+c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'')
       +renderCommentAttachments(c.attachments)
       +'</div>';
   }).join('');
@@ -2533,7 +2543,11 @@ function clearAllLogs(){
   });
 }
 
-function editComment(containerId,ts,source,recordId){
+function editComment(btn){
+  var ts=parseInt(btn.dataset.ts);
+  var source=btn.dataset.src;
+  var recordId=btn.dataset.rid;
+  var containerId=btn.dataset.cid;
   var r=DATA.find(function(d){return d.id===parseInt(recordId);});
   if(!r||!r.comments) return;
   var cm=r.comments.find(function(c){return c.ts===ts;});
@@ -2541,16 +2555,25 @@ function editComment(containerId,ts,source,recordId){
   var el=document.getElementById('ct_'+ts);
   if(!el) return;
   var old=cm.text||'';
-  el.innerHTML='<textarea style="width:100%;background:var(--bg4);border:1px solid var(--accent);border-radius:6px;padding:6px;color:var(--text);font-family:var(--sf);font-size:13px;resize:vertical;min-height:50px" id="cedit_ta_'+ts+'">'+escHtml(old)+'</textarea>'
-    +'<div style="display:flex;gap:6px;margin-top:5px"><button class="btn btn-primary btn-sm" onclick="saveCommentEdit('+ts+',\''+escHtml(source)+'\',\''+escHtml(recordId)+'\',\''+containerId+'\')">Save</button><button class="btn btn-secondary btn-sm" onclick="cancelCommentEdit('+ts+',\''+escHtml(old.replace(/'/g,"\\'"))+'\')">Cancel</button></div>';
+  el.innerHTML='<textarea style="width:100%;background:var(--bg4);border:1px solid var(--accent);border-radius:6px;padding:6px;color:var(--text);font-family:var(--sf);font-size:13px;resize:vertical;min-height:50px" id="cedit_ta_'+ts+'">'+old.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</textarea>'
+    +'<div style="display:flex;gap:6px;margin-top:5px">'
+    +'<button class="btn btn-primary btn-sm" data-ts="'+ts+'" data-src="'+source+'" data-rid="'+recordId+'" data-cid="'+containerId+'" onclick="saveCommentEdit(this)">Save</button>'
+    +'<button class="btn btn-secondary btn-sm" data-ts="'+ts+'" data-old="'+old.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'" onclick="cancelCommentEdit(this)">Cancel</button>'
+    +'</div>';
 }
 
-function cancelCommentEdit(ts,oldText){
+function cancelCommentEdit(btn){
+  var ts=btn.dataset.ts;
+  var old=btn.dataset.old||'';
   var el=document.getElementById('ct_'+ts);
-  if(el) el.innerHTML=oldText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if(el) el.innerHTML=old.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function saveCommentEdit(ts,source,recordId,containerId){
+function saveCommentEdit(btn){
+  var ts=parseInt(btn.dataset.ts);
+  var source=btn.dataset.src;
+  var recordId=btn.dataset.rid;
+  var containerId=btn.dataset.cid;
   var ta=document.getElementById('cedit_ta_'+ts);
   if(!ta) return;
   var newText=ta.value.trim();
@@ -2560,14 +2583,16 @@ function saveCommentEdit(ts,source,recordId,containerId){
   if(!cm) return;
   cm.text=newText;
   saveOne(r);
-  // Re-render the correct list
   if(source==='endorsement') renderModalComments(r.comments);
   else if(source==='did') renderDIDModalComments(r.comments);
   else if(source==='cm') renderCmModalComments(r.comments);
   toast('Comment updated','success');
 }
 
-function deleteComment(containerId,ts,source,recordId){
+function deleteComment(btn){
+  var ts=parseInt(btn.dataset.ts);
+  var source=btn.dataset.src;
+  var recordId=btn.dataset.rid;
   appConfirm('Delete this comment?','Delete').then(function(ok){
     if(!ok) return;
     var r=DATA.find(function(d){return d.id===parseInt(recordId);});
@@ -2576,7 +2601,7 @@ function deleteComment(containerId,ts,source,recordId){
     saveOne(r);
     if(source==='endorsement') renderModalComments(r.comments);
     else if(source==='did') renderDIDModalComments(r.comments);
-    else if(source==='cm'){renderCmModalComments(r.comments);}
+    else renderCmModalComments(r.comments);
     toast('Comment deleted','info');
   });
 }
