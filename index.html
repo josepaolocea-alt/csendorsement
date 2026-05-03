@@ -2305,16 +2305,21 @@ var _dropdownData = {}; // loaded from Firestore
 
 function loadDropdownOptions(){
   onSnapshot(collection(db,'dropdown_options'), function(snap){
-    if(snap.empty){
-      // First time — seed defaults
-      Object.keys(DROPDOWN_OPTS).forEach(function(key){
-        setDoc(doc(db,'dropdown_options',key),{items:DROPDOWN_OPTS[key].defaults});
+    var hasData=false;
+    snap.forEach(function(d){
+      _dropdownData[d.id]=d.data().items||[];
+      hasData=true;
+    });
+    if(!hasData){
+      // First time — seed defaults to Firestore
+      var batch=Object.keys(DROPDOWN_OPTS).map(function(key){
+        _dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();
+        return setDoc(doc(db,'dropdown_options',key),{items:DROPDOWN_OPTS[key].defaults});
       });
-      Object.keys(DROPDOWN_OPTS).forEach(function(key){_dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();});
-    }else{
-      snap.forEach(function(d){_dropdownData[d.id]=d.data().items||[];});
+      Promise.all(batch).catch(function(){});
     }
     applyDropdownsToForms();
+    // Always render panel if on admin tab
     if(currentTab==='admin') renderDropdownOptionsPanel();
   });
 }
@@ -2421,6 +2426,10 @@ function deleteDropdownOption(btn){
 function loadAdminData(){
   loadAdminUsers();
   renderClientGrid();
+  // Render with current data (may be defaults if Firestore hasn't loaded yet)
+  if(!Object.keys(_dropdownData).length){
+    Object.keys(DROPDOWN_OPTS).forEach(function(key){_dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();});
+  }
   renderDropdownOptionsPanel();
 }
 
