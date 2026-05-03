@@ -1389,7 +1389,7 @@ function renderRows(){
         +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
         +'<td><div class="row-acts">'
         +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>':'')
-        +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(r.comments&&r.comments.length?'<span style="position:absolute;top:-3px;right:-3px;background:var(--accent);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+r.comments.length+'</span>':'')+'</button>'
+        +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()+'</button>'
         +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
         +'</div></td>'
         +'</tr>';
@@ -2137,7 +2137,13 @@ function openCommentsModal(id){
   renderPendingPreviews('cm-attach-pending');
   renderCmModalComments(r.comments||[]);
   markRead(id);
-  // Re-render table so badge clears immediately
+  // Clear the badge on the specific row immediately (works for all roles)
+  var rowBtn=document.querySelector('#row-'+id+' button[onclick*="openCommentsModal"]');
+  if(rowBtn){
+    var badge=rowBtn.querySelector('span');
+    if(badge) badge.remove();
+  }
+  // Also re-render table so badge stays clear
   if(currentTab==='did') renderDIDRows();
   else if(currentTab==='mine') renderRRRows();
   else renderRows();
