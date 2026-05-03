@@ -1380,7 +1380,7 @@ function renderRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     if(r._type==='did'){
-      return '<tr class="row-done" id="row-'+r.id+'">'
+      return '<tr id="row-'+r.id+'" style="opacity:0.6">'
         +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
         +'<td title="'+(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+(r.desc||'')+'</td>'
@@ -1421,6 +1421,7 @@ function renderRows(){
       +'</tr>';
   }).join('');
   initResizers();
+  var hdr=document.getElementById('chk-all');if(hdr&&window._lastCheckAll!==undefined)hdr.checked=window._lastCheckAll;
 }
 
 function updateStats(){
@@ -1486,6 +1487,7 @@ function renderDIDRows(){
       +'</tr>';
   }).join('');
   initResizers();
+  var hdr=document.getElementById('chk-all');if(hdr&&window._lastCheckAll!==undefined)hdr.checked=window._lastCheckAll;
 }
 
 function updateDIDStats(){
@@ -1689,14 +1691,30 @@ function updateBulkBar(){
 }
 function toggleAll(chk){
   var checked=chk.checked;
+  // Update all filtered records' _sel state
   filteredData.forEach(function(r){r._sel=checked;});
-  // Update existing row checkboxes directly — no re-render needed
-  document.querySelectorAll('#main-tbody input[type="checkbox"]').forEach(function(cb){
-    cb.checked=checked;
+  // Update row checkboxes directly in DOM without full re-render
+  document.querySelectorAll('#main-tbody tr').forEach(function(tr){
+    var cb=tr.querySelector('td:first-child input[type="checkbox"]');
+    if(cb) cb.checked=checked;
   });
+  // Update bulk bar
   updateBulkBar();
+  // Keep header checkbox in sync after any subsequent re-render
+  window._lastCheckAll=checked;
 }
-function toggleRow(id,chk){var r=DATA.find(function(d){return d.id===id;});if(r){r._sel=chk.checked;updateBulkBar();}}
+function toggleRow(id,chk){
+  var r=DATA.find(function(d){return d.id===id;});
+  if(r){
+    r._sel=chk.checked;
+    updateBulkBar();
+    // Sync header checkbox: uncheck it if any row is unchecked
+    var allChecked=filteredData.length>0&&filteredData.every(function(d){return d._sel;});
+    var hdr=document.getElementById('chk-all');
+    if(hdr) hdr.checked=allChecked;
+    window._lastCheckAll=allChecked;
+  }
+}
 function toggleEnd(id,chk){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.endorsed=chk.checked?1:0;saveOne(r);toast(chk.checked?'Marked endorsed':'Unmarked','info');}
 
 function bulkDelete(){
