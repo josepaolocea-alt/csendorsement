@@ -213,8 +213,12 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </div>
     </div>
     <div class="login-err" id="login-err"></div>
+    <div id="login-success" style="color:#4ade80;font-size:12px;text-align:center;min-height:18px;margin-bottom:6px;display:none"></div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doLogin()" id="login-btn">Sign In</button>
-    <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)">Contact your admin to get access</p>
+    <div style="text-align:center;margin-top:12px">
+      <button onclick="showForgotPassword()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline">Forgot password?</button>
+    </div>
+    <p style="text-align:center;margin-top:8px;font-size:11px;color:var(--text3)">Contact your admin to get access</p>
   </div>
 </div>
 
@@ -289,7 +293,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <div class="toolbar">
     <div class="search-wrap">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="search-input" placeholder="Quick search..." oninput="applyFilters()">
+      <input id="search-input" placeholder="Search client, concern, description, status..." oninput="applyFilters()">
       <span class="kbd">Ctrl+F</span>
     </div>
     <select class="fsel" id="f-svc" onchange="applyFilters()"><option value="">All Services</option><option>VOIP</option><option>SMS</option><option>Payment</option></select>
@@ -760,7 +764,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 // ─── FIREBASE CONFIG ────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDNeq1-e3Yx_7AhViQwQXpwpwHddNQzLXo",
@@ -885,6 +889,8 @@ onAuthStateChanged(auth, function(user){
     hideLoginScreen();
     startFirestore();
     // login log written after role is loaded (in setUserDisplay)
+    // Request browser notification permission
+    setTimeout(requestNotifPermission, 2000);
   }else{
     showLoginScreen();
     hideLoader();
@@ -1160,7 +1166,7 @@ function applyFilters(){
       if(currentTab==='done'&&!isDone)return false;
       if(currentTab==='all'&&isDone)return false;
     }
-    var mq=!q||[r.client,r.service,r.concern,r.platform,r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
+    var mq=!q||[r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
     var stMatch=!fst||(
       fst==='__inprogress__'?IN_PROGRESS_ST.indexOf(r.status)>-1:
       fst==='__completed__'?COMPLETED_ST.indexOf(r.status)>-1:
@@ -1184,7 +1190,7 @@ function applyDIDFilters(){
     if(r._type!=='did')return false;
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     if(isDone)return false;
-    return !q||[r.client,r.service,r.desc,r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
+    return !q||[r.client,r.service,r.desc,r.remarks||'',r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
   });
   // Sort by startDate descending (newest first)
   filteredData.sort(function(a,b){return (b.startDate||'').localeCompare(a.startDate||'');});
@@ -1875,9 +1881,12 @@ function delRec(id){
 }
 
 function exportCSV(){
-  var headers=['Client/Vendor','Service','Concern','Platform','Status','Start Date','Resolved Date','Priority','Endorsed'];
+  var headers=['Client/Vendor','Service','Concern','Description','Platform','Status','Start Date','Resolved Date','Priority','Endorsed','Comments'];
   var rows=[headers.join(',')].concat(filteredData.map(function(r){
-    return [r.client,r.service,r.concern,r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,r.endorsed?'Yes':'No'].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+    var commentsTxt=(r.comments||[]).map(function(cm){
+      return '['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||'');
+    }).join(' | ');
+    return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,r.endorsed?'Yes':'No',commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
   }));
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
@@ -2225,6 +2234,7 @@ function startFirestore(){
   if(_firestoreUnsub) return; // already listening
   showLoader('Loading data...');
   _firestoreUnsub = onSnapshot(collection(db, COLL), function(snapshot){
+    var oldData=DATA.slice();
     DATA=[];
     idSeq=1;
     snapshot.forEach(function(docSnap){
@@ -2233,6 +2243,7 @@ function startFirestore(){
       DATA.push(r);
       if(r.id>=idSeq) idSeq=r.id+1;
     });
+    if(_fbReady) checkNewComments(oldData,DATA);
     if(!_fbReady){
       _fbReady=true;
       hideLoader();
@@ -2291,7 +2302,73 @@ function toggleClientGrid(){
   if(arrow) arrow.textContent=_clientGridExpanded?'▲':'▼';
   if(count) count.textContent=_clientGridExpanded?'':' ('+CLIENTS.length+' clients — click to expand)';
 }
-// ─── DROPDOWN OPTIONS ────────────────────────────────────────
+function showForgotPassword(){
+  var email=document.getElementById('login-email').value.trim();
+  var errEl=document.getElementById('login-err');
+  var okEl=document.getElementById('login-success');
+  errEl.textContent='';okEl.style.display='none';
+  if(!email){
+    errEl.textContent='Enter your email above first, then click Forgot password.';
+    return;
+  }
+  sendPasswordResetEmail(auth,email)
+    .then(function(){
+      okEl.textContent='✅ Password reset email sent to '+email+'. Check your inbox!';
+      okEl.style.display='';
+    })
+    .catch(function(e){
+      var msg='Could not send reset email.';
+      if(e.code==='auth/user-not-found') msg='No account found with that email.';
+      if(e.code==='auth/invalid-email') msg='Invalid email address.';
+      errEl.textContent=msg;
+    });
+}
+window.showForgotPassword=showForgotPassword;
+
+// ─── BROWSER NOTIFICATIONS ───────────────────────────────────
+var _notifPermission='default';
+
+function requestNotifPermission(){
+  if(!('Notification' in window)) return;
+  Notification.requestPermission().then(function(p){_notifPermission=p;});
+}
+
+function sendBrowserNotif(title,body,recordId){
+  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  var n=new Notification(title,{
+    body:body,
+    icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%235B7CFF"/><text x="16" y="21" text-anchor="middle" font-size="16" fill="white">💬</text></svg>',
+    tag:'cyn_'+recordId
+  });
+  n.onclick=function(){window.focus();n.close();};
+}
+
+// Watch for new comments from OTHER users via Firestore onSnapshot
+// We already have the onSnapshot listener for DATA — hook into it
+var _lastCommentCheck={};
+function checkNewComments(oldData,newData){
+  if(!_currentUser) return;
+  var myEmail=_currentUser.email;
+  newData.forEach(function(r){
+    if(!r.comments||!r.comments.length) return;
+    var key=String(r.id);
+    var prev=oldData.find(function(d){return d.id===r.id;});
+    var prevCount=prev&&prev.comments?prev.comments.length:0;
+    var lastKnown=_lastCommentCheck[key]||prevCount;
+    if(r.comments.length>lastKnown){
+      // New comments added
+      var newCms=r.comments.slice(lastKnown);
+      newCms.forEach(function(cm){
+        if(cm.user!==myEmail){
+          var who=getUserDisplay(cm.user)||'Someone';
+          var rec=r.client||r.rrSubject||r.desc||'a record';
+          sendBrowserNotif('New comment on '+rec,who+': '+(cm.text||'(attachment)'),r.id);
+        }
+      });
+    }
+    _lastCommentCheck[key]=r.comments.length;
+  });
+}
 var DROPDOWN_OPTS = {
   service:    {label:'Service',              defaults:['VOIP','SMS','Payment']},
   platform:   {label:'Platform',             defaults:['MS Teams','Viber','WhatsApp','Telegram','Email']},
