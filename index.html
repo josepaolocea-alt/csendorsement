@@ -1851,8 +1851,15 @@ function saveRecord(){
         var timerUpdate;
         if(noTimer){
           timerUpdate={timerStart:null,timerAlerted:false};
-        }else{
+        }else if(prev.timerOverride!==timerSecs){
+          // Timer duration changed — restart timer with new duration
+          timerUpdate={timerStart:Date.now(),timerAlerted:false};
+        }else if(prev.timerStart){
+          // Keep existing running timer
           timerUpdate={timerStart:prev.timerStart,timerAlerted:prev.timerAlerted||false};
+        }else{
+          // No timer was running — start it now
+          timerUpdate={timerStart:Date.now(),timerAlerted:false};
         }
         DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
         saveOne(DATA[idx]);
