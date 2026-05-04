@@ -1029,15 +1029,18 @@ function timerHTML(r){
   var rem=r.timerStart?calcRem(r):null;
   var cls='tbadge'+(rem===null?'':(rem===0?' texp':rem<300?' twarn':''));
   var ts=rem===null?'--:--':fmtTime(rem);
-  var btns=r.timerStart
-    ?'<button class="btn-icon btn-sm" onclick="resetTmr('+r.id+')" title="Reset">&#8635;</button><button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>'
-    :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
+  var btns='';
+  if(window._canEdit){
+    btns=r.timerStart
+      ?'<button class="btn-icon btn-sm" onclick="resetTmr('+r.id+')" title="Reset">&#8635;</button><button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>'
+      :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
+  }
   return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'">'+ts+'</span>'+btns+'</div>';
 }
 
-function startTmr(id){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);renderRows();}
-function resetTmr(id){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);}
-function stopTmr(id){var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;saveOne(r);renderRows();}
+function startTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);renderRows();}
+function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);}
+function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;saveOne(r);renderRows();}
 
 function clampTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>23)el.value=23;}
 function clampTimerMM(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>59)el.value=59;}
