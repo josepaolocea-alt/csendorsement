@@ -1026,9 +1026,9 @@ function didPriBadge(p){
 function svcBadge(s){var cls={VOIP:'svc-voip',SMS:'svc-sms',Payment:'svc-payment'}[s]||'svc-voip';return '<span class="badge '+cls+'">'+(s||'VOIP')+'</span>';}
 function pltBadge(p){if(!p)return '';var cls={'MS Teams':'plt-msteams','Viber':'plt-viber','WhatsApp':'plt-whatsapp','Telegram':'plt-telegram','Email':'plt-email'}[p]||'plt-def';return '<span class="badge '+cls+'">'+p+'</span>';}
 function stBadge(s){
-  var redSt=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Advised Client'];
+  var redSt=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting'];
   var blueSt=['Pending at Vendor','Pending at Developer'];
-  var greenSt=['Done','Commercial Concern','Resolved','Posted'];
+  var greenSt=['Done','Commercial Concern','Resolved','Posted','Advised Client'];
   var cls='st-yellow';
   if(redSt.indexOf(s)>-1)cls='st-red';
   else if(blueSt.indexOf(s)>-1)cls='st-blue';
