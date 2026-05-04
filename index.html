@@ -1063,10 +1063,30 @@ function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){retu
 function clampTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>23)el.value=23;}
 function clampTimerMM(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>59)el.value=59;}
 
+// ─── PERSISTENT AUDIO CONTEXT ────────────────────────────────
+var _audioCtx = null;
+function getAudioCtx(){
+  if(!_audioCtx){
+    try{_audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}
+  }
+  if(_audioCtx.state==='suspended'){
+    _audioCtx.resume().catch(function(){});
+  }
+  return _audioCtx;
+}
+// Resume AudioContext on ANY user interaction so it's ready when timer fires
+['click','keydown','touchstart'].forEach(function(ev){
+  document.addEventListener(ev,function(){
+    if(_audioCtx&&_audioCtx.state==='suspended') _audioCtx.resume().catch(function(){});
+    if(!_audioCtx) getAudioCtx();
+  },{once:false,passive:true});
+});
+
 function testAlert(){playAlert();toast('Alert sound test!','info');}
 function playAlert(){
   try{
-    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    var ctx=getAudioCtx();
+    if(!ctx) return;
     var tone=SETTINGS.alarmTone||'beep';
     if(tone==='beep'){
       // Classic triple beep
@@ -1161,7 +1181,14 @@ setInterval(function(){
       r.timerAlerted=true;
       changed=true;
       // Always play sound regardless of role or autoAlert setting
-      try{playAlert();}catch(e){}
+      try{playAlert();}catch(e){
+        // Fallback: use HTML5 Audio with a data URI beep for Firefox
+        try{
+          var a=new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2ozNWCfz+OxbDE0X5XK3ataLC9bkL/UrFcqMFqIssiqUycvWYOotaFQJTBYfqGtl0olMVh5mKOLQCQzWHSQmX87IjVXb4iRdTYkN1dmf4lsMinBXl16f2JeJzLGXlp5eVpkJzHJW1l4eFpgJi');
+          a.volume=0.8;
+          a.play().catch(function(){});
+        }catch(e2){}
+      }
       // Toast notification
       toast('⏰ Timer expired: '+(r.client||r.desc||'Record'),'error');
       // Browser notification (works even if tab is in background)
