@@ -228,11 +228,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <span class="app-title">CYN Endorsement</span>
   </div>
   <div class="divider"></div>
-  <button class="tab-btn active" onclick="switchTab('all',this)">★ All Tasks</button>
-  <button class="tab-btn" onclick="switchTab('did',this)">📋 DID Order / Cancel</button>
-  <button class="tab-btn" onclick="switchTab('done',this)">✓ Done / Resolved</button>
-  <button class="tab-btn" onclick="switchTab('mine',this)">📝 Pending RR / RO</button>
-  <button class="tab-btn" id="admin-tab-btn" style="display:none" onclick="switchTab('admin',this)">🛡️ Admin</button>
+  <button class="tab-btn active" onclick="switchTab('all',this)">All Tasks</button>
+  <button class="tab-btn" onclick="switchTab('did',this)">DID Order / Cancel</button>
+  <button class="tab-btn" onclick="switchTab('done',this)">Done / Resolved</button>
+  <button class="tab-btn" onclick="switchTab('mine',this)">Pending RR / RO</button>
+  <button class="tab-btn" id="admin-tab-btn" style="display:none" onclick="switchTab('admin',this)">Admin</button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar">?</div>
@@ -321,6 +321,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="table-scroll">
       <table id="main-table">
         <thead id="main-thead"><tr>
+          <th style="width:30px;color:var(--text3);font-size:11px">#</th>
           <th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>
           <th onclick="sortBy('client')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('service')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>
@@ -1327,6 +1328,7 @@ function rrBadge(val,type){
 }
 
 var RR_THEAD='<tr>'
+  +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
   +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
   +'<th style="width:70px">Priority</th>'
   +'<th style="min-width:200px">Subject</th>'
@@ -1347,10 +1349,11 @@ var RR_THEAD='<tr>'
 function renderRRRows(){
   document.getElementById('main-thead').innerHTML=RR_THEAD;
   var tbody=document.getElementById('main-tbody');
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="15" class="empty">No RR/RO records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="16" class="empty">No RR/RO records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
     return '<tr class="'+rowCls+'" id="row-'+r.id+'">'
+      +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
       +'<td style="font-weight:600;max-width:220px;white-space:normal" title="'+(r.rrSubject||'')+'">'+(r.rrSubject||'')+'</td>'
@@ -1481,11 +1484,12 @@ function saveRRRecord(){
 function renderRows(){
   document.getElementById('main-thead').innerHTML=END_THEAD;
   var tbody=document.getElementById('main-tbody');
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     if(r._type==='did'){
       return '<tr id="row-'+r.id+'" style="opacity:0.6">'
-        +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
+        +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
+      +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
         +'<td title="'+(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+(r.desc||'')+'</td>'
         +'<td></td>'
@@ -1504,6 +1508,7 @@ function renderRows(){
     }
     var isDone=DONE_ST.indexOf(r.status)>-1;
     return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'">'
+      +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
@@ -1540,6 +1545,8 @@ function updateStats(){
 }
 
 var DID_THEAD='<tr>'
+  +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
+  +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
   +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
   +'<th onclick="sortBy(\'client\')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'desc\')" id="th-desc">Description<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
@@ -1552,6 +1559,8 @@ var DID_THEAD='<tr>'
   +'</tr>';
 
 var END_THEAD='<tr>'
+  +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
+  +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
   +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
   +'<th onclick="sortBy(\'client\')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'service\')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
@@ -1569,10 +1578,11 @@ var END_THEAD='<tr>'
 function renderDIDRows(){
   document.getElementById('main-thead').innerHTML=DID_THEAD;
   var tbody=document.getElementById('main-tbody');
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="9" class="empty">No DID records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="10" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'">'
+      +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
       +'<td title="'+(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+(r.desc||'')+'</td>'
