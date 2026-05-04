@@ -1260,7 +1260,10 @@ function applyFilters(){
   if(sortCol){
     filteredData.sort(function(a,b){
       var va=String(a[sortCol]||'').toLowerCase(),vb=String(b[sortCol]||'').toLowerCase();
-      return va.localeCompare(vb)*sortDir;
+      var d=va.localeCompare(vb)*sortDir;
+      if(d!==0) return d;
+      // Tiebreaker: newer entries first
+      return (b.createdAt||0)-(a.createdAt||0);
     });
   }
   renderRows();updateStats();
@@ -1275,8 +1278,12 @@ function applyDIDFilters(){
     if(isDone)return false;
     return !q||[r.client,r.service,r.desc,r.remarks||'',r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
   });
-  // Sort by startDate descending (newest first)
-  filteredData.sort(function(a,b){return (b.startDate||'').localeCompare(a.startDate||'');});
+  // Sort by startDate descending, createdAt as tiebreaker
+  filteredData.sort(function(a,b){
+    var d=(b.startDate||'').localeCompare(a.startDate||'');
+    if(d!==0) return d;
+    return (b.createdAt||0)-(a.createdAt||0);
+  });
   renderDIDRows();updateDIDStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
 }
@@ -1387,8 +1394,12 @@ function applyRRFilters(){
     if(r._type!=='rr')return false;
     return !q||[r.rrSubject,r.rrRemarks,r.rrBy,r.roBy,r.rrStatus].join(' ').toLowerCase().indexOf(q)>-1;
   });
-  // Sort by rrDate descending (newest first)
-  filteredData.sort(function(a,b){return (b.rrDate||'').localeCompare(a.rrDate||'');});
+  // Sort by rrDate descending, then createdAt descending as tiebreaker
+  filteredData.sort(function(a,b){
+    var d=(b.rrDate||'').localeCompare(a.rrDate||'');
+    if(d!==0) return d;
+    return (b.createdAt||0)-(a.createdAt||0);
+  });
   renderRRRows();updateRRStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
 }
@@ -1973,19 +1984,35 @@ function delRec(id){
 }
 
 function exportCSV(){
+  var selected=filteredData.filter(function(r){return r._sel;});
+  var toExport=selected.length>0?selected:null;
+
+  if(!toExport){
+    // Nothing selected — ask user what to export
+    appConfirm('No rows selected. Export all '+filteredData.length+' visible records?','Export All').then(function(ok){
+      if(!ok) return;
+      doExportRows(filteredData,'all');
+    });
+    return;
+  }
+  doExportRows(toExport,'selected');
+}
+
+function doExportRows(rows,mode){
   var headers=['Client/Vendor','Service','Concern','Description','Platform','Status','Start Date','Resolved Date','Priority','Endorsed','Comments'];
-  var rows=[headers.join(',')].concat(filteredData.map(function(r){
+  var data=[headers.join(',')].concat(rows.map(function(r){
     var commentsTxt=(r.comments||[]).map(function(cm){
       return '['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||'');
     }).join(' | ');
     return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,r.endorsed?'Yes':'No',commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
   }));
+  var suffix=mode==='selected'?'_selected':'';
   var a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
-  a.download='endorsements_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.href=URL.createObjectURL(new Blob([data.join('\n')],{type:'text/csv'}));
+  a.download='endorsements'+suffix+'_'+new Date().toISOString().split('T')[0]+'.csv';
   a.click();
-  writeLog('exported','Endorsements CSV','Exported '+filteredData.length+' records');
-  toast('Exported','success');
+  writeLog('exported','Endorsements CSV','Exported '+rows.length+' records ('+(mode==='selected'?'selected':'all visible')+')');
+  toast('Exported '+rows.length+' record'+(rows.length!==1?'s':''),'success');
 }
 
 function appConfirm(msg,okLabel){
@@ -3238,6 +3265,7 @@ window.toggleDropdownPanel=toggleDropdownPanel;
 window.goLogPage=goLogPage;
 window.clearSearch=clearSearch;
 window.toggleSearchClear=toggleSearchClear;
+window.doExportRows=doExportRows;
 </script>
 </body>
 </html>
