@@ -990,6 +990,7 @@ function openNewModalCurrent(){
 }
 
 var DONE_ST=['Done','Commercial Concern','Resolved','Posted'];
+var NO_TIMER_ST=['Done','Commercial Concern','Resolved','Posted','Advised Client']; // statuses that stop/prevent timer
 var DID_DONE_ST=['Done','Cancel by Client'];
 var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','In Progress'];
 
@@ -1821,6 +1822,7 @@ function saveRecord(){
   }
   var newStatus=document.getElementById('f-st-f').value;
   var isCompleted=DONE_ST.indexOf(newStatus)>-1;
+  var noTimer=NO_TIMER_ST.indexOf(newStatus)>-1;
   var today=new Date().toISOString().split('T')[0];
   var rec={
     client:client,
@@ -1843,7 +1845,7 @@ function saveRecord(){
         else if(!isCompleted) rec.resolvedDate='';
         else rec.resolvedDate=prev.resolvedDate;
         var timerUpdate;
-        if(isCompleted){
+        if(noTimer){
           timerUpdate={timerStart:null,timerAlerted:false};
         }else{
           timerUpdate={timerStart:prev.timerStart,timerAlerted:prev.timerAlerted||false};
@@ -1852,16 +1854,17 @@ function saveRecord(){
         saveOne(DATA[idx]);
         try{writeLog('updated',prev.client||'record','Updated: '+Object.keys(rec).filter(function(k){return String(rec[k])!==String(prev[k]);}).join(', '));}catch(le){}
       }
-      toast(isCompleted?'Updated & timer stopped!':'Updated!','success');
+      toast(noTimer?'Updated & timer stopped!':'Updated!','success');
     }catch(e){console.error('saveRecord edit error:',e);toast('Saved but error occurred: '+e.message,'error');}
   }else{
-    if(isCompleted){rec.resolvedDate=today;rec.timerStart=null;rec.timerAlerted=false;}
-    var ne=Object.assign({id:idSeq++,_sel:false,timerStart:isCompleted?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    if(isCompleted){rec.resolvedDate=today;}
+    if(noTimer){rec.timerStart=null;rec.timerAlerted=false;}
+    var ne=Object.assign({id:idSeq++,_sel:false,timerStart:noTimer?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     // Merge any buffered comments
     if(_pendingComments.length){ne.comments=_pendingComments.slice();_pendingComments=[];}
     DATA.push(ne);saveOne(ne);
     try{writeLog('created',ne.client||'new record','Created new endorsement');}catch(le){}
-    toast('Added'+(isCompleted?'':' & timer started!'),'success');
+    toast('Added'+(noTimer?'':' & timer started!'),'success');
   }
   try{closeModal();}catch(e){}
   applyFilters();
