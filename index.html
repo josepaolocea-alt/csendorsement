@@ -1939,16 +1939,14 @@ function saveRecord(){
         else rec.resolvedDate=prev.resolvedDate;
         var timerUpdate;
         if(noTimer){
+          // Completed status or 0:0 duration — stop timer
           timerUpdate={timerStart:null,timerAlerted:false};
-        }else if(prev.timerOverride!==timerSecs){
-          // Timer duration changed — restart timer with new duration
+        }else if(timerSecs&&prev.timerOverride&&prev.timerOverride!==timerSecs){
+          // Timer duration was explicitly changed to a new non-null value — restart
           timerUpdate={timerStart:Date.now(),timerAlerted:false};
-        }else if(prev.timerStart){
-          // Keep existing running timer
-          timerUpdate={timerStart:prev.timerStart,timerAlerted:prev.timerAlerted||false};
         }else{
-          // No timer was running — start it now
-          timerUpdate={timerStart:Date.now(),timerAlerted:false};
+          // Keep existing timer state exactly as-is (running or stopped)
+          timerUpdate={timerStart:prev.timerStart||null,timerAlerted:prev.timerAlerted||false};
         }
         DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
         saveOne(DATA[idx]);
