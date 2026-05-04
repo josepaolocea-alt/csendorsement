@@ -293,7 +293,8 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <div class="toolbar">
     <div class="search-wrap">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="search-input" placeholder="Search client, concern, description, status..." oninput="applyFilters()">
+      <input id="search-input" placeholder="Search client, concern, description, status..." oninput="applyFilters();toggleSearchClear()">
+      <button id="search-clear-btn" onclick="clearSearch()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 4px;line-height:1" title="Clear search">✕</button>
       <span class="kbd">Ctrl+F</span>
     </div>
     <select class="fsel" id="f-svc" onchange="applyFilters()"><option value="">All Services</option><option>VOIP</option><option>SMS</option><option>Payment</option></select>
@@ -1816,13 +1817,13 @@ function saveRecord(){
     var hh=parseInt(document.getElementById('f-timer-hh').value)||0;
     var mm=parseInt(document.getElementById('f-timer-mm').value)||0;
     timerSecs=(hh*3600)+(mm*60);
-    if(timerSecs<60)timerSecs=60;
+    if(timerSecs<=0) timerSecs=null; // 0:0 means no timer
   }else{
     timerSecs=parseInt(timerSel)||3600;
   }
   var newStatus=document.getElementById('f-st-f').value;
   var isCompleted=DONE_ST.indexOf(newStatus)>-1;
-  var noTimer=NO_TIMER_ST.indexOf(newStatus)>-1;
+  var noTimer=NO_TIMER_ST.indexOf(newStatus)>-1||timerSecs===null;
   var today=new Date().toISOString().split('T')[0];
   var rec={
     client:client,
@@ -1928,6 +1929,18 @@ function autoResize(el){
 function autoResizeId(id){
   var el=document.getElementById(id);
   if(el) autoResize(el);
+}
+
+function clearSearch(){
+  var inp=document.getElementById('search-input');
+  if(inp){inp.value='';inp.focus();}
+  document.getElementById('search-clear-btn').style.display='none';
+  applyFilters();
+}
+function toggleSearchClear(){
+  var inp=document.getElementById('search-input');
+  var btn=document.getElementById('search-clear-btn');
+  if(btn) btn.style.display=(inp&&inp.value)?'':'none';
 }
 
 function onModalTimerChange(){
@@ -3135,6 +3148,8 @@ window.deleteDropdownOption=deleteDropdownOption;
 window.renderDropdownOptionsPanel=renderDropdownOptionsPanel;
 window.toggleDropdownPanel=toggleDropdownPanel;
 window.goLogPage=goLogPage;
+window.clearSearch=clearSearch;
+window.toggleSearchClear=toggleSearchClear;
 </script>
 </body>
 </html>
