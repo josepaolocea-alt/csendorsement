@@ -740,6 +740,24 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   </div>
 </div>
 
+<!-- TIMER ALERT MODAL -->
+<div class="modal-ov hidden" id="timer-alert-modal" style="z-index:9500;background:rgba(0,0,0,.7)">
+  <div class="modal" style="max-width:380px;border:2px solid #f87171;animation:pr 1s ease infinite">
+    <div class="modal-hdr" style="background:rgba(239,68,68,.15)">
+      <h3 style="color:#f87171">⏰ Timer Expired!</h3>
+      <button class="modal-cls" onclick="closeTimerAlert()">x</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:24px">
+      <div style="font-size:40px;margin-bottom:12px">🚨</div>
+      <p id="timer-alert-msg" style="font-size:15px;color:var(--text);margin-bottom:4px"></p>
+      <p style="font-size:12px;color:var(--text3);margin-top:8px">This alert will auto-dismiss in 10 seconds</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;background:#f87171;border-color:#f87171" onclick="closeTimerAlert()">Dismiss</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM MODAL -->
 <div class="modal-ov hidden" id="confirm-modal" style="z-index:600">
   <div class="modal" style="max-width:360px">
@@ -1139,7 +1157,22 @@ setInterval(function(){
   DATA.forEach(function(r){
     if(!r.timerStart)return;
     var rem=calcRem(r);
-    if(rem===0&&!r.timerAlerted){r.timerAlerted=true;playAlert();toast('Timer expired: '+r.client,'error');changed=true;}
+    if(rem===0&&!r.timerAlerted){
+      r.timerAlerted=true;
+      changed=true;
+      // Always play sound regardless of role or autoAlert setting
+      try{playAlert();}catch(e){}
+      // Toast notification
+      toast('⏰ Timer expired: '+(r.client||r.desc||'Record'),'error');
+      // Browser notification (works even if tab is in background)
+      sendBrowserNotif(
+        '⏰ Timer Expired!',
+        (r.client||r.desc||'A record')+' — timer has expired.',
+        r.id
+      );
+      // Show a visible alert modal so Viewer can't miss it
+      showTimerAlert(r);
+    }
     var badge=document.getElementById('tb-'+r.id);
     if(badge){
       badge.textContent=fmtTime(rem);
@@ -1148,6 +1181,24 @@ setInterval(function(){
   });
   if(changed){DATA.forEach(function(r){if(r.timerAlerted)saveOne(r);});}
 },1000);
+
+function showTimerAlert(r){
+  var name=r.client||r.rrSubject||r.desc||'Record';
+  var modal=document.getElementById('timer-alert-modal');
+  var msg=document.getElementById('timer-alert-msg');
+  if(!modal||!msg)return;
+  msg.innerHTML='<strong>'+escHtml(name)+'</strong>'
+    +(r.concern?'<br><span style="font-size:12px;color:var(--text3)">'+escHtml(r.concern)+'</span>':'');
+  modal.classList.remove('hidden');
+  // Auto-dismiss after 10s
+  clearTimeout(window._timerAlertTimeout);
+  window._timerAlertTimeout=setTimeout(function(){modal.classList.add('hidden');},10000);
+}
+function closeTimerAlert(){
+  document.getElementById('timer-alert-modal').classList.add('hidden');
+  clearTimeout(window._timerAlertTimeout);
+}
+window.closeTimerAlert=closeTimerAlert;
 
 function applyFilters(){
   if(currentTab==='did'){applyDIDFilters();return;}
