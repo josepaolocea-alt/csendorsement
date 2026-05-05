@@ -1393,7 +1393,6 @@ function renderRRRows(){
       +'<td style="text-align:center"><input type="checkbox" style="accent-color:#4ade80;width:15px;height:15px;cursor:pointer" '+(r.rrCompleted?'checked':'')+' '+(window._canEdit?'':'disabled')+' onchange="toggleRRField('+r.id+',\'rrCompleted\',this.checked);renderRRRows()"></td>'
       +'<td style="text-align:center"><input type="checkbox" style="accent-color:#f87171;width:15px;height:15px;cursor:pointer" '+(r.rrDisregard?'checked':'')+' '+(window._canEdit?'':'disabled')+' onchange="toggleRRField('+r.id+',\'rrDisregard\',this.checked);renderRRRows()"></td>'
       +'<td><div class="row-acts">'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEditRR('+r.id+')" title="Edit">&#9998;</button>':'')
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
@@ -1524,7 +1523,6 @@ function renderRows(){
         +'<td></td>'
         +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
         +'<td><div class="row-acts">'
-        +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>':'')
         +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()+'</button>'
         +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
         +'</div></td>'
@@ -1545,7 +1543,6 @@ function renderRows(){
       +'<td>'+timerHTML(r)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
       +'<td><div class="row-acts">'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEdit('+r.id+')" title="Edit">&#9998;</button>':'')
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
       +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})() 
       +'</button>'
@@ -1614,7 +1611,6 @@ function renderDIDRows(){
       +'<td>'+didPriBadge(r.priority)+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
       +'<td><div class="row-acts">'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="openEditDID('+r.id+')" title="Edit">&#9998;</button>':'')
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
       +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})() 
       +'</button>'
