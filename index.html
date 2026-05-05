@@ -1376,7 +1376,7 @@ function renderRRRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="16" class="empty">No RR/RO records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
-    return '<tr class="'+rowCls+'" id="row-'+r.id+'">'
+    return '<tr class="'+rowCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'rr\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
@@ -1511,7 +1511,7 @@ function renderRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     if(r._type==='did'){
-      return '<tr id="row-'+r.id+'" style="opacity:0.6">'
+      return '<tr id="row-'+r.id+'" style="opacity:0.6;cursor:pointer" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
@@ -1531,7 +1531,7 @@ function renderRows(){
         +'</tr>';
     }
     var isDone=DONE_ST.indexOf(r.status)>-1;
-    return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'">'
+    return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'end\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
@@ -1603,7 +1603,7 @@ function renderDIDRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="10" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
-    return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'">'
+    return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
@@ -3297,6 +3297,15 @@ window.changeLogPageSize=changeLogPageSize;
 window.clearSearch=clearSearch;
 window.toggleSearchClear=toggleSearchClear;
 window.doExportRows=doExportRows;
+
+// Double-click row to open edit modal
+function rowDblClick(e, id, type) {
+  if (e.target.closest('button,input,select,a,label')) return;
+  if (type === 'rr') openEditRR(id);
+  else if (type === 'did') openEditDID(id);
+  else openEdit(id);
+}
+window.rowDblClick = rowDblClick;
 
 // Wake Lock: prevent screen/tab sleep while the app is visible
 (async function keepAwake() {
