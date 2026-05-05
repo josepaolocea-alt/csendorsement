@@ -273,7 +273,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="alarm">⏰ Alarm Clock</option>
         <option value="ding">✨ Ding Ding</option>
       </select>
-      <button class="btn btn-secondary btn-sm" onclick="testAlert()">🔔 Test</button>
+      <button class="btn btn-secondary btn-sm" onclick="testAlert()">Test</button>
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">📅 Export by date range:</span>
@@ -284,7 +284,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="startDate">Start Date</option>
         <option value="resolvedDate">Resolved Date</option>
       </select>
-      <button class="btn btn-primary btn-sm" onclick="exportByDateRange()">⬇️ Export Range</button>
+      <button class="btn btn-primary btn-sm" onclick="exportByDateRange()">Export Range</button>
     </div>
   </div>
 
@@ -311,9 +311,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </select>
     <select class="fsel" id="f-pri" onchange="applyFilters()"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
     <select class="fsel" id="f-plt" onchange="applyFilters()"><option value="">All Platforms</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
-    <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">⚙️ Settings ▾</button>
-    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇️ Export</button>
-    <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">🗑️ Delete Selected</button>
+    <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">Settings ▾</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export</button>
+    <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
     <span style="font-size:12px;color:var(--text3)" id="rec-count"></span>
   </div>
 
@@ -395,9 +395,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           ⬆️ Upload CSV
           <input type="file" accept=".csv" style="display:none" onchange="uploadClientCSV(event)">
         </label>
-        <button class="btn btn-secondary btn-sm" onclick="downloadSampleCSV()">📄 Sample CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadSampleCSV()">Sample CSV</button>
         <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
-        <button class="btn btn-sm" onclick="clearAllClients()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">🗑️ Clear All</button>
+        <button class="btn btn-sm" onclick="clearAllClients()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Clear All</button>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-top:8px">CSV format: one client name per row, no header needed. e.g. <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">MAYA</code></p>
     </div>
@@ -423,9 +423,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
             <option value="login">🔑 Login</option>
           </select>
           <input type="date" class="fc" id="log-date-filter" onchange="renderLogs()" style="width:150px;font-size:12px" title="Filter by date">
-          <button class="btn btn-secondary btn-sm" onclick="clearLogFilters()">✕ Clear</button>
-          <button class="btn btn-secondary btn-sm" onclick="exportLogs()">⬇️ Export</button>
-          <button class="btn btn-sm" onclick="clearAllLogs()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">🗑️ Clear All</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearLogFilters()">Clear</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportLogs()">Export</button>
+          <button class="btn btn-sm" onclick="clearAllLogs()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Clear All</button>
         </div>
       </div>
       <div id="log-section-body" style="display:none;overflow-x:auto;margin-top:10px">
@@ -1791,7 +1791,7 @@ function updateBulkBar(){
   var sel=DATA.filter(function(r){return r._sel;});
   var btn=document.getElementById('bulk-delete-btn');
   if(btn) btn.style.display=(sel.length>0&&window._canEdit)?'':'none';
-  if(btn&&sel.length>0) btn.textContent='🗑️ Delete '+sel.length+' Selected';
+  if(btn&&sel.length>0) btn.textContent='Delete '+sel.length+' Selected';
 }
 function toggleAll(chk){
   var checked=chk.checked;
@@ -1799,7 +1799,7 @@ function toggleAll(chk){
   filteredData.forEach(function(r){r._sel=checked;});
   // Update row checkboxes directly in DOM without full re-render
   document.querySelectorAll('#main-tbody tr').forEach(function(tr){
-    var cb=tr.querySelector('td:first-child input[type="checkbox"]');
+    var cb=tr.querySelector('td:nth-child(2) input[type="checkbox"]');
     if(cb) cb.checked=checked;
   });
   // Update bulk bar
@@ -1839,7 +1839,7 @@ function toggleAutoPanel(){
   var panel=document.getElementById('auto-panel');
   var btn=document.getElementById('auto-toggle-btn');
   var hidden=panel.classList.toggle('hidden');
-  btn.textContent=hidden?'⚙️ Settings ▾':'⚙️ Settings ▴';
+  btn.textContent=hidden?'Settings ▾':'Settings ▴';
 }
 
 function openNewModal(){
@@ -2693,7 +2693,7 @@ function loadAdminUsers(){
         +'<td style="color:var(--accent)">'+escHtml(u.nickname||'—')+'</td>'
         +'<td><span class="role-badge '+roleCls+'">'+escHtml(u.role||'Viewer')+'</span></td>'
         +'<td style="color:var(--text3)">'+added+'</td>'
-        +'<td><button class="btn btn-secondary btn-sm" onclick="openEditUser(\''+d.id+'\')">✏️ Edit</button></td>'
+        +'<td><button class="btn btn-secondary btn-sm" onclick="openEditUser(\''+d.id+'\')">Edit</button></td>'
         +'</tr>');
     });
     tbody.innerHTML=rows.join('');
