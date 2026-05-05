@@ -1795,16 +1795,15 @@ function updateBulkBar(){
 }
 function toggleAll(chk){
   var checked=chk.checked;
-  // Update all filtered records' _sel state
-  filteredData.forEach(function(r){r._sel=checked;});
-  // Update row checkboxes directly in DOM without full re-render
-  document.querySelectorAll('#main-tbody tr').forEach(function(tr){
-    var cb=tr.querySelector('td:nth-child(2) input[type="checkbox"]');
-    if(cb) cb.checked=checked;
+  filteredData.forEach(function(r){
+    r._sel=checked;
+    var row=document.getElementById('row-'+r.id);
+    if(row){
+      var cb=row.querySelector('input[type="checkbox"]');
+      if(cb) cb.checked=checked;
+    }
   });
-  // Update bulk bar
   updateBulkBar();
-  // Keep header checkbox in sync after any subsequent re-render
   window._lastCheckAll=checked;
 }
 function toggleRow(id,chk){
@@ -2372,11 +2371,13 @@ function startFirestore(){
   showLoader('Loading data...');
   _firestoreUnsub = onSnapshot(collection(db, COLL), function(snapshot){
     var oldData=DATA.slice();
+    var selMap={};
+    oldData.forEach(function(r){selMap[r.id]=r._sel;});
     DATA=[];
     idSeq=1;
     snapshot.forEach(function(docSnap){
       var r=docSnap.data();
-      r._sel=false;
+      r._sel=selMap[r.id]||false;
       DATA.push(r);
       if(r.id>=idSeq) idSeq=r.id+1;
     });
