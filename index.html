@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CYN Endorsement</title>
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22CYN+Endorsement%22%2C%22short_name%22%3A%22CYN%22%2C%22description%22%3A%22CYN+Endorsement+App%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230d0d0f%22%2C%22theme_color%22%3A%22%230d0d0f%22%2C%22orientation%22%3A%22any%22%7D">
+<meta name="theme-color" content="#0d0d0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CYN">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 :root{--sf:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;--mono:'DM Mono',monospace;}
@@ -3212,7 +3218,6 @@ window.doLogin=doLogin;
 window.doLogout=doLogout;
 window.clearAllLogs=clearAllLogs;
 window.exportLogs=exportLogs;
-window.toggleLogSection=toggleLogSection;
 window.renderLogs=renderLogs;
 window.closeAddUserModal=closeAddUserModal;
 window.closeEditUserModal=closeEditUserModal;
@@ -3288,9 +3293,23 @@ window.deleteDropdownOption=deleteDropdownOption;
 window.renderDropdownOptionsPanel=renderDropdownOptionsPanel;
 window.toggleDropdownPanel=toggleDropdownPanel;
 window.goLogPage=goLogPage;
+window.changeLogPageSize=changeLogPageSize;
 window.clearSearch=clearSearch;
 window.toggleSearchClear=toggleSearchClear;
 window.doExportRows=doExportRows;
+
+// Wake Lock: prevent screen/tab sleep while the app is visible
+(async function keepAwake() {
+  if (!('wakeLock' in navigator)) return;
+  let lock = null;
+  async function acquire() {
+    try { lock = await navigator.wakeLock.request('screen'); } catch (_) {}
+  }
+  acquire();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') acquire();
+  });
+})();
 </script>
 </body>
 </html>
