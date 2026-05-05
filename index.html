@@ -421,12 +421,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <!-- LOGS -->
     <div class="adm-panel">
       <div class="adm-panel-head">
-        <div style="cursor:pointer;display:flex;align-items:center;gap:10px;flex:1" onclick="toggleLogSection()">
+        <div style="display:flex;align-items:center;gap:10px;flex:1">
           <div>
             <div class="adm-panel-label">Activity Logs</div>
-            <div class="adm-panel-sub" id="log-count-label">Click to load logs</div>
+            <div class="adm-panel-sub" id="log-count-label">Loading...</div>
           </div>
-          <span id="log-toggle-arrow" style="font-size:11px;color:var(--text3)">▶</span>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:10px">
           <select class="fsel" id="log-action-filter" onchange="renderLogs()" style="font-size:12px">
@@ -444,7 +443,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <button class="btn btn-sm" onclick="clearAllLogs()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Clear All</button>
         </div>
       </div>
-      <div id="log-section-body" style="display:none;border-top:1px solid var(--border);overflow-x:auto">
+      <div id="log-section-body" style="border-top:1px solid var(--border);overflow-x:auto">
         <table class="log-table">
           <thead><tr>
             <th style="width:30px">#</th>
@@ -552,6 +551,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
             <option value="1800">30 Minutes</option>
             <option value="3600" selected>1 Hour</option>
             <option value="7200">2 Hours</option>
+            <option value="86400">1 Day (24 Hours)</option>
+            <option value="259200">3 Days (72 Hours)</option>
+            <option value="604800">7 Days (168 Hours)</option>
             <option value="custom">Custom...</option>
           </select>
         </div>
@@ -2688,6 +2690,7 @@ function deleteDropdownOption(btn){
 function loadAdminData(){
   loadAdminUsers();
   renderClientGrid();
+  loadLogs();
   // Render with current data (may be defaults if Firestore hasn't loaded yet)
   if(!Object.keys(_dropdownData).length){
     Object.keys(DROPDOWN_OPTS).forEach(function(key){_dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();});
@@ -2973,7 +2976,6 @@ function loadNicknames(){
 
 // ─── LOGS ────────────────────────────────────────────────────
 var LOGS = [];
-var _logSectionOpen = false;
 
 function writeLog(action, record, details, extra){
   var entry={
@@ -2987,14 +2989,6 @@ function writeLog(action, record, details, extra){
   setDoc(doc(db,'logs',entry.id),entry).catch(function(e){console.error('writeLog failed:',e);});
 }
 
-function toggleLogSection(){
-  _logSectionOpen=!_logSectionOpen;
-  var body=document.getElementById('log-section-body');
-  var arrow=document.getElementById('log-toggle-arrow');
-  if(body) body.style.display=_logSectionOpen?'':'none';
-  if(arrow) arrow.textContent=_logSectionOpen?'▼':'▶';
-  if(_logSectionOpen) loadLogs();
-}
 
 function loadLogs(){
   document.getElementById('log-count-label').textContent='Loading...';
@@ -3009,7 +3003,7 @@ function loadLogs(){
 }
 
 var _logPage=0;
-var _logPageSize=50;
+var _logPageSize=25;
 
 function renderLogs(){
   var filter=document.getElementById('log-action-filter')?document.getElementById('log-action-filter').value:'';
@@ -3052,18 +3046,26 @@ function renderLogs(){
   // Pagination controls
   var pgDiv=document.getElementById('log-pagination');
   if(pgDiv){
-    pgDiv.innerHTML=totalPages<=1?'':
-      '<div style="display:flex;align-items:center;gap:8px;padding:10px 0">'
-      +'<button class="btn btn-secondary btn-sm" onclick="goLogPage(0)" '+(  _logPage===0?'disabled':'')+'>«</button>'
+    var pageBtns=totalPages<=1?'':
+      '<button class="btn btn-secondary btn-sm" onclick="goLogPage(0)" '+(_logPage===0?'disabled':'')+'>«</button>'
       +'<button class="btn btn-secondary btn-sm" onclick="goLogPage('+(_logPage-1)+')" '+(_logPage===0?'disabled':'')+'>‹ Prev</button>'
       +'<span style="font-size:12px;color:var(--text2)">Page '+(_logPage+1)+' / '+totalPages+'</span>'
       +'<button class="btn btn-secondary btn-sm" onclick="goLogPage('+(_logPage+1)+')" '+(_logPage>=totalPages-1?'disabled':'')+'>Next ›</button>'
-      +'<button class="btn btn-secondary btn-sm" onclick="goLogPage('+(totalPages-1)+')" '+(_logPage>=totalPages-1?'disabled':'')+'>»</button>'
+      +'<button class="btn btn-secondary btn-sm" onclick="goLogPage('+(totalPages-1)+')" '+(_logPage>=totalPages-1?'disabled':'')+'>»</button>';
+    pgDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:10px 0;flex-wrap:wrap">'
+      +pageBtns
+      +'<span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">Rows per page:'
+      +'<select class="fsel" style="font-size:12px" onchange="changeLogPageSize(this.value)">'
+      +'<option value="25"'+(  _logPageSize===25?' selected':'')+'>25</option>'
+      +'<option value="50"'+(_logPageSize===50?' selected':'')+'>50</option>'
+      +'<option value="100"'+(_logPageSize===100?' selected':'')+'>100</option>'
+      +'</select></span>'
       +'</div>';
   }
 }
 
 function goLogPage(p){_logPage=p;renderLogs();}
+function changeLogPageSize(v){_logPageSize=parseInt(v,10);_logPage=0;renderLogs();}
 
 function clearLogFilters(){
   var af=document.getElementById('log-action-filter');
