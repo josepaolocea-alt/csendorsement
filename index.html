@@ -79,8 +79,8 @@ tr.row-done td{opacity:.5;}
 .st-green{background:rgba(34,197,94,.12);color:#4ade80;}
 .st-yellow{background:rgba(234,179,8,.12);color:#facc15;}
 .pri-high{background:rgba(239,68,68,.15);color:#f87171;}
-.pri-med{background:rgba(234,179,8,.15);color:#fbbf24;}
-.pri-low{background:rgba(34,197,94,.15);color:#4ade80;}
+.pri-med{background:rgba(156,163,175,.15);color:#9ca3af;}
+.pri-low{background:rgba(156,163,175,.15);color:#9ca3af;}
 .timer-cell{display:flex;align-items:center;gap:5px;}
 .tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:56px;text-align:center;}
 .tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
@@ -331,7 +331,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option>Done</option><option>Commercial Concern</option><option>Resolved</option><option>Posted</option>
       </optgroup>
     </select>
-    <select class="fsel" id="f-pri" onchange="applyFilters()"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <select class="fsel" id="f-pri" onchange="applyFilters()"><option value="">All Priorities</option><option>High</option><option>Normal</option></select>
     <select class="fsel" id="f-plt" onchange="applyFilters()"><option value="">All Platforms</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
     <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">Settings ▾</button>
     <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export</button>
@@ -548,7 +548,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           </select>
         </div>
         <div class="fgrp"><label>Priority</label>
-          <select class="fc" id="f-pri-f" onchange="onPriorityChange()"><option>High</option><option selected>Medium</option><option>Low</option></select>
+          <select class="fc" id="f-pri-f" onchange="onPriorityChange()"><option>High</option><option selected>Normal</option></select>
         </div>
         <div class="fgrp"><label>Start Date</label><input class="fc" id="f-date" type="date"></div>
         <div class="fgrp" id="f-resolved-wrap"><label>Resolved Date</label><div id="f-resolved-display" style="font-size:13px;color:#4ade80;padding:8px 0;font-family:var(--mono)">—</div></div>
@@ -704,7 +704,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp"><label>Start Date</label><input class="fc" id="d-date" type="date"></div>
         <div class="fgrp" id="d-resolved-wrap"><label>Resolved Date</label><div id="d-resolved-display" style="font-size:13px;color:var(--text3);padding:8px 0;font-family:var(--mono)">—</div></div>
         <div class="fgrp"><label>Priority</label>
-          <select class="fc" id="d-priority" onchange="onDIDPriorityChange()"><option>High</option><option selected>Normal</option><option>Low</option></select>
+          <select class="fc" id="d-priority" onchange="onDIDPriorityChange()"><option>High</option><option selected>Normal</option></select>
         </div>
       </div>
     </div>
@@ -1044,7 +1044,7 @@ function didStBadge(s){
   return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
 }
 function didPriBadge(p){
-  var cls={High:'pri-high',Normal:'pri-med',Low:'pri-low'}[p]||'pri-med';
+  var cls={High:'pri-high',Normal:'pri-med'}[p]||'pri-med';
   return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';
 }
 
@@ -1060,7 +1060,7 @@ function stBadge(s){
   else if(greenSt.indexOf(s)>-1)cls='st-green';
   return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
 }
-function priBadge(p){var cls={High:'pri-high',Medium:'pri-med',Low:'pri-low'}[p]||'pri-med';return '<span class="badge '+cls+'">'+(p||'Medium')+'</span>';}
+function priBadge(p){var cls={High:'pri-high',Normal:'pri-med'}[p]||'pri-med';return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';}
 function fmtDate(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 
 function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.defaultTimer;}
@@ -1664,7 +1664,7 @@ function openEditDID(id){
   document.getElementById('d-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('d-remarks');},0);
   document.getElementById('d-status').value=r.status||'Pending AM';
   document.getElementById('d-date').value=r.startDate||'';
-  document.getElementById('d-priority').value=r.priority||'Normal';
+  document.getElementById('d-priority').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
   document.getElementById('d-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
   document.getElementById('d-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
   document.getElementById('d-comment-text').value='';
@@ -1870,11 +1870,11 @@ function openNewModal(){
   document.getElementById('f-remarks').value='';autoResizeId('f-remarks');
   document.getElementById('f-plt-f').value='';
   document.getElementById('f-st-f').value='Pending at CS';
-  document.getElementById('f-pri-f').value='Medium';
+  document.getElementById('f-pri-f').value='Normal';
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('f-resolved-display').textContent='—';
   document.getElementById('f-resolved-display').style.color='var(--text3)';
-  // Set timer based on default priority (Medium → custom)
+  // Set timer based on default priority (Normal → custom)
   document.getElementById('f-timer-sel').value='custom';
   document.getElementById('f-timer-hh').value='1';
   document.getElementById('f-timer-mm').value='0';
@@ -1899,7 +1899,7 @@ function openEdit(id){
   document.getElementById('f-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('f-remarks');},0);
   document.getElementById('f-plt-f').value=r.platform||'';
   document.getElementById('f-st-f').value=r.status||'Pending at CS';
-  document.getElementById('f-pri-f').value=r.priority||'Medium';
+  document.getElementById('f-pri-f').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
   document.getElementById('f-date').value=r.startDate||'';
   document.getElementById('f-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
   document.getElementById('f-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
@@ -2105,6 +2105,9 @@ function onPriorityChange(){
       hh.value='1';mm.value='0';
     }
   }
+}
+function migratePriority(r){
+  if(r.priority==='Medium'||r.priority==='Low'){r.priority='Normal';saveOne(r);}
 }
 
 var _commentModalId=null;
@@ -2398,10 +2401,12 @@ function startFirestore(){
     snapshot.forEach(function(docSnap){
       var r=docSnap.data();
       r._sel=selMap[r.id]||false;
+      if(r.priority==='Medium'||r.priority==='Low'){r.priority='Normal';}
       DATA.push(r);
       if(r.id>=idSeq) idSeq=r.id+1;
     });
     if(_fbReady) checkNewComments(oldData,DATA);
+    DATA.forEach(function(r){migratePriority(r);});
     if(!_fbReady){
       _fbReady=true;
       hideLoader();
@@ -2410,7 +2415,7 @@ function startFirestore(){
       loadDropdownOptions();
       if(DATA.length===0){
         var samples=[
-          {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Medium',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
+          {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Normal',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
           {client:'GCASH',service:'Payment',concern:'Transaction timeout issue',platform:'Email',status:'Pending at NOC',priority:'High',startDate:'2026-05-02',endorsed:1,timerStart:null,timerAlerted:false,_sel:false,comments:[]}
         ];
         samples.forEach(function(s){
