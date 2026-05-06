@@ -365,6 +365,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <!-- ADMIN PANEL -->
   <div id="admin-panel" style="display:none">
 
+    <!-- ADMIN HEADER -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <button class="btn btn-secondary btn-sm" onclick="loadAdminData(true)">↻ Refresh</button>
+    </div>
+
     <!-- USER MANAGEMENT -->
     <div class="admin-section">
       <div class="admin-toolbar">
@@ -835,6 +840,7 @@ var _cellStart = null, _dragging = false, _selCells = new Set();
 var _confirmResolve = null;
 var _fbReady = false;
 var _firestoreUnsub = null;
+var _adminLoaded = false;
 var _currentUser = null;
 var _currentUserRole = 'Viewer';
 window._canEdit=false;
@@ -2694,11 +2700,16 @@ function deleteDropdownOption(btn){
   });
 }
 
-function loadAdminData(){
+function loadAdminData(force){
+  if(_adminLoaded && !force){
+    renderClientGrid();
+    renderDropdownOptionsPanel();
+    return;
+  }
+  _adminLoaded = true;
   loadAdminUsers();
   renderClientGrid();
   loadLogs();
-  // Render with current data (may be defaults if Firestore hasn't loaded yet)
   if(!Object.keys(_dropdownData).length){
     Object.keys(DROPDOWN_OPTS).forEach(function(key){_dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();});
   }
