@@ -339,7 +339,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <span style="font-size:12px;color:var(--text3)" id="rec-count"></span>
   </div>
 
-  <div class="table-wrap">
+  <div class="table-wrap" id="main-table-wrap">
     <div class="table-scroll">
       <table id="main-table">
         <thead id="main-thead"><tr>
@@ -361,6 +361,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </table>
     </div>
   </div>
+  <div id="main-pagination" style="padding:6px 16px 2px"></div>
 
   <!-- ADMIN PANEL -->
   <div id="admin-panel" style="display:none">
@@ -535,7 +536,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <input class="fc" id="f-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase()" style="margin-top:5px;display:none">
         </div>
         <div class="fgrp"><label>Service</label>
-          <select class="fc" id="f-svc-f"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
+          <select class="fc" id="f-svc-f" onchange="onSvcChange()"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
         </div>
         <div class="fgrp full"><label>Concern</label><textarea class="fc" id="f-concern" placeholder="Describe the issue..." style="min-height:55px"></textarea></div>
         <div class="fgrp full"><label>Description</label><textarea class="fc" id="f-remarks" placeholder="Additional description / notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
@@ -587,7 +588,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="comment-new">
           <label>Add Comment / Attachment</label>
           <div class="attach-zone" id="endorse-attach-zone" ondragover="onDragOver(event,'endorse-attach-zone')" ondragleave="onDragLeave('endorse-attach-zone')" ondrop="onDrop(event,'endorse-attach-zone','endorse-attach-pending')">
-            <textarea class="fc" id="f-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px" onpaste="onPasteAttach(event,'endorse-attach-pending')"></textarea>
+            <textarea class="fc" id="f-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'endorse-attach-pending')"></textarea>
             <div class="attach-previews" id="endorse-attach-pending"></div>
             <div class="attach-input-row">
               <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'endorse-attach-pending')"></label>
@@ -666,6 +667,23 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
       </div>
     </div>
+    <div class="modal-body" style="padding-top:0">
+      <div class="comments-section">
+        <h4>💬 Comments <span class="comment-badge" id="rr-modal-comment-count">0</span></h4>
+        <div class="comment-list" id="rr-modal-comment-list"></div>
+        <div class="comment-new">
+          <label>Add Comment / Attachment</label>
+          <div class="attach-zone" id="rr-attach-zone" ondragover="onDragOver(event,'rr-attach-zone')" ondragleave="onDragLeave('rr-attach-zone')" ondrop="onDrop(event,'rr-attach-zone','rr-attach-pending')">
+            <textarea class="fc" id="rr-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'rr-attach-pending')"></textarea>
+            <div class="attach-previews" id="rr-attach-pending"></div>
+            <div class="attach-input-row">
+              <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'rr-attach-pending')"></label>
+              <button class="btn btn-primary btn-sm" onclick="addRRComment()">Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="modal-ftr" style="justify-content:space-between;align-items:center">
       <div class="meta-info" id="rr-modal-meta" style="display:none">
         <span>👤 Created by: <strong id="rr-modal-created-by">—</strong></span>
@@ -720,7 +738,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="comment-new">
           <label>Add Comment / Attachment</label>
           <div class="attach-zone" id="did-attach-zone" ondragover="onDragOver(event,'did-attach-zone')" ondragleave="onDragLeave('did-attach-zone')" ondrop="onDrop(event,'did-attach-zone','did-attach-pending')">
-            <textarea class="fc" id="d-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px" onpaste="onPasteAttach(event,'did-attach-pending')"></textarea>
+            <textarea class="fc" id="d-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'did-attach-pending')"></textarea>
             <div class="attach-previews" id="did-attach-pending"></div>
             <div class="attach-input-row">
               <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'did-attach-pending')"></label>
@@ -755,7 +773,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div class="comment-new">
         <label>Add Comment / Attachment</label>
         <div class="attach-zone" id="cm-attach-zone" ondragover="onDragOver(event,'cm-attach-zone')" ondragleave="onDragLeave('cm-attach-zone')" ondrop="onDrop(event,'cm-attach-zone','cm-attach-pending')">
-          <textarea class="fc" id="cm-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px" onpaste="onPasteAttach(event,'cm-attach-pending')"></textarea>
+          <textarea class="fc" id="cm-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'cm-attach-pending')"></textarea>
           <div class="attach-previews" id="cm-attach-pending"></div>
           <div class="attach-input-row">
             <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'cm-attach-pending')"></label>
@@ -847,6 +865,10 @@ window._canEdit=false;
 window._canAdd=false;
 var CLIENTS = []; // loaded from Firestore
 var _editingUserId = null;
+var _donePage=0, _donePageSize=10;
+var _rrPage=0, _rrPageSize=50;
+var _undoState=null, _undoTimeout=null;
+var _pendingRRComments=[];
 
 // ─── AUTH FUNCTIONS ─────────────────────────────────────────
 function showLoginScreen(){
@@ -1014,13 +1036,24 @@ function toggleTheme(){
 }
 
 function switchTab(tab,el){
+  if(tab==='admin'){
+    appConfirm('Accessing the Admin tab will consume usage. Do you want to proceed?','Proceed').then(function(ok){
+      if(!ok) return;
+      _doSwitchTab(tab,el);
+    });
+    return;
+  }
+  _doSwitchTab(tab,el);
+}
+function _doSwitchTab(tab,el){
   currentTab=tab;
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   el.classList.add('active');
   var isAdmin=tab==='admin';
   document.getElementById('stats-row').style.display=isAdmin?'none':'';
   document.querySelector('.toolbar').style.display=isAdmin?'none':'';
-  document.querySelector('.table-wrap').style.display=isAdmin?'none':'';
+  document.getElementById('main-table-wrap').style.display=isAdmin?'none':'';
+  document.getElementById('main-pagination').style.display=isAdmin?'none':'';
   document.getElementById('admin-panel').style.display=isAdmin?'':'none';
   document.getElementById('new-btn').style.display=isAdmin?'none':'';
   if(isAdmin){loadAdminData();return;}
@@ -1029,6 +1062,8 @@ function switchTab(tab,el){
   document.getElementById('f-st').value='';
   document.getElementById('f-pri').value='';
   document.getElementById('f-plt').value='';
+  if(tab==='done') _donePage=0;
+  if(tab==='mine') _rrPage=0;
   applyFilters();
 }
 
@@ -1039,8 +1074,8 @@ function openNewModalCurrent(){
   else openNewModal();
 }
 
-var DONE_ST=['Done','Commercial Concern','Resolved','Posted'];
-var NO_TIMER_ST=['Done','Commercial Concern','Resolved','Posted','Advised Client']; // statuses that stop/prevent timer
+var DONE_ST=['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Continue to Other Ticket'];
+var NO_TIMER_ST=['Done','Commercial Concern','Resolved','Posted','Advised Client','Lack of Update from Client','Continue to Other Ticket']; // statuses that stop/prevent timer
 var DID_DONE_ST=['Done','Cancel by Client'];
 var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','In Progress'];
 
@@ -1058,12 +1093,14 @@ function svcBadge(s){var cls={VOIP:'svc-voip',SMS:'svc-sms',Payment:'svc-payment
 function pltBadge(p){if(!p)return '';var cls={'MS Teams':'plt-msteams','Viber':'plt-viber','WhatsApp':'plt-whatsapp','Telegram':'plt-telegram','Email':'plt-email'}[p]||'plt-def';return '<span class="badge '+cls+'">'+p+'</span>';}
 function stBadge(s){
   var redSt=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting'];
-  var blueSt=['Pending at Vendor','Pending at Developer'];
+  var blueSt=['Pending at Vendor','Pending at Developer','Continue to Other Ticket'];
   var greenSt=['Done','Commercial Concern','Resolved','Posted','Advised Client'];
+  var yellowSt=['Lack of Update from Client'];
   var cls='st-yellow';
   if(redSt.indexOf(s)>-1)cls='st-red';
   else if(blueSt.indexOf(s)>-1)cls='st-blue';
   else if(greenSt.indexOf(s)>-1)cls='st-green';
+  else if(yellowSt.indexOf(s)>-1)cls='st-yellow';
   return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
 }
 function priBadge(p){var cls={High:'pri-high',Normal:'pri-med'}[p]||'pri-med';return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';}
@@ -1267,7 +1304,7 @@ function applyFilters(){
   var fp=document.getElementById('f-pri').value;
   var fpl=document.getElementById('f-plt').value;
   var IN_PROGRESS_ST=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client'];
-  var COMPLETED_ST=['Done','Commercial Concern','Resolved','Posted'];
+  var COMPLETED_ST=DONE_ST.slice();
   var filteringByStatus=fst&&fst!=='';
   filteredData=DATA.filter(function(r){
     if(r._type==='did'){
@@ -1373,15 +1410,46 @@ var RR_THEAD='<tr>'
   +'<th style="width:120px">Updated Inv.</th>'
   +'<th style="width:70px;text-align:center">✅</th>'
   +'<th style="width:70px;text-align:center">🚫</th>'
-  +'<th style="width:60px">Actions</th>'
+  +'<th style="width:80px">Actions</th>'
   +'</tr>';
+
+function renderRRPagination(total){
+  var pgDiv=document.getElementById('main-pagination');
+  if(!pgDiv) return;
+  var totalPages=Math.max(1,Math.ceil(total/_rrPageSize));
+  if(_rrPage>=totalPages) _rrPage=totalPages-1;
+  if(_rrPage<0) _rrPage=0;
+  var pageBtns=totalPages<=1?'':
+    '<button class="btn btn-secondary btn-sm" onclick="goRRPage(0)" '+(_rrPage===0?'disabled':'')+'>«</button>'
+    +'<button class="btn btn-secondary btn-sm" onclick="goRRPage('+(_rrPage-1)+')" '+(_rrPage===0?'disabled':'')+'>‹ Prev</button>'
+    +'<span style="font-size:12px;color:var(--text2)">Page '+(_rrPage+1)+' / '+totalPages+'</span>'
+    +'<button class="btn btn-secondary btn-sm" onclick="goRRPage('+(_rrPage+1)+')" '+(_rrPage>=totalPages-1?'disabled':'')+'>Next ›</button>'
+    +'<button class="btn btn-secondary btn-sm" onclick="goRRPage('+(totalPages-1)+')" '+(_rrPage>=totalPages-1?'disabled':'')+'>»</button>';
+  pgDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap">'
+    +pageBtns
+    +'<span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">Rows per page:'
+    +'<select class="fsel" style="font-size:12px" onchange="changeRRPageSize(this.value)">'
+    +'<option value="50"'+(_rrPageSize===50?' selected':'')+'>50</option>'
+    +'<option value="100"'+(_rrPageSize===100?' selected':'')+'>100</option>'
+    +'<option value="500"'+(_rrPageSize===500?' selected':'')+'>500</option>'
+    +'</select></span>'
+    +'</div>';
+}
+function goRRPage(p){_rrPage=p;renderRRRows();}
+function changeRRPageSize(v){_rrPageSize=parseInt(v,10);_rrPage=0;renderRRRows();}
 
 function renderRRRows(){
   document.getElementById('main-thead').innerHTML=RR_THEAD;
   var tbody=document.getElementById('main-tbody');
+  var totalPages=Math.max(1,Math.ceil(filteredData.length/_rrPageSize));
+  if(_rrPage>=totalPages) _rrPage=totalPages-1;
+  if(_rrPage<0) _rrPage=0;
+  var displayData=filteredData.slice(_rrPage*_rrPageSize,(_rrPage+1)*_rrPageSize);
+  renderRRPagination(filteredData.length);
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="16" class="empty">No RR/RO records found</td></tr>';return;}
-  tbody.innerHTML=filteredData.map(function(r){
+  tbody.innerHTML=displayData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
+    var unreadBadge=(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})();
     return '<tr class="'+rowCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'rr\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
@@ -1399,6 +1467,7 @@ function renderRRRows(){
       +'<td style="text-align:center"><input type="checkbox" style="accent-color:#4ade80;width:15px;height:15px;cursor:pointer" '+(r.rrCompleted?'checked':'')+' '+(window._canEdit?'':'disabled')+' onchange="toggleRRField('+r.id+',\'rrCompleted\',this.checked);renderRRRows()"></td>'
       +'<td style="text-align:center"><input type="checkbox" style="accent-color:#f87171;width:15px;height:15px;cursor:pointer" '+(r.rrDisregard?'checked':'')+' '+(window._canEdit?'':'disabled')+' onchange="toggleRRField('+r.id+',\'rrDisregard\',this.checked);renderRRRows()"></td>'
       +'<td><div class="row-acts">'
+      +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+unreadBadge+'</button>'
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
@@ -1454,6 +1523,11 @@ function openNewRRModal(){
   document.getElementById('rr-inv').value='None';
   document.getElementById('rr-completed').checked=false;
   document.getElementById('rr-disregard').checked=false;
+  document.getElementById('rr-comment-text').value='';
+  _pendingAttachments['rr-attach-pending']=[];
+  _pendingRRComments=[];
+  renderPendingPreviews('rr-attach-pending');
+  renderRRModalComments([]);
   clearModalMeta('rr-modal');
   document.getElementById('rr-modal').classList.remove('hidden');
 }
@@ -1474,10 +1548,15 @@ function openEditRR(id){
   document.getElementById('rr-inv').value=r.rrInv||'None';
   document.getElementById('rr-completed').checked=!!r.rrCompleted;
   document.getElementById('rr-disregard').checked=!!r.rrDisregard;
+  document.getElementById('rr-comment-text').value='';
+  _pendingAttachments['rr-attach-pending']=[];
+  renderPendingPreviews('rr-attach-pending');
+  renderRRModalComments(r.comments||[]);
+  markRead(id);renderRRRows();
   setModalMeta('rr-modal',r);
   document.getElementById('rr-modal').classList.remove('hidden');
 }
-function closeRRModal(){document.getElementById('rr-modal').classList.add('hidden');}
+function closeRRModal(){document.getElementById('rr-modal').classList.add('hidden');editingRRId=null;_pendingRRComments=[];}
 function saveRRRecord(){
   var subject=document.getElementById('rr-subject').value.trim();
   if(!subject){toast('Subject is required','error');return;}
@@ -1502,7 +1581,8 @@ function saveRRRecord(){
     if(idx>=0){DATA[idx]=Object.assign({},DATA[idx],rec,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});saveOne(DATA[idx]);writeLog('updated',rec.rrSubject||'RR record','Updated RR entry');}
     toast('Updated!','success');
   }else{
-    var nr=Object.assign({id:idSeq++,_sel:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    var nr=Object.assign({id:idSeq++,_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
     writeLog('created',nr.rrSubject||'RR record','Created RR entry');
     toast('Added!','success');
@@ -1510,11 +1590,48 @@ function saveRRRecord(){
   closeRRModal();applyFilters();
 }
 
+function renderDonePagination(total){
+  var pgDiv=document.getElementById('main-pagination');
+  if(!pgDiv) return;
+  var totalPages=Math.max(1,Math.ceil(total/_donePageSize));
+  if(_donePage>=totalPages) _donePage=totalPages-1;
+  if(_donePage<0) _donePage=0;
+  var pageBtns=totalPages<=1?'':
+    '<button class="btn btn-secondary btn-sm" onclick="goDonePage(0)" '+(_donePage===0?'disabled':'')+'>«</button>'
+    +'<button class="btn btn-secondary btn-sm" onclick="goDonePage('+(_donePage-1)+')" '+(_donePage===0?'disabled':'')+'>‹ Prev</button>'
+    +'<span style="font-size:12px;color:var(--text2)">Page '+(_donePage+1)+' / '+totalPages+'</span>'
+    +'<button class="btn btn-secondary btn-sm" onclick="goDonePage('+(_donePage+1)+')" '+(_donePage>=totalPages-1?'disabled':'')+'>Next ›</button>'
+    +'<button class="btn btn-secondary btn-sm" onclick="goDonePage('+(totalPages-1)+')" '+(_donePage>=totalPages-1?'disabled':'')+'>»</button>';
+  pgDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap">'
+    +pageBtns
+    +'<span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">Rows per page:'
+    +'<select class="fsel" style="font-size:12px" onchange="changeDonePageSize(this.value)">'
+    +'<option value="10"'+(_donePageSize===10?' selected':'')+'>10</option>'
+    +'<option value="50"'+(_donePageSize===50?' selected':'')+'>50</option>'
+    +'<option value="100"'+(_donePageSize===100?' selected':'')+'>100</option>'
+    +'<option value="500"'+(_donePageSize===500?' selected':'')+'>500</option>'
+    +'</select></span>'
+    +'</div>';
+}
+function goDonePage(p){_donePage=p;renderRows();}
+function changeDonePageSize(v){_donePageSize=parseInt(v,10);_donePage=0;renderRows();}
+
 function renderRows(){
   document.getElementById('main-thead').innerHTML=END_THEAD;
   var tbody=document.getElementById('main-tbody');
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">No records found</td></tr>';return;}
-  tbody.innerHTML=filteredData.map(function(r){
+  var pgDiv=document.getElementById('main-pagination');
+  var displayData=filteredData;
+  if(currentTab==='done'){
+    var totalPages=Math.max(1,Math.ceil(filteredData.length/_donePageSize));
+    if(_donePage>=totalPages) _donePage=totalPages-1;
+    if(_donePage<0) _donePage=0;
+    displayData=filteredData.slice(_donePage*_donePageSize,(_donePage+1)*_donePageSize);
+    renderDonePagination(filteredData.length);
+  }else{
+    if(pgDiv) pgDiv.innerHTML='';
+  }
+  if(!displayData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">No records found</td></tr>';return;}
+  tbody.innerHTML=displayData.map(function(r){
     if(r._type==='did'){
       return '<tr id="row-'+r.id+'" style="opacity:0.6;cursor:pointer" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
@@ -1850,14 +1967,46 @@ function bulkDelete(){
   if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
   var sel=DATA.filter(function(r){return r._sel;});
   if(!sel.length)return;
-  appConfirm('Delete '+sel.length+' selected record'+(sel.length>1?'s':'')+'?','Delete').then(function(ok){
-    if(!ok)return;
-    var ids=sel.map(function(r){return r.id;});
-    var toDelete=DATA.filter(function(r){return ids.indexOf(r.id)>-1;});
-    DATA=DATA.filter(function(r){return ids.indexOf(r.id)===-1;});
-    toDelete.forEach(function(r){deleteOne(r.id);});
-    applyFilters();updateBulkBar();toast('Deleted '+ids.length+' record'+(ids.length>1?'s':''),'info');
+  softDelete(sel);
+}
+
+function softDelete(deleted){
+  // Commit any still-pending undo first
+  if(_undoState){clearTimeout(_undoTimeout);commitPendingDelete();}
+  var ids=deleted.map(function(r){return r.id;});
+  DATA=DATA.filter(function(r){return ids.indexOf(r.id)===-1;});
+  _undoState={deleted:deleted.slice()};
+  applyFilters();updateBulkBar();
+  // Show undo toast
+  var existing=document.getElementById('undo-toast');
+  if(existing) existing.remove();
+  var el=document.createElement('div');
+  el.id='undo-toast';
+  el.className='toast info';
+  var msg=deleted.length===1?'1 record deleted.':deleted.length+' records deleted.';
+  el.innerHTML='<span>ℹ️</span><span>'+msg+'</span>'
+    +'<button onclick="undoDelete()" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;font-family:var(--sf);white-space:nowrap;flex-shrink:0">Undo</button>';
+  document.getElementById('toast-wrap').appendChild(el);
+  _undoTimeout=setTimeout(function(){el.remove();commitPendingDelete();},5000);
+}
+
+function commitPendingDelete(){
+  if(!_undoState) return;
+  _undoState.deleted.forEach(function(r){
+    deleteOne(r.id);
+    try{writeLog('deleted',r.client||r.rrSubject||r.desc||'record','Deleted record');}catch(e){}
   });
+  _undoState=null;
+}
+
+function undoDelete(){
+  if(!_undoState) return;
+  clearTimeout(_undoTimeout);
+  _undoState.deleted.forEach(function(r){DATA.push(r);});
+  _undoState=null;
+  var t=document.getElementById('undo-toast');if(t)t.remove();
+  applyFilters();updateBulkBar();
+  toast('Deletion undone','success');
 }
 
 function toggleAutoPanel(){
@@ -2003,15 +2152,9 @@ function saveRecord(){
 
 function delRec(id){
   if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
-  appConfirm('Delete this record?','Delete').then(function(ok){
-    if(!ok)return;
-    var dr=DATA.find(function(r){return r.id===id;});
-    DATA=DATA.filter(function(r){return r.id!==id;});
-    deleteOne(id);
-    writeLog('deleted',dr?(dr.client||dr.rrSubject||dr.desc||'record'):'record','Deleted record');
-    applyFilters();
-    toast('Deleted','info');
-  });
+  var dr=DATA.find(function(r){return r.id===id;});
+  if(!dr) return;
+  softDelete([dr]);
 }
 
 function exportCSV(){
@@ -2069,7 +2212,8 @@ function toast(msg,type){
 
 function autoResize(el){
   el.style.height='auto';
-  el.style.height=Math.max(90,el.scrollHeight)+'px';
+  var minH=parseInt(el.style.minHeight)||55;
+  el.style.height=Math.max(minH,el.scrollHeight)+'px';
 }
 
 function autoResizeId(id){
@@ -2293,6 +2437,45 @@ function renderModalComments(comments){
 
 function renderCmModalComments(comments){
   _renderCommentList(comments,'cm-list',String(_commentModalId||''),'cm');
+}
+
+function renderRRModalComments(comments){
+  var count=document.getElementById('rr-modal-comment-count');
+  if(count) count.textContent=comments.length;
+  _renderCommentList(comments,'rr-modal-comment-list',String(editingRRId||''),'rr');
+}
+
+function addRRComment(){
+  var text=document.getElementById('rr-comment-text').value.trim();
+  var attachments=collectAndClearPending('rr-attach-pending');
+  if(!text&&!attachments.length){toast('Write a comment or attach a file','error');return;}
+  if(editingRRId){
+    var r=DATA.find(function(d){return d.id===editingRRId;});
+    if(r){
+      if(!r.comments)r.comments=[];
+      r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+      saveOne(r);
+      markRead(r.id);
+      document.getElementById('rr-comment-text').value='';
+      renderRRModalComments(r.comments);
+      renderRRRows();
+      toast('Comment added','success');
+    }
+  }else{
+    _pendingRRComments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+    document.getElementById('rr-comment-text').value='';
+    renderRRModalComments(_pendingRRComments);
+    toast('Comment queued — will save with entry','info');
+  }
+}
+
+function onSvcChange(){
+  if(editingId!==null) return; // only for new entries
+  var svc=document.getElementById('f-svc-f').value;
+  if(svc==='Payment'){
+    document.getElementById('f-timer-sel').value='86400';
+    document.getElementById('f-timer-custom-wrap').style.display='none';
+  }
 }
 
 function addComment(){
@@ -2542,7 +2725,7 @@ var DROPDOWN_OPTS = {
   service:    {label:'Service',              defaults:['VOIP','SMS','Payment']},
   platform:   {label:'Platform',             defaults:['MS Teams','Viber','WhatsApp','Telegram','Email']},
   status_ip:  {label:'Status — In Progress', defaults:['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client']},
-  status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted']},
+  status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Continue to Other Ticket']},
   rr_by:      {label:'RR by',                defaults:["Ma'am Kath","Sir Jason","Ma'am Shayne","Jem Santos","Robert Pinote","Raffy Ching","Mark Deviente","Vi Quibingco","Paul Fabella","Jessa Lubiano"]},
   ro_by:      {label:'RO by',                defaults:['Sir Rod','L2 Aries','L2 Efren','L2 Franz']}
 };
@@ -3166,6 +3349,7 @@ function saveCommentEdit(btn){
   saveOne(r);
   if(source==='endorsement') renderModalComments(r.comments);
   else if(source==='did') renderDIDModalComments(r.comments);
+  else if(source==='rr') renderRRModalComments(r.comments);
   else renderCmModalComments(r.comments);
   toast('Comment updated','success');
 }
@@ -3182,6 +3366,7 @@ function deleteComment(btn){
     saveOne(r);
     if(source==='endorsement') renderModalComments(r.comments);
     else if(source==='did') renderDIDModalComments(r.comments);
+    else if(source==='rr') renderRRModalComments(r.comments);
     else renderCmModalComments(r.comments);
     toast('Comment deleted','info');
   });
@@ -3309,6 +3494,15 @@ window.changeLogPageSize=changeLogPageSize;
 window.clearSearch=clearSearch;
 window.toggleSearchClear=toggleSearchClear;
 window.doExportRows=doExportRows;
+window.undoDelete=undoDelete;
+window.goDonePage=goDonePage;
+window.changeDonePageSize=changeDonePageSize;
+window.goRRPage=goRRPage;
+window.changeRRPageSize=changeRRPageSize;
+window.addRRComment=addRRComment;
+window.renderRRModalComments=renderRRModalComments;
+window.onSvcChange=onSvcChange;
+window._doSwitchTab=_doSwitchTab;
 
 // Double-click row to open edit modal
 function rowDblClick(e, id, type) {
