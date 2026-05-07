@@ -1800,7 +1800,7 @@ document.addEventListener('mousemove',function(e){
 document.addEventListener('mouseup',function(){_dragging=false;});
 document.addEventListener('keydown',function(e){
   if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();document.getElementById('search-input').focus();}
-  if((e.ctrlKey||e.metaKey)&&e.key==='c'&&_selCells.size>0){
+  if((e.ctrlKey||e.metaKey)&&e.key==='c'&&_selCells.size>0&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement&&document.activeElement.tagName)&&!document.activeElement.isContentEditable){
     var rows=Array.from(document.getElementById('main-table').querySelectorAll('tbody tr'));
     var allRows=rows.map(function(r){return Array.from(r.cells);});
     var minR=9999,maxR=-1,minC=9999,maxC=-1;
