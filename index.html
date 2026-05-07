@@ -1174,7 +1174,7 @@ function didTimerHTML(r){
 
 function onDIDTimerChange(){
   var v=document.getElementById('d-timer-sel').value;
-  document.getElementById('d-timer-custom-wrap').style.display=v==='custom'?'':'none';
+  document.getElementById('d-timer-custom-wrap').style.display=v==='custom'?'flex':'none';
 }
 
 // ─── PERSISTENT AUDIO CONTEXT ────────────────────────────────
@@ -1820,7 +1820,7 @@ function openNewDIDModal(){
   document.getElementById('d-timer-mm').value='';
   document.getElementById('d-resolved-display').textContent='—';
   document.getElementById('d-resolved-display').style.color='var(--text3)';
-  document.getElementById('d-comment-text').value='';
+  var _dct0=document.getElementById('d-comment-text');_dct0.value='';_dct0.style.height='';
   _pendingAttachments['did-attach-pending']=[];
   _pendingDIDComments=[];
   renderPendingPreviews('did-attach-pending');
@@ -1855,7 +1855,7 @@ function openEditDID(id){
   }
   document.getElementById('d-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
   document.getElementById('d-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
-  document.getElementById('d-comment-text').value='';
+  var _dct1=document.getElementById('d-comment-text');_dct1.value='';_dct1.style.height='';
   _pendingAttachments['did-attach-pending']=[];
   renderPendingPreviews('did-attach-pending');
   renderDIDModalComments(r.comments||[]);
