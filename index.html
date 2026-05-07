@@ -1100,7 +1100,8 @@ var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','In Progress','Advised Client'
 
 function didStBadge(s){
   var greenSt=['Done','Cancel by Client','Advised Client'];
-  var cls=greenSt.indexOf(s)>-1?'st-green':'st-red';
+  var blueSt=['In Progress'];
+  var cls=greenSt.indexOf(s)>-1?'st-green':blueSt.indexOf(s)>-1?'st-blue':'st-red';
   return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
 }
 function didPriBadge(p){
@@ -1946,7 +1947,7 @@ function addDIDComment(){
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
       saveOne(r);
       markRead(r.id);
-      document.getElementById('d-comment-text').value='';
+      var _dct=document.getElementById('d-comment-text');_dct.value='';_dct.style.height='';
       renderDIDModalComments(r.comments);
       renderDIDRows();
       toast('Comment added','success');
@@ -1954,7 +1955,7 @@ function addDIDComment(){
   }else{
     // Buffer comment — don't save record yet, wait for Save button
     _pendingDIDComments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
-    document.getElementById('d-comment-text').value='';
+    var _dct=document.getElementById('d-comment-text');_dct.value='';_dct.style.height='';
     renderDIDModalComments(_pendingDIDComments);
     toast('Comment queued — will save with entry','info');
   }
@@ -2856,8 +2857,9 @@ function applyDropdownsToForms(){
     var el=document.getElementById(id);if(!el)return;
     var cur=el.value;
     var isFilter=id==='f-svc';
+    var items=id==='d-svc'?svcItems.filter(function(v){return v!=='Payment';}):svcItems;
     el.innerHTML=(isFilter?'<option value="">All Services</option>':'')
-      +svcItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
+      +items.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(cur) el.value=cur;
   });
   // Platform dropdowns
