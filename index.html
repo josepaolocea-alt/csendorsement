@@ -738,15 +738,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
             <option value="604800">7 Days (168 Hours)</option>
             <option value="custom">Custom...</option>
           </select>
-        </div>
-        <div class="fgrp" id="d-timer-custom-wrap" style="display:none">
-          <label>Custom Duration (HH:MM)</label>
-          <div style="display:flex;align-items:center;gap:6px">
-            <input class="fc" id="d-timer-hh" type="number" min="0" max="9999" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampDIDTimerHH(this)">
-            <span style="font-size:18px;font-weight:700;color:var(--text2)">:</span>
-            <input class="fc" id="d-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerMM(this)">
+          <div id="d-timer-custom-wrap" style="display:none;flex-direction:column;gap:5px">
+            <label>Custom Duration (HH:MM)</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input class="fc" id="d-timer-hh" type="number" min="0" max="9999" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampDIDTimerHH(this)">
+              <span style="font-size:18px;font-weight:700;color:var(--text2)">:</span>
+              <input class="fc" id="d-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerMM(this)">
+            </div>
+            <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 24:00 = 1 day &nbsp;|&nbsp; 72:00 = 3 days</span>
           </div>
-          <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 24:00 = 1 day &nbsp;|&nbsp; 72:00 = 3 days</span>
         </div>
       </div>
     </div>
@@ -1844,7 +1844,7 @@ function openEditDID(id){
   var _dKnown=[86400,259200,604800];
   if(_dtov&&_dKnown.indexOf(_dtov)===-1){
     document.getElementById('d-timer-sel').value='custom';
-    document.getElementById('d-timer-custom-wrap').style.display='';
+    document.getElementById('d-timer-custom-wrap').style.display='flex';
     document.getElementById('d-timer-hh').value=Math.floor(_dtov/3600);
     document.getElementById('d-timer-mm').value=Math.floor((_dtov%3600)/60);
   }else{
