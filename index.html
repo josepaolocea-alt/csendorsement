@@ -78,6 +78,7 @@ tr.row-done td{opacity:.5;}
 .st-blue{background:rgba(59,130,246,.12);color:#60a5fa;}
 .st-green{background:rgba(34,197,94,.12);color:#4ade80;}
 .st-yellow{background:rgba(234,179,8,.12);color:#facc15;}
+.st-gray{background:var(--bg4);color:var(--text3);}
 .pri-high{background:rgba(239,68,68,.15);color:#f87171;}
 .pri-med{background:rgba(156,163,175,.15);color:#9ca3af;}
 .pri-low{background:rgba(156,163,175,.15);color:#9ca3af;}
@@ -1093,14 +1094,14 @@ function svcBadge(s){var cls={VOIP:'svc-voip',SMS:'svc-sms',Payment:'svc-payment
 function pltBadge(p){if(!p)return '';var cls={'MS Teams':'plt-msteams','Viber':'plt-viber','WhatsApp':'plt-whatsapp','Telegram':'plt-telegram','Email':'plt-email'}[p]||'plt-def';return '<span class="badge '+cls+'">'+p+'</span>';}
 function stBadge(s){
   var redSt=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting'];
-  var blueSt=['Pending at Vendor','Pending at Developer','Continue to Other Ticket'];
-  var greenSt=['Done','Commercial Concern','Resolved','Posted','Advised Client'];
-  var yellowSt=['Lack of Update from Client'];
+  var blueSt=['Pending at Vendor','Pending at Developer'];
+  var greenSt=['Done','Commercial Concern','Resolved','Posted','Advised Client','Lack of Update from Client'];
+  var graySt=['Continue to Other Ticket'];
   var cls='st-yellow';
   if(redSt.indexOf(s)>-1)cls='st-red';
   else if(blueSt.indexOf(s)>-1)cls='st-blue';
   else if(greenSt.indexOf(s)>-1)cls='st-green';
-  else if(yellowSt.indexOf(s)>-1)cls='st-yellow';
+  else if(graySt.indexOf(s)>-1)cls='st-gray';
   return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
 }
 function priBadge(p){var cls={High:'pri-high',Normal:'pri-med'}[p]||'pri-med';return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';}
@@ -2745,6 +2746,17 @@ function loadDropdownOptions(){
         return setDoc(doc(db,'dropdown_options',key),{items:DROPDOWN_OPTS[key].defaults});
       });
       Promise.all(batch).catch(function(){});
+    } else {
+      // Merge any newly added default statuses into existing Firestore data
+      ['status_done','status_ip'].forEach(function(key){
+        var existing=_dropdownData[key]||[];
+        var newItems=DROPDOWN_OPTS[key].defaults.filter(function(v){return existing.indexOf(v)===-1;});
+        if(newItems.length){
+          var merged=existing.concat(newItems);
+          _dropdownData[key]=merged;
+          setDoc(doc(db,'dropdown_options',key),{items:merged}).catch(function(){});
+        }
+      });
     }
     applyDropdownsToForms();
     // Always render panel if on admin tab
