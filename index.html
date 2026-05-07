@@ -1974,8 +1974,8 @@ function saveRecord(){
         if(noTimer){
           // Completed status or 0:0 duration — stop timer
           timerUpdate={timerStart:null,timerAlerted:false};
-        }else if(timerSecs&&prev.timerOverride&&prev.timerOverride!==timerSecs){
-          // Timer duration was explicitly changed to a new non-null value — restart
+        }else if(timerSecs&&prev.timerOverride!==timerSecs){
+          // Timer duration changed (including from null/unset to a value) — restart
           timerUpdate={timerStart:Date.now(),timerAlerted:false};
         }else{
           // Keep existing timer state exactly as-is (running or stopped)
