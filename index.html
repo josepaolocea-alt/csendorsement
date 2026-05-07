@@ -718,7 +718,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp"><label>Status</label>
           <select class="fc" id="d-status">
             <optgroup label="In Progress">
-              <option>Pending AM</option><option>Pending CS</option><option>In Progress</option>
+              <option>Pending AM</option><option>Pending CS</option><option>In Progress</option><option>Advised Client</option>
             </optgroup>
             <optgroup label="Completed">
               <option>Done</option><option>Cancel by Client</option>
@@ -729,6 +729,24 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp" id="d-resolved-wrap"><label>Resolved Date</label><div id="d-resolved-display" style="font-size:13px;color:var(--text3);padding:8px 0;font-family:var(--mono)">—</div></div>
         <div class="fgrp"><label>Priority</label>
           <select class="fc" id="d-priority" onchange="onDIDPriorityChange()"><option>High</option><option selected>Normal</option></select>
+        </div>
+        <div class="fgrp"><label>Timer Duration</label>
+          <select class="fc" id="d-timer-sel" onchange="onDIDTimerChange()">
+            <option value="0">None (00:00)</option>
+            <option value="86400">1 Day (24 Hours)</option>
+            <option value="259200">3 Days (72 Hours)</option>
+            <option value="604800">7 Days (168 Hours)</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+        <div class="fgrp" id="d-timer-custom-wrap" style="display:none">
+          <label>Custom Duration (HH:MM)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input class="fc" id="d-timer-hh" type="number" min="0" max="9999" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampDIDTimerHH(this)">
+            <span style="font-size:18px;font-weight:700;color:var(--text2)">:</span>
+            <input class="fc" id="d-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerMM(this)">
+          </div>
+          <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 24:00 = 1 day &nbsp;|&nbsp; 72:00 = 3 days</span>
         </div>
       </div>
     </div>
@@ -1078,10 +1096,10 @@ function openNewModalCurrent(){
 var DONE_ST=['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Continue to Other Ticket'];
 var NO_TIMER_ST=['Done','Commercial Concern','Resolved','Posted','Advised Client','Lack of Update from Client','Continue to Other Ticket']; // statuses that stop/prevent timer
 var DID_DONE_ST=['Done','Cancel by Client'];
-var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','In Progress'];
+var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','In Progress','Advised Client'];
 
 function didStBadge(s){
-  var greenSt=['Done','Cancel by Client'];
+  var greenSt=['Done','Cancel by Client','Advised Client'];
   var cls=greenSt.indexOf(s)>-1?'st-green':'st-red';
   return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
 }
@@ -1125,12 +1143,38 @@ function timerHTML(r){
   return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'">'+ts+'</span>'+btns+'</div>';
 }
 
-function startTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);renderRows();}
+function startTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);applyFilters();}
 function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);}
-function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;saveOne(r);renderRows();}
+function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;saveOne(r);applyFilters();}
 
 function clampTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>23)el.value=23;}
 function clampTimerMM(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>59)el.value=59;}
+function clampDIDTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;}
+
+function fmtTimeDID(s){
+  if(s===null||s===undefined)return '00:00';
+  var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
+  return pad(h)+':'+pad(m);
+}
+
+function didTimerHTML(r){
+  var rem=r.timerStart?calcRem(r):null;
+  var isRunning=r.timerStart&&rem!==null;
+  var cls='tbadge'+(isRunning?(rem===0?' texp':rem<3600?' twarn':''):'');
+  var ts=isRunning?fmtTimeDID(rem):'00:00';
+  var btns='';
+  if(window._canEdit){
+    btns=r.timerStart
+      ?'<button class="btn-icon btn-sm" onclick="resetTmr('+r.id+')" title="Reset">&#8635;</button><button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>'
+      :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
+  }
+  return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'">'+ts+'</span>'+btns+'</div>';
+}
+
+function onDIDTimerChange(){
+  var v=document.getElementById('d-timer-sel').value;
+  document.getElementById('d-timer-custom-wrap').style.display=v==='custom'?'':'none';
+}
 
 // ─── PERSISTENT AUDIO CONTEXT ────────────────────────────────
 var _audioCtx = null;
@@ -1271,8 +1315,8 @@ setInterval(function(){
     }
     var badge=document.getElementById('tb-'+r.id);
     if(badge){
-      badge.textContent=fmtTime(rem);
-      badge.className='tbadge'+(rem===0?' texp':rem<300?' twarn':'');
+      badge.textContent=r._type==='did'?fmtTimeDID(rem):fmtTime(rem);
+      badge.className='tbadge'+(rem===0?' texp':(r._type==='did'?rem<3600:rem<300)?' twarn':'');
     }
   });
   if(changed){DATA.forEach(function(r){if(r.timerAlerted)saveOne(r);});}
@@ -1699,6 +1743,7 @@ var DID_THEAD='<tr>'
   +'<th onclick="sortBy(\'resolvedDate\')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'service\')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th style="width:100px">Actions</th>'
   +'</tr>';
 
@@ -1721,7 +1766,7 @@ var END_THEAD='<tr>'
 function renderDIDRows(){
   document.getElementById('main-thead').innerHTML=DID_THEAD;
   var tbody=document.getElementById('main-tbody');
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="10" class="empty">No DID records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer">'
@@ -1734,6 +1779,7 @@ function renderDIDRows(){
       +'<td style="color:'+(r.resolvedDate?'#4ade80':'var(--text3)')+'">'+( r.resolvedDate?fmtDate(r.resolvedDate):'—')+'</td>'
       +'<td>'+didPriBadge(r.priority)+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
+      +'<td>'+didTimerHTML(r)+'</td>'
       +'<td><div class="row-acts">'
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
       +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})() 
@@ -1767,6 +1813,10 @@ function openNewDIDModal(){
   document.getElementById('d-status').value='Pending AM';
   document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('d-priority').value='Normal';
+  document.getElementById('d-timer-sel').value='0';
+  document.getElementById('d-timer-custom-wrap').style.display='none';
+  document.getElementById('d-timer-hh').value='';
+  document.getElementById('d-timer-mm').value='';
   document.getElementById('d-resolved-display').textContent='—';
   document.getElementById('d-resolved-display').style.color='var(--text3)';
   document.getElementById('d-comment-text').value='';
@@ -1789,6 +1839,19 @@ function openEditDID(id){
   document.getElementById('d-status').value=r.status||'Pending AM';
   document.getElementById('d-date').value=r.startDate||'';
   document.getElementById('d-priority').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
+  var _dtov=r.timerOverride||0;
+  var _dKnown=[86400,259200,604800];
+  if(_dtov&&_dKnown.indexOf(_dtov)===-1){
+    document.getElementById('d-timer-sel').value='custom';
+    document.getElementById('d-timer-custom-wrap').style.display='';
+    document.getElementById('d-timer-hh').value=Math.floor(_dtov/3600);
+    document.getElementById('d-timer-mm').value=Math.floor((_dtov%3600)/60);
+  }else{
+    document.getElementById('d-timer-sel').value=String(_dtov);
+    document.getElementById('d-timer-custom-wrap').style.display='none';
+    document.getElementById('d-timer-hh').value='';
+    document.getElementById('d-timer-mm').value='';
+  }
   document.getElementById('d-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
   document.getElementById('d-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
   document.getElementById('d-comment-text').value='';
@@ -1810,6 +1873,17 @@ function saveDIDRecord(){
   var newStatus=document.getElementById('d-status').value;
   var isDone=DID_DONE_ST.indexOf(newStatus)>-1;
   var today=new Date().toISOString().split('T')[0];
+  // Read timer duration
+  var dTimerSel=document.getElementById('d-timer-sel').value;
+  var dTimerSecs;
+  if(dTimerSel==='custom'){
+    var dhh=parseInt(document.getElementById('d-timer-hh').value)||0;
+    var dmm=parseInt(document.getElementById('d-timer-mm').value)||0;
+    dTimerSecs=(dhh*3600)+(dmm*60);
+    if(dTimerSecs<=0) dTimerSecs=0;
+  }else{
+    dTimerSecs=parseInt(dTimerSel)||0;
+  }
   var rec={
     _type:'did',
     client:client,
@@ -1818,7 +1892,8 @@ function saveDIDRecord(){
     remarks:document.getElementById('d-remarks').value,
     status:newStatus,
     startDate:document.getElementById('d-date').value,
-    priority:document.getElementById('d-priority').value
+    priority:document.getElementById('d-priority').value,
+    timerOverride:dTimerSecs||null
   };
   if(editingDIDId){
     var idx=DATA.findIndex(function(d){return d.id===editingDIDId;});
@@ -1827,13 +1902,23 @@ function saveDIDRecord(){
       if(isDone&&!prev.resolvedDate) rec.resolvedDate=today;
       else if(!isDone) rec.resolvedDate='';
       else rec.resolvedDate=prev.resolvedDate;
-      DATA[idx]=Object.assign({},prev,rec,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
+      // Timer logic for edit: restart if duration changed and >0, stop if 0
+      var timerUpd={};
+      if(dTimerSecs>0&&prev.timerOverride!==dTimerSecs){
+        timerUpd={timerStart:Date.now(),timerAlerted:false};
+      }else if(dTimerSecs<=0){
+        timerUpd={timerStart:null,timerAlerted:false};
+      }
+      DATA[idx]=Object.assign({},prev,rec,timerUpd,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
       saveOne(DATA[idx]);
       writeLog('updated',prev.client||'DID record','Updated DID entry');
     }
     toast('Updated!','success');
   }else{
     if(isDone) rec.resolvedDate=today;
+    // Timer logic for new: start automatically if duration > 0
+    if(dTimerSecs>0){rec.timerStart=Date.now();rec.timerAlerted=false;}
+    else{rec.timerStart=null;rec.timerAlerted=false;}
     var nd=Object.assign({id:idSeq++,_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     // Merge any buffered DID comments
     if(_pendingDIDComments.length){nd.comments=_pendingDIDComments.slice();_pendingDIDComments=[];}
