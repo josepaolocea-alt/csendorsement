@@ -355,7 +355,6 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <th onclick="sortBy('resolvedDate')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('priority')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>
-          <th onclick="sortBy('endorsed')" id="th-endorsed">Endorsed<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th style="width:100px">Actions</th>
         </tr></thead>
         <tbody id="main-tbody"></tbody>
@@ -579,7 +578,6 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           </div>
           <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 01:00 = 1 hour &nbsp;|&nbsp; 00:30 = 30 min</span>
         </div>
-        <div class="fgrp"><label>Endorsed</label><select class="fc" id="f-end"><option value="0">No</option><option value="1">Yes</option></select></div>
       </div>
     </div>
     <div class="modal-body" style="padding-top:0">
@@ -620,9 +618,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div class="fg">
         <div class="fgrp full"><label>Subject *</label><input class="fc" id="rr-subject" placeholder="e.g. ROUTE REQUEST - CID CYN DIDLOGIC - THREE (3) PLDT FCS"></div>
         <div class="fgrp"><label>Priority</label>
-          <select class="fc" id="rr-priority">
+          <select class="fc" id="rr-priority" onchange="onRRPriorityChange()">
             <option value="">— None —</option>
             <option value="Critical">⚡ Critical</option>
+            <option value="Urgent">⚠️ Urgent</option>
           </select>
         </div>
         <div class="fgrp"><label>Effective Date</label><input class="fc" id="rr-eff-date" type="date"></div>
@@ -657,6 +656,22 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <select class="fc" id="rr-inv">
             <option>None</option><option>Not Yet</option><option>Done</option>
           </select>
+        </div>
+        <div class="fgrp"><label>Timer Duration</label>
+          <select class="fc" id="rr-timer-sel" onchange="onRRTimerChange()">
+            <option value="3600">1 Hour</option>
+            <option value="14400">4 Hours</option>
+            <option value="28800" selected>8 Hours</option>
+            <option value="custom">Custom...</option>
+          </select>
+          <div id="rr-timer-custom-wrap" style="display:none;flex-direction:column;gap:5px;margin-top:5px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <input class="fc" id="rr-timer-hh" type="number" min="0" max="9999" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampDIDTimerHH(this)">
+              <span style="font-size:18px;font-weight:700;color:var(--text2)">:</span>
+              <input class="fc" id="rr-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerMM(this)">
+            </div>
+            <span style="font-size:11px;color:var(--text3)">HH:MM — e.g. 01:00 = 1 hour</span>
+          </div>
         </div>
         <div class="fgrp" style="flex-direction:row;align-items:center;gap:10px">
           <input type="checkbox" id="rr-completed" style="accent-color:#4ade80;width:16px;height:16px;cursor:pointer">
@@ -1162,7 +1177,21 @@ function didTimerHTML(r){
   var rem=r.timerStart?calcRem(r):null;
   var isRunning=r.timerStart&&rem!==null;
   var cls='tbadge'+(isRunning?(rem===0?' texp':rem<3600?' twarn':''):'');
-  var ts=isRunning?fmtTimeDID(rem):'00:00';
+  var ts=isRunning?fmtTimeDID(rem):'--:--';
+  var btns='';
+  if(window._canEdit){
+    btns=r.timerStart
+      ?'<button class="btn-icon btn-sm" onclick="resetTmr('+r.id+')" title="Reset">&#8635;</button><button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>'
+      :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
+  }
+  return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'">'+ts+'</span>'+btns+'</div>';
+}
+
+function rrTimerHTML(r){
+  var rem=r.timerStart?calcRem(r):null;
+  var isRunning=r.timerStart&&rem!==null;
+  var cls='tbadge'+(isRunning?(rem===0?' texp':rem<3600?' twarn':''):'');
+  var ts=isRunning?fmtTimeDID(rem):'--:--';
   var btns='';
   if(window._canEdit){
     btns=r.timerStart
@@ -1175,6 +1204,19 @@ function didTimerHTML(r){
 function onDIDTimerChange(){
   var v=document.getElementById('d-timer-sel').value;
   document.getElementById('d-timer-custom-wrap').style.display=v==='custom'?'flex':'none';
+}
+
+function onRRTimerChange(){
+  var v=document.getElementById('rr-timer-sel').value;
+  document.getElementById('rr-timer-custom-wrap').style.display=v==='custom'?'flex':'none';
+}
+
+function onRRPriorityChange(){
+  if(editingRRId!==null) return;
+  var pri=document.getElementById('rr-priority').value;
+  var secs=pri==='Critical'?3600:pri==='Urgent'?14400:28800;
+  document.getElementById('rr-timer-sel').value=secs;
+  document.getElementById('rr-timer-custom-wrap').style.display='none';
 }
 
 // ─── PERSISTENT AUDIO CONTEXT ────────────────────────────────
@@ -1316,8 +1358,9 @@ setInterval(function(){
     }
     var badge=document.getElementById('tb-'+r.id);
     if(badge){
-      badge.textContent=r._type==='did'?fmtTimeDID(rem):fmtTime(rem);
-      badge.className='tbadge'+(rem===0?' texp':(r._type==='did'?rem<3600:rem<300)?' twarn':'');
+      var isHHMM=r._type==='did'||r._type==='rr';
+      badge.textContent=isHHMM?fmtTimeDID(rem):fmtTime(rem);
+      badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'');
     }
   });
   if(changed){DATA.forEach(function(r){if(r.timerAlerted)saveOne(r);});}
@@ -1437,6 +1480,7 @@ function rrBadge(val,type){
   }
   if(type==='roby') return '<span class="badge rr-ro">'+val+'</span>';
   if(val==='Critical') return '<span class="badge rr-notyet">⚡ Critical</span>';
+  if(val==='Urgent') return '<span class="badge rr-yellow">⚠️ Urgent</span>';
   return '<span class="badge rr-gray">'+val+'</span>';
 }
 
@@ -1454,8 +1498,7 @@ var RR_THEAD='<tr>'
   +'<th style="width:130px">Advised Client</th>'
   +'<th style="width:110px">Posted</th>'
   +'<th style="width:120px">Updated Inv.</th>'
-  +'<th style="width:70px;text-align:center">✅</th>'
-  +'<th style="width:70px;text-align:center">🚫</th>'
+  +'<th style="width:160px">Timer</th>'
   +'<th style="width:80px">Actions</th>'
   +'</tr>';
 
@@ -1492,7 +1535,7 @@ function renderRRRows(){
   if(_rrPage<0) _rrPage=0;
   var displayData=filteredData.slice(_rrPage*_rrPageSize,(_rrPage+1)*_rrPageSize);
   renderRRPagination(filteredData.length);
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="16" class="empty">No RR/RO records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="15" class="empty">No RR/RO records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
     var unreadBadge=(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})();
@@ -1510,8 +1553,7 @@ function renderRRRows(){
       +'<td>'+rrBadge(r.rrAdvised||'Not Yet','advised')+'</td>'
       +'<td>'+rrBadge(r.rrPosted||'None','posted')+'</td>'
       +'<td>'+rrBadge(r.rrInv||'None','inv')+'</td>'
-      +'<td style="text-align:center"><input type="checkbox" style="accent-color:#4ade80;width:15px;height:15px;cursor:pointer" '+(r.rrCompleted?'checked':'')+' '+(window._canEdit?'':'disabled')+' onchange="toggleRRField('+r.id+',\'rrCompleted\',this.checked);renderRRRows()"></td>'
-      +'<td style="text-align:center"><input type="checkbox" style="accent-color:#f87171;width:15px;height:15px;cursor:pointer" '+(r.rrDisregard?'checked':'')+' '+(window._canEdit?'':'disabled')+' onchange="toggleRRField('+r.id+',\'rrDisregard\',this.checked);renderRRRows()"></td>'
+      +'<td>'+rrTimerHTML(r)+'</td>'
       +'<td><div class="row-acts">'
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+unreadBadge+'</button>'
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
@@ -1569,6 +1611,8 @@ function openNewRRModal(){
   document.getElementById('rr-inv').value='None';
   document.getElementById('rr-completed').checked=false;
   document.getElementById('rr-disregard').checked=false;
+  document.getElementById('rr-timer-sel').value='28800';
+  document.getElementById('rr-timer-custom-wrap').style.display='none';
   document.getElementById('rr-comment-text').value='';
   _pendingAttachments['rr-attach-pending']=[];
   _pendingRRComments=[];
@@ -1594,6 +1638,17 @@ function openEditRR(id){
   document.getElementById('rr-inv').value=r.rrInv||'None';
   document.getElementById('rr-completed').checked=!!r.rrCompleted;
   document.getElementById('rr-disregard').checked=!!r.rrDisregard;
+  var rrTov=r.timerOverride||28800;
+  var rrKnown=[3600,14400,28800];
+  if(rrKnown.indexOf(rrTov)===-1){
+    document.getElementById('rr-timer-sel').value='custom';
+    document.getElementById('rr-timer-hh').value=Math.floor(rrTov/3600)||0;
+    document.getElementById('rr-timer-mm').value=Math.floor((rrTov%3600)/60)||0;
+    document.getElementById('rr-timer-custom-wrap').style.display='flex';
+  }else{
+    document.getElementById('rr-timer-sel').value=rrTov;
+    document.getElementById('rr-timer-custom-wrap').style.display='none';
+  }
   document.getElementById('rr-comment-text').value='';
   _pendingAttachments['rr-attach-pending']=[];
   renderPendingPreviews('rr-attach-pending');
@@ -1606,6 +1661,15 @@ function closeRRModal(){document.getElementById('rr-modal').classList.add('hidde
 function saveRRRecord(){
   var subject=document.getElementById('rr-subject').value.trim();
   if(!subject){toast('Subject is required','error');return;}
+  var rrTimerSel=document.getElementById('rr-timer-sel').value;
+  var rrTimerSecs;
+  if(rrTimerSel==='custom'){
+    var rrHH=parseInt(document.getElementById('rr-timer-hh').value)||0;
+    var rrMM=parseInt(document.getElementById('rr-timer-mm').value)||0;
+    rrTimerSecs=(rrHH*3600)+(rrMM*60)||28800;
+  }else{
+    rrTimerSecs=parseInt(rrTimerSel)||28800;
+  }
   var rec={
     _type:'rr',
     rrSubject:subject,
@@ -1620,14 +1684,22 @@ function saveRRRecord(){
     rrPosted:document.getElementById('rr-posted').value,
     rrInv:document.getElementById('rr-inv').value,
     rrCompleted:document.getElementById('rr-completed').checked,
-    rrDisregard:document.getElementById('rr-disregard').checked
+    rrDisregard:document.getElementById('rr-disregard').checked,
+    timerOverride:rrTimerSecs
   };
   if(editingRRId){
     var idx=DATA.findIndex(function(d){return d.id===editingRRId;});
-    if(idx>=0){DATA[idx]=Object.assign({},DATA[idx],rec,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});saveOne(DATA[idx]);writeLog('updated',rec.rrSubject||'RR record','Updated RR entry');}
+    if(idx>=0){
+      var prev=DATA[idx];
+      var timerUpdate=prev.timerOverride!==rrTimerSecs
+        ?{timerStart:null,timerAlerted:false}
+        :{timerStart:prev.timerStart||null,timerAlerted:prev.timerAlerted||false};
+      DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
+      saveOne(DATA[idx]);writeLog('updated',rec.rrSubject||'RR record','Updated RR entry');
+    }
     toast('Updated!','success');
   }else{
-    var nr=Object.assign({id:idSeq++,_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    var nr=Object.assign({id:idSeq++,_sel:false,comments:[],timerStart:null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
     writeLog('created',nr.rrSubject||'RR record','Created RR entry');
@@ -1676,7 +1748,7 @@ function renderRows(){
   }else{
     if(pgDiv) pgDiv.innerHTML='';
   }
-  if(!displayData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">No records found</td></tr>';return;}
+  if(!displayData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     if(r._type==='did'){
       return '<tr id="row-'+r.id+'" style="opacity:0.6;cursor:pointer" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
@@ -1690,7 +1762,6 @@ function renderRows(){
         +'<td style="color:#4ade80">'+fmtDate(r.resolvedDate)+'</td>'
         +'<td>'+didPriBadge(r.priority)+'</td>'
         +'<td></td>'
-        +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
         +'<td><div class="row-acts">'
         +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()+'</button>'
         +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
@@ -1710,10 +1781,9 @@ function renderRows(){
       +'<td style="color:'+(r.resolvedDate?'#4ade80':'var(--text3)')+'">'+( r.resolvedDate?fmtDate(r.resolvedDate):'—')+'</td>'
       +'<td>'+priBadge(r.priority)+'</td>'
       +'<td>'+timerHTML(r)+'</td>'
-      +'<td><input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer" '+(r.endorsed?'checked':'')+' onchange="toggleEnd('+r.id+',this)"></td>'
       +'<td><div class="row-acts">'
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
-      +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})() 
+      +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()
       +'</button>'
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
@@ -1760,7 +1830,6 @@ var END_THEAD='<tr>'
   +'<th onclick="sortBy(\'resolvedDate\')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
-  +'<th onclick="sortBy(\'endorsed\')" id="th-endorsed">Endorsed<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th style="width:100px">Actions</th>'
   +'</tr>';
 
@@ -2121,7 +2190,6 @@ function openNewModal(){
   document.getElementById('f-timer-hh').value='1';
   document.getElementById('f-timer-mm').value='0';
   document.getElementById('f-timer-custom-wrap').style.display='';
-  document.getElementById('f-end').value='0';
   document.getElementById('f-comment-text').value='';
   _pendingAttachments['endorse-attach-pending']=[];
   _pendingComments=[];
@@ -2158,7 +2226,6 @@ function openEdit(id){
     document.getElementById('f-timer-mm').value='0';
     document.getElementById('f-timer-custom-wrap').style.display='none';
   }
-  document.getElementById('f-end').value=r.endorsed||0;
   document.getElementById('f-comment-text').value='';
   _pendingAttachments['endorse-attach-pending']=[];
   renderPendingPreviews('endorse-attach-pending');
@@ -2195,8 +2262,7 @@ function saveRecord(){
     status:newStatus,
     priority:document.getElementById('f-pri-f').value,
     startDate:document.getElementById('f-date').value,
-    timerOverride:timerSecs,
-    endorsed:parseInt(document.getElementById('f-end').value)||0
+    timerOverride:timerSecs
   };
   if(editingId){
     try{
@@ -2260,12 +2326,12 @@ function exportCSV(){
 }
 
 function doExportRows(rows,mode){
-  var headers=['Client/Vendor','Service','Concern','Description','Platform','Status','Start Date','Resolved Date','Priority','Endorsed','Comments'];
+  var headers=['Client/Vendor','Service','Concern','Description','Platform','Status','Start Date','Resolved Date','Priority','Comments'];
   var data=[headers.join(',')].concat(rows.map(function(r){
     var commentsTxt=(r.comments||[]).map(function(cm){
       return '['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||'');
     }).join(' | ');
-    return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,r.endorsed?'Yes':'No',commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+    return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
   }));
   var suffix=mode==='selected'?'_selected':'';
   var a=document.createElement('a');
@@ -2645,9 +2711,9 @@ function exportByDateRange(){
     return d&&d>=from&&d<=to;
   });
   if(!range.length){toast('No records found in that date range','info');return;}
-  var headers=['Client/Vendor','Service','Concern','Remarks','Platform','Status','Start Date','Resolved Date','Priority','Endorsed'];
+  var headers=['Client/Vendor','Service','Concern','Remarks','Platform','Status','Start Date','Resolved Date','Priority'];
   var rows=[headers.join(',')].concat(range.map(function(r){
-    return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,r.endorsed?'Yes':'No']
+    return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority]
       .map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
   }));
   var a=document.createElement('a');
@@ -3501,6 +3567,7 @@ window.appConfirm=appConfirm;
 window.applyFilters=applyFilters;
 window.applyRolePermissions=applyRolePermissions;
 window.bulkDelete=bulkDelete;
+window.clampDIDTimerHH=clampDIDTimerHH;
 window.clampTimerHH=clampTimerHH;
 window.clampTimerMM=clampTimerMM;
 window.closeCommentsModal=closeCommentsModal;
@@ -3532,6 +3599,10 @@ window.exportByDateRange=exportByDateRange;
 window.exportCSV=exportCSV;
 window.initResizers=initResizers;
 window.onDIDPriorityChange=onDIDPriorityChange;
+window.onDIDTimerChange=onDIDTimerChange;
+window.onRRPriorityChange=onRRPriorityChange;
+window.onRRTimerChange=onRRTimerChange;
+window.rrTimerHTML=rrTimerHTML;
 window.onDragLeave=onDragLeave;
 window.onDragOver=onDragOver;
 window.onDrop=onDrop;
