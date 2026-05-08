@@ -1699,7 +1699,7 @@ function saveRRRecord(){
     }
     toast('Updated!','success');
   }else{
-    var nr=Object.assign({id:idSeq++,_sel:false,comments:[],timerStart:null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    var nr=Object.assign({id:idSeq++,_sel:false,comments:[],timerStart:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
     writeLog('created',nr.rrSubject||'RR record','Created RR entry');
@@ -2315,7 +2315,6 @@ function exportCSV(){
   var toExport=selected.length>0?selected:null;
 
   if(!toExport){
-    // Nothing selected — ask user what to export
     appConfirm('No rows selected. Export all '+filteredData.length+' visible records?','Export All').then(function(ok){
       if(!ok) return;
       doExportRows(filteredData,'all');
@@ -2326,19 +2325,33 @@ function exportCSV(){
 }
 
 function doExportRows(rows,mode){
-  var headers=['Client/Vendor','Service','Concern','Description','Platform','Status','Start Date','Resolved Date','Priority','Comments'];
-  var data=[headers.join(',')].concat(rows.map(function(r){
-    var commentsTxt=(r.comments||[]).map(function(cm){
-      return '['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||'');
-    }).join(' | ');
-    return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
-  }));
   var suffix=mode==='selected'?'_selected':'';
+  var today=new Date().toISOString().split('T')[0];
+  var isRR=currentTab==='mine';
+  var headers,csvRows;
+  if(isRR){
+    headers=['Subject','Priority','Effective Date','Description','RR Date','RR By','RO By','Status','Advised to Client','Posted','Updated Inventory','Comments'];
+    csvRows=rows.map(function(r){
+      var commentsTxt=(r.comments||[]).map(function(cm){
+        return '['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||'');
+      }).join(' | ');
+      return [r.rrSubject,r.rrPriority||'',r.rrEffDate||'',r.rrRemarks||'',r.rrDate||'',r.rrBy||'',r.roBy||'',r.rrStatus||'',r.rrAdvised||'',r.rrPosted||'',r.rrInv||'',commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+    });
+  }else{
+    headers=['Client/Vendor','Service','Concern','Description','Platform','Status','Start Date','Resolved Date','Priority','Comments'];
+    csvRows=rows.map(function(r){
+      var commentsTxt=(r.comments||[]).map(function(cm){
+        return '['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||'');
+      }).join(' | ');
+      return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+    });
+  }
+  var data=[headers.join(',')].concat(csvRows);
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([data.join('\n')],{type:'text/csv'}));
-  a.download='endorsements'+suffix+'_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.download=(isRR?'pending_rr_ro':'endorsements')+suffix+'_'+today+'.csv';
   a.click();
-  writeLog('exported','Endorsements CSV','Exported '+rows.length+' records ('+(mode==='selected'?'selected':'all visible')+')');
+  writeLog('exported',(isRR?'Pending RR/RO CSV':'Endorsements CSV'),'Exported '+rows.length+' records ('+(mode==='selected'?'selected':'all visible')+')');
   toast('Exported '+rows.length+' record'+(rows.length!==1?'s':''),'success');
 }
 
