@@ -2214,7 +2214,7 @@ function openEdit(id){
   document.getElementById('f-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
   document.getElementById('f-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
   var tov=r.timerOverride||0;
-  var knownVals=[1800,3600,7200];
+  var knownVals=[1800,3600,7200,86400,259200,604800];
   if(tov&&knownVals.indexOf(tov)===-1){
     document.getElementById('f-timer-sel').value='custom';
     document.getElementById('f-timer-hh').value=Math.floor(tov/3600)||0;
