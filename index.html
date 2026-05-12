@@ -198,7 +198,7 @@ textarea.fc{resize:vertical;min-height:70px;}
 .client-tag button:hover{color:#f87171;}
 .client-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
 
-.rr-bm{background:rgba(239,68,68,.15);color:#f87171;}
+.rr-bm{background:var(--bg4);color:var(--text3);}
 .rr-am{background:rgba(234,179,8,.15);color:#fbbf24;}
 .rr-prod{background:rgba(180,120,40,.15);color:#c8924a;}
 .rr-ro{background:rgba(34,197,94,.15);color:#4ade80;}
@@ -742,6 +742,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
               <option>Done</option><option>Cancel by Client</option>
             </optgroup>
           </select>
+        </div>
+        <div class="fgrp"><label>AM</label>
+          <select class="fc" id="d-am"><option value="">— None —</option></select>
         </div>
         <div class="fgrp"><label>Start Date</label><input class="fc" id="d-date" type="date"></div>
         <div class="fgrp" id="d-resolved-wrap"><label>Resolved Date</label><div id="d-resolved-display" style="font-size:13px;color:var(--text3);padding:8px 0;font-family:var(--mono)">—</div></div>
@@ -1816,8 +1819,8 @@ var DID_THEAD='<tr>'
   +'<th onclick="sortBy(\'client\')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'desc\')" id="th-desc">Description<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'status\')" id="th-status">Status<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'am\')" id="th-am">AM<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'startDate\')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
-  +'<th onclick="sortBy(\'resolvedDate\')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'service\')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
@@ -1866,8 +1869,8 @@ function renderDIDRows(){
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
       +'<td title="'+(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+(r.desc||'')+'</td>'
       +'<td>'+didStBadge(r.status)+'</td>'
+      +'<td>'+rrBadge(r.am||'','rrby')+'</td>'
       +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
-      +'<td style="color:'+(r.resolvedDate?'#4ade80':'var(--text3)')+'">'+( r.resolvedDate?fmtDate(r.resolvedDate):'—')+'</td>'
       +'<td>'+didPriBadge(r.priority)+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
       +'<td>'+didTimerHTML(r)+'</td>'
@@ -1902,6 +1905,7 @@ function openNewDIDModal(){
   document.getElementById('d-desc').value='';
   document.getElementById('d-remarks').value='';autoResizeId('d-remarks');
   document.getElementById('d-status').value='Pending AM';
+  document.getElementById('d-am').value='';
   document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('d-priority').value='Normal';
   document.getElementById('d-timer-sel').value='0';
@@ -1928,6 +1932,7 @@ function openEditDID(id){
   document.getElementById('d-desc').value=r.desc||'';
   document.getElementById('d-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('d-remarks');},0);
   document.getElementById('d-status').value=r.status||'Pending AM';
+  document.getElementById('d-am').value=r.am||'';
   document.getElementById('d-date').value=r.startDate||'';
   document.getElementById('d-priority').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
   var _dtov=r.timerOverride||0;
@@ -1982,6 +1987,7 @@ function saveDIDRecord(){
     desc:document.getElementById('d-desc').value,
     remarks:document.getElementById('d-remarks').value,
     status:newStatus,
+    am:document.getElementById('d-am').value,
     startDate:document.getElementById('d-date').value,
     priority:document.getElementById('d-priority').value,
     timerOverride:dTimerSecs||null
@@ -3001,15 +3007,16 @@ function applyDropdownsToForms(){
     if(curStf) fstf.value=curStf;
     else fstf.value=ipItems[0]||'';
   }
-  // AM dropdown (endorsement modal) — uses rr_by options from Admin Panel
+  // AM dropdowns (endorsement + DID modals) — uses rr_by options from Admin Panel
   var amItems=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
-  var amEl=document.getElementById('f-am');
-  if(amEl){
+  ['f-am','d-am'].forEach(function(id){
+    var amEl=document.getElementById(id);
+    if(!amEl)return;
     var curAm=amEl.value;
     amEl.innerHTML='<option value="">— None —</option>'
       +amItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(curAm) amEl.value=curAm;
-  }
+  });
   // RR by dropdown
   var rrByItems=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
   var rrByEl=document.getElementById('rr-by');
