@@ -351,8 +351,8 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <th onclick="sortBy('concern')" id="th-concern">Concern<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('platform')" id="th-platform">Platform<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('status')" id="th-status">Status<div class="col-rz" onclick="event.stopPropagation()"></div></th>
+          <th onclick="sortBy('am')" id="th-am">AM<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('startDate')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>
-          <th onclick="sortBy('resolvedDate')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('priority')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th style="width:100px">Actions</th>
@@ -552,6 +552,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
               <option>Done</option><option>Commercial Concern</option><option>Resolved</option><option>Posted</option>
             </optgroup>
           </select>
+        </div>
+        <div class="fgrp"><label>AM</label>
+          <select class="fc" id="f-am"><option value="">— None —</option></select>
         </div>
         <div class="fgrp"><label>Priority</label>
           <select class="fc" id="f-pri-f" onchange="onPriorityChange()"><option>High</option><option selected>Normal</option></select>
@@ -1735,7 +1738,7 @@ function goDonePage(p){_donePage=p;renderRows();}
 function changeDonePageSize(v){_donePageSize=parseInt(v,10);_donePage=0;renderRows();}
 
 function renderRows(){
-  document.getElementById('main-thead').innerHTML=END_THEAD;
+  document.getElementById('main-thead').innerHTML=currentTab==='done'?DONE_THEAD:ALL_THEAD;
   var tbody=document.getElementById('main-tbody');
   var pgDiv=document.getElementById('main-pagination');
   var displayData=filteredData;
@@ -1777,8 +1780,11 @@ function renderRows(){
       +'<td title="'+(r.concern||'')+'" style="max-width:260px;color:var(--text2)">'+(r.concern||'')+'</td>'
       +'<td>'+pltBadge(r.platform)+'</td>'
       +'<td>'+stBadge(r.status)+'</td>'
-      +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
-      +'<td style="color:'+(r.resolvedDate?'#4ade80':'var(--text3)')+'">'+( r.resolvedDate?fmtDate(r.resolvedDate):'—')+'</td>'
+      +(currentTab==='done'
+        ?'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
+         +'<td style="color:'+(r.resolvedDate?'#4ade80':'var(--text3)')+'">'+( r.resolvedDate?fmtDate(r.resolvedDate):'—')+'</td>'
+        :'<td>'+rrBadge(r.am||'','rrby')+'</td>'
+         +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>')
       +'<td>'+priBadge(r.priority)+'</td>'
       +'<td>'+timerHTML(r)+'</td>'
       +'<td><div class="row-acts">'
@@ -1818,7 +1824,22 @@ var DID_THEAD='<tr>'
   +'<th style="width:100px">Actions</th>'
   +'</tr>';
 
-var END_THEAD='<tr>'
+var ALL_THEAD='<tr>'
+  +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
+  +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
+  +'<th onclick="sortBy(\'client\')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'service\')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'concern\')" id="th-concern">Concern<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'platform\')" id="th-platform">Platform<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'status\')" id="th-status">Status<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'am\')" id="th-am">AM<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'startDate\')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th style="width:100px">Actions</th>'
+  +'</tr>';
+
+var DONE_THEAD='<tr>'
   +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
   +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
   +'<th onclick="sortBy(\'client\')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
@@ -2181,6 +2202,7 @@ function openNewModal(){
   document.getElementById('f-remarks').value='';autoResizeId('f-remarks');
   document.getElementById('f-plt-f').value='';
   document.getElementById('f-st-f').value='Pending at CS';
+  document.getElementById('f-am').value='';
   document.getElementById('f-pri-f').value='Normal';
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('f-resolved-display').textContent='—';
@@ -2209,6 +2231,7 @@ function openEdit(id){
   document.getElementById('f-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('f-remarks');},0);
   document.getElementById('f-plt-f').value=r.platform||'';
   document.getElementById('f-st-f').value=r.status||'Pending at CS';
+  document.getElementById('f-am').value=r.am||'';
   document.getElementById('f-pri-f').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
   document.getElementById('f-date').value=r.startDate||'';
   document.getElementById('f-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
@@ -2260,6 +2283,7 @@ function saveRecord(){
     remarks:document.getElementById('f-remarks').value,
     platform:document.getElementById('f-plt-f').value,
     status:newStatus,
+    am:document.getElementById('f-am').value,
     priority:document.getElementById('f-pri-f').value,
     startDate:document.getElementById('f-date').value,
     timerOverride:timerSecs
@@ -2976,6 +3000,15 @@ function applyDropdownsToForms(){
       +'<optgroup label="Completed">'+doneItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>';
     if(curStf) fstf.value=curStf;
     else fstf.value=ipItems[0]||'';
+  }
+  // AM dropdown (endorsement modal) — uses rr_by options from Admin Panel
+  var amItems=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
+  var amEl=document.getElementById('f-am');
+  if(amEl){
+    var curAm=amEl.value;
+    amEl.innerHTML='<option value="">— None —</option>'
+      +amItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
+    if(curAm) amEl.value=curAm;
   }
   // RR by dropdown
   var rrByItems=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
