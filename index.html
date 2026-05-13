@@ -50,6 +50,10 @@ body{font-family:var(--sf);background:var(--bg);color:var(--text);font-size:13.5
 .search-wrap input::placeholder{color:var(--text3);}
 .kbd{display:inline-flex;align-items:center;padding:1px 5px;background:var(--bg4);border:1px solid var(--border2);border-radius:4px;font-size:10px;color:var(--text3);font-family:var(--mono);}
 .fsel{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-family:var(--sf);font-size:13px;outline:none;cursor:pointer;}
+select.fsel,select.fc{-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text3) 50%),linear-gradient(135deg,var(--text3) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px;}
+select.fsel{background-color:var(--bg2);}
+select.fsel:hover,select.fc:hover{border-color:var(--border2);}
+select::-ms-expand{display:none;}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
 .table-scroll{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -102,12 +106,25 @@ tr.row-done td{opacity:.5;}
 .modal-cls:hover{background:var(--bg3);}
 .modal-body{padding:18px 20px;}
 .modal-ftr{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--bg2);}
+.entry-modal{max-width:min(1120px,96vw);height:min(90vh,820px);overflow:hidden;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr);grid-template-rows:auto minmax(0,1fr) auto;}
+.entry-modal .modal-hdr{grid-column:1/-1;position:relative;top:auto;}
+.entry-details{grid-column:1;grid-row:2;overflow:auto;}
+.entry-comments{grid-column:2;grid-row:2;overflow:hidden;padding:0;border-left:1px solid var(--border);background:var(--bg2);}
+.entry-modal .modal-ftr{grid-column:1/-1;position:relative;bottom:auto;z-index:2;}
+.entry-comments .comments-section{height:100%;margin:0;padding:0;border-top:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;}
+.entry-comments .comments-section h4{margin:0;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.entry-comments .comment-list{min-height:0;overflow:auto;margin:0;padding:14px 16px;}
+.entry-comments .comment-new{margin:0;padding:14px 16px;background:var(--bg2);border-top:1px solid var(--border);}
+.entry-comments .attach-zone{padding:10px;}
+.entry-comments textarea.fc{min-height:64px!important;max-height:150px;}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .fgrp{display:flex;flex-direction:column;gap:5px;}
 .fgrp.full{grid-column:1/-1;}
 .fgrp label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
 .fc{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:8px;font-family:var(--sf);font-size:13px;outline:none;transition:.15s;width:100%;}
-.fc:focus{border-color:var(--accent);background:var(--bg2);}
+.fc:focus{border-color:var(--accent);background-color:var(--bg2);}
+select.fc{background-color:var(--bg3);}
+select.fc:focus{background-color:var(--bg2);}
 textarea.fc{resize:vertical;min-height:70px;}
 .toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
 .toast{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 15px;font-size:13px;display:flex;align-items:center;gap:9px;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:toastIn .2s ease;min-width:210px;max-width:min(460px,calc(100vw - 40px));}
@@ -230,6 +247,14 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}
+}
+@media (max-width:920px){
+  .entry-modal{display:block;height:auto;max-height:90vh;overflow-y:auto;max-width:min(700px,96vw);}
+  .entry-details{overflow:visible;}
+  .entry-comments{border-left:0;border-top:1px solid var(--border);overflow:visible;}
+  .entry-comments .comments-section{display:flex;flex-direction:column;max-height:58vh;}
+  .entry-comments .comment-list{max-height:32vh;}
+  .entry-modal .modal-ftr{position:sticky;bottom:0;}
 }
 
 </style>
@@ -545,9 +570,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   </div>
 </div>
 <div class="modal-ov hidden" id="record-modal">
-  <div class="modal">
+  <div class="modal entry-modal">
     <div class="modal-hdr"><h3 id="modal-title">New Endorsement</h3><button class="modal-cls" onclick="closeModal()">x</button></div>
-    <div class="modal-body">
+    <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
           <select class="fc" id="f-client-sel" onchange="syncClientInput('f-client-sel','f-client')">
@@ -603,7 +628,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
       </div>
     </div>
-    <div class="modal-body" style="padding-top:0">
+    <div class="modal-body entry-comments">
       <div class="comments-section">
         <h4>💬 Comments <span class="comment-badge" id="modal-comment-count">0</span></h4>
         <div class="comment-list" id="modal-comment-list"></div>
@@ -635,9 +660,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 
 <!-- RR / RO MODAL -->
 <div class="modal-ov hidden" id="rr-modal">
-  <div class="modal" style="max-width:760px">
+  <div class="modal entry-modal">
     <div class="modal-hdr"><h3 id="rr-modal-title">New RR / RO Entry</h3><button class="modal-cls" onclick="closeRRModal()">x</button></div>
-    <div class="modal-body">
+    <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp full"><label>Subject *</label><input class="fc" id="rr-subject" placeholder="e.g. ROUTE REQUEST - CID CYN DIDLOGIC - THREE (3) PLDT FCS"></div>
         <div class="fgrp"><label>Priority</label>
@@ -706,7 +731,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
       </div>
     </div>
-    <div class="modal-body" style="padding-top:0">
+    <div class="modal-body entry-comments">
       <div class="comments-section">
         <h4>💬 Comments <span class="comment-badge" id="rr-modal-comment-count">0</span></h4>
         <div class="comment-list" id="rr-modal-comment-list"></div>
@@ -738,9 +763,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 
 <!-- DID ORDER MODAL -->
 <div class="modal-ov hidden" id="did-modal">
-  <div class="modal">
+  <div class="modal entry-modal">
     <div class="modal-hdr"><h3 id="did-modal-title">New DID Order / Cancel</h3><button class="modal-cls" onclick="closeDIDModal()">x</button></div>
-    <div class="modal-body">
+    <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
           <select class="fc" id="d-client-sel" onchange="syncClientInput('d-client-sel','d-client')">
@@ -791,7 +816,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
       </div>
     </div>
-    <div class="modal-body" style="padding-top:0">
+    <div class="modal-body entry-comments">
       <div class="comments-section">
         <h4>💬 Comments <span class="comment-badge" id="did-modal-comment-count">0</span></h4>
         <div class="comment-list" id="did-modal-comment-list"></div>
