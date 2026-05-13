@@ -89,7 +89,7 @@ tr.row-done td{opacity:.5;}
 .pri-med{background:rgba(156,163,175,.15);color:#9ca3af;}
 .pri-low{background:rgba(156,163,175,.15);color:#9ca3af;}
 .timer-cell{display:flex;align-items:center;gap:5px;}
-.tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:56px;text-align:center;}
+.tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:70px;text-align:center;}
 .tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
 @keyframes timerPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.18)}50%{box-shadow:0 0 0 4px rgba(248,113,113,.08)}}
@@ -1194,7 +1194,12 @@ function fmtDate(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toL
 
 function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.defaultTimer;}
 function calcRem(r){if(!r.timerStart)return null;var elapsed=Math.floor((Date.now()-r.timerStart)/1000);return Math.max(0,getTimerSecs(r)-elapsed);}
-function fmtTime(s){if(s===null)return '--:--';var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;if(h>0)return h+':'+pad(m)+':'+pad(sc);return pad(m)+':'+pad(sc);}
+function fmtTime(s){
+  if(s===null||s===undefined)return '--:--';
+  var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;
+  if(h>0)return pad(h)+':'+pad(m)+':'+pad(sc);
+  return pad(m)+':'+pad(sc);
+}
 function pad(n){return n<10?'0'+n:String(n);}
 
 function timerHTML(r){
@@ -1218,17 +1223,13 @@ function clampTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;i
 function clampTimerMM(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>59)el.value=59;}
 function clampDIDTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;}
 
-function fmtTimeDID(s){
-  if(s===null||s===undefined)return '00:00';
-  var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
-  return pad(h)+':'+pad(m);
-}
+function fmtTimeDID(s){return fmtTime(s);}
 
 function didTimerHTML(r){
   var rem=r.timerStart?calcRem(r):null;
   var isRunning=r.timerStart&&rem!==null;
   var cls='tbadge'+(isRunning?(rem===0?' texp':rem<3600?' twarn':''):'');
-  var ts=isRunning?fmtTimeDID(rem):'--:--';
+  var ts=isRunning?fmtTime(rem):'--:--';
   var btns='';
   if(window._canEdit){
     btns=r.timerStart
@@ -1242,7 +1243,7 @@ function rrTimerHTML(r){
   var rem=r.timerStart?calcRem(r):null;
   var isRunning=r.timerStart&&rem!==null;
   var cls='tbadge'+(isRunning?(rem===0?' texp':rem<3600?' twarn':''):'');
-  var ts=isRunning?fmtTimeDID(rem):'--:--';
+  var ts=isRunning?fmtTime(rem):'--:--';
   var btns='';
   if(window._canEdit){
     btns=r.timerStart
@@ -1426,7 +1427,7 @@ setInterval(function(){
     var badge=document.getElementById('tb-'+r.id);
     if(badge){
       var isHHMM=r._type==='did'||r._type==='rr';
-      badge.textContent=isHHMM?fmtTimeDID(rem):fmtTime(rem);
+      badge.textContent=fmtTime(rem);
       badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'');
     }
   });
