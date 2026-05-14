@@ -2239,7 +2239,17 @@ function bulkDelete(){
   if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
   var sel=DATA.filter(function(r){return r._sel;});
   if(!sel.length)return;
-  softDelete(sel);
+  appConfirm('Delete '+sel.length+' selected record'+(sel.length!==1?'s':'')+'? You can still undo for 5 seconds after deleting.','Delete').then(function(ok){
+    if(!ok)return;
+    softDelete(sel);
+  });
+}
+
+function deleteRecordLabel(r){
+  if(!r)return 'this record';
+  if(r._type==='rr')return r.rrSubject||'this RR / RO record';
+  if(r._type==='did')return r.client?('DID record for '+r.client):'this DID record';
+  return r.client?('record for '+r.client):'this record';
 }
 
 function softDelete(deleted){
@@ -2452,7 +2462,10 @@ function delRec(id){
   if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
   var dr=DATA.find(function(r){return r.id===id;});
   if(!dr) return;
-  softDelete([dr]);
+  appConfirm('Delete '+deleteRecordLabel(dr)+'? You can still undo for 5 seconds after deleting.','Delete').then(function(ok){
+    if(!ok)return;
+    softDelete([dr]);
+  });
 }
 
 function exportCSV(){
@@ -3698,7 +3711,7 @@ function deleteComment(btn){
   var ts=parseInt(btn.dataset.ts);
   var source=btn.dataset.src;
   var recordId=btn.dataset.rid;
-  appConfirm('Delete this comment?','Delete').then(function(ok){
+  appConfirm('Delete this comment? This cannot be undone.','Delete').then(function(ok){
     if(!ok) return;
     var r=DATA.find(function(d){return d.id===parseInt(recordId);});
     if(!r||!r.comments) return;
