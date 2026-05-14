@@ -620,9 +620,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp" id="f-timer-custom-wrap" style="display:none">
           <label>Custom Duration (HH:MM)</label>
           <div style="display:flex;align-items:center;gap:6px">
-            <input class="fc" id="f-timer-hh" type="number" min="0" max="23" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerHH(this)">
+            <input class="fc" id="f-timer-hh" type="number" min="0" max="23" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="markEndorsementTimerDirty();clampTimerHH(this)">
             <span style="font-size:18px;font-weight:700;color:var(--text2)">:</span>
-            <input class="fc" id="f-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerMM(this)">
+            <input class="fc" id="f-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="markEndorsementTimerDirty();clampTimerMM(this)">
           </div>
           <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 01:00 = 1 hour &nbsp;|&nbsp; 00:30 = 30 min</span>
         </div>
@@ -714,9 +714,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           </select>
           <div id="rr-timer-custom-wrap" style="display:none;flex-direction:column;gap:5px;margin-top:5px">
             <div style="display:flex;align-items:center;gap:6px">
-              <input class="fc" id="rr-timer-hh" type="number" min="0" max="9999" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampDIDTimerHH(this)">
+              <input class="fc" id="rr-timer-hh" type="number" min="0" max="9999" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="markRRTimerDirty();clampDIDTimerHH(this)">
               <span style="font-size:18px;font-weight:700;color:var(--text2)">:</span>
-              <input class="fc" id="rr-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerMM(this)">
+              <input class="fc" id="rr-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="markRRTimerDirty();clampTimerMM(this)">
             </div>
             <span style="font-size:11px;color:var(--text3)">HH:MM — e.g. 01:00 = 1 hour</span>
           </div>
@@ -807,9 +807,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <div id="d-timer-custom-wrap" style="display:none;flex-direction:column;gap:5px">
             <label>Custom Duration (HH:MM)</label>
             <div style="display:flex;align-items:center;gap:6px">
-              <input class="fc" id="d-timer-hh" type="number" min="0" max="9999" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampDIDTimerHH(this)">
+              <input class="fc" id="d-timer-hh" type="number" min="0" max="9999" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="markDIDTimerDirty();clampDIDTimerHH(this)">
               <span style="font-size:18px;font-weight:700;color:var(--text2)">:</span>
-              <input class="fc" id="d-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="clampTimerMM(this)">
+              <input class="fc" id="d-timer-mm" type="number" min="0" max="59" placeholder="00" style="width:70px;text-align:center;font-size:16px;font-family:var(--mono)" oninput="markDIDTimerDirty();clampTimerMM(this)">
             </div>
             <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 24:00 = 1 day &nbsp;|&nbsp; 72:00 = 3 days</span>
           </div>
@@ -939,6 +939,7 @@ var DATA = [];
 var idSeq = 1;
 var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep'};
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
+var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
 var _cellStart = null, _dragging = false, _selCells = new Set();
 var _confirmResolve = null;
 var _fbReady = false;
@@ -1219,6 +1220,10 @@ function startTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){ret
 function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);}
 function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;saveOne(r);applyFilters();}
 
+function markEndorsementTimerDirty(){if(editingId!==null)_endorsementTimerDirty=true;}
+function markDIDTimerDirty(){if(editingDIDId!==null)_didTimerDirty=true;}
+function markRRTimerDirty(){if(editingRRId!==null)_rrTimerDirty=true;}
+
 function clampTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>23)el.value=23;}
 function clampTimerMM(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>59)el.value=59;}
 function clampDIDTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;}
@@ -1254,11 +1259,13 @@ function rrTimerHTML(r){
 }
 
 function onDIDTimerChange(){
+  markDIDTimerDirty();
   var v=document.getElementById('d-timer-sel').value;
   document.getElementById('d-timer-custom-wrap').style.display=v==='custom'?'flex':'none';
 }
 
 function onRRTimerChange(){
+  markRRTimerDirty();
   var v=document.getElementById('rr-timer-sel').value;
   document.getElementById('rr-timer-custom-wrap').style.display=v==='custom'?'flex':'none';
 }
@@ -1665,6 +1672,7 @@ function applyRRFilters(){
 var editingRRId=null;
 function openNewRRModal(){
   editingRRId=null;
+  _rrTimerDirty=false;
   var today=new Date().toISOString().split('T')[0];
   document.getElementById('rr-modal-title').textContent='New RR / RO Entry';
   document.getElementById('rr-subject').value='';
@@ -1692,6 +1700,7 @@ function openNewRRModal(){
 }
 function openEditRR(id){
   editingRRId=id;
+  _rrTimerDirty=false;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   document.getElementById('rr-modal-title').textContent='Edit RR / RO Entry';
   document.getElementById('rr-subject').value=r.rrSubject||'';
@@ -1726,7 +1735,7 @@ function openEditRR(id){
   setModalMeta('rr-modal',r);
   document.getElementById('rr-modal').classList.remove('hidden');
 }
-function closeRRModal(){document.getElementById('rr-modal').classList.add('hidden');editingRRId=null;_pendingRRComments=[];}
+function closeRRModal(){document.getElementById('rr-modal').classList.add('hidden');editingRRId=null;_rrTimerDirty=false;_pendingRRComments=[];}
 function saveRRRecord(){
   var subject=document.getElementById('rr-subject').value.trim();
   if(!subject){toast('Subject is required','error');return;}
@@ -1735,7 +1744,8 @@ function saveRRRecord(){
   if(rrTimerSel==='custom'){
     var rrHH=parseInt(document.getElementById('rr-timer-hh').value)||0;
     var rrMM=parseInt(document.getElementById('rr-timer-mm').value)||0;
-    rrTimerSecs=(rrHH*3600)+(rrMM*60)||28800;
+    rrTimerSecs=(rrHH*3600)+(rrMM*60);
+    if(rrTimerSecs<=0) rrTimerSecs=null;
   }else{
     rrTimerSecs=parseInt(rrTimerSel)||28800;
   }
@@ -1760,15 +1770,24 @@ function saveRRRecord(){
     var idx=DATA.findIndex(function(d){return d.id===editingRRId;});
     if(idx>=0){
       var prev=DATA[idx];
-      var timerUpdate=prev.timerOverride!==rrTimerSecs
-        ?{timerStart:null,timerAlerted:false}
-        :{timerStart:prev.timerStart||null,timerAlerted:prev.timerAlerted||false};
+      var timerChanged=_rrTimerDirty;
+      var timerUpdate;
+      if(timerChanged&&rrTimerSecs){
+        rec.timerOverride=rrTimerSecs;
+        timerUpdate={timerStart:Date.now(),timerAlerted:false};
+      }else if(timerChanged&&!rrTimerSecs){
+        rec.timerOverride=null;
+        timerUpdate={timerStart:null,timerAlerted:false};
+      }else{
+        rec.timerOverride=prev.timerOverride||null;
+        timerUpdate={timerStart:prev.timerStart||null,timerAlerted:prev.timerAlerted||false};
+      }
       DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
       saveOne(DATA[idx]);writeLog('updated',rec.rrSubject||'RR record','Updated RR entry');
     }
     toast('Updated!','success');
   }else{
-    var nr=Object.assign({id:idSeq++,_sel:false,comments:[],timerStart:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    var nr=Object.assign({id:idSeq++,_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
     writeLog('created',nr.rrSubject||'RR record','Created RR entry');
@@ -1962,6 +1981,7 @@ function updateDIDStats(){
 var editingDIDId=null;
 function openNewDIDModal(){
   editingDIDId=null;
+  _didTimerDirty=false;
   document.getElementById('did-modal-title').textContent='New DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs){dcs.value='';}document.getElementById('d-client').value='';
   document.getElementById('d-svc').value='VOIP';
@@ -1988,6 +2008,7 @@ function openNewDIDModal(){
 
 function openEditDID(id){
   editingDIDId=id;
+  _didTimerDirty=false;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   document.getElementById('did-modal-title').textContent='Edit DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){setClientDropdown('d-client-sel','d-client',r.client||'');}else{document.getElementById('d-client').value=r.client||'';}
@@ -2022,7 +2043,7 @@ function openEditDID(id){
   document.getElementById('did-modal').classList.remove('hidden');
 }
 
-function closeDIDModal(){if(_skipModalClose)return;document.getElementById('did-modal').classList.add('hidden');editingDIDId=null;_pendingDIDComments=[];}
+function closeDIDModal(){if(_skipModalClose)return;document.getElementById('did-modal').classList.add('hidden');editingDIDId=null;_didTimerDirty=false;_pendingDIDComments=[];}
 
 function onDIDPriorityChange(){}
 
@@ -2062,12 +2083,17 @@ function saveDIDRecord(){
       if(isDone&&!prev.resolvedDate) rec.resolvedDate=today;
       else if(!isDone) rec.resolvedDate='';
       else rec.resolvedDate=prev.resolvedDate;
-      // Timer logic for edit: restart if duration changed and >0, stop if 0
+      var timerChanged=_didTimerDirty;
       var timerUpd={};
-      if(dTimerSecs>0&&prev.timerOverride!==dTimerSecs){
+      if(timerChanged&&dTimerSecs>0){
+        rec.timerOverride=dTimerSecs;
         timerUpd={timerStart:Date.now(),timerAlerted:false};
-      }else if(dTimerSecs<=0){
+      }else if(timerChanged&&dTimerSecs<=0){
+        rec.timerOverride=null;
         timerUpd={timerStart:null,timerAlerted:false};
+      }else{
+        rec.timerOverride=prev.timerOverride||null;
+        timerUpd={timerStart:prev.timerStart||null,timerAlerted:prev.timerAlerted||false};
       }
       DATA[idx]=Object.assign({},prev,rec,timerUpd,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
       saveOne(DATA[idx]);
@@ -2284,6 +2310,7 @@ function toggleAutoPanel(){
 
 function openNewModal(){
   editingId=null;
+  _endorsementTimerDirty=false;
   document.getElementById('modal-title').textContent='New Endorsement';
   var fcs=document.getElementById('f-client-sel');if(fcs){fcs.value='';}document.getElementById('f-client').value='';
   document.getElementById('f-svc-f').value='VOIP';
@@ -2311,6 +2338,7 @@ function openNewModal(){
 }
 function openEdit(id){
   editingId=id;
+  _endorsementTimerDirty=false;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   document.getElementById('modal-title').textContent='Edit Endorsement';
   // Set client dropdown — add the current client as an option if not in list
@@ -2346,7 +2374,7 @@ function openEdit(id){
   markRead(id);renderRows();
   document.getElementById('record-modal').classList.remove('hidden');
 }
-function closeModal(){if(_skipModalClose)return;document.getElementById('record-modal').classList.add('hidden');editingId=null;_pendingComments=[];}
+function closeModal(){if(_skipModalClose)return;document.getElementById('record-modal').classList.add('hidden');editingId=null;_endorsementTimerDirty=false;_pendingComments=[];}
 
 function saveRecord(){
   var sel=document.getElementById('f-client-sel');var client=(sel&&sel.style.display!=='none'?sel.value:document.getElementById('f-client').value).trim().toUpperCase();
@@ -2385,15 +2413,19 @@ function saveRecord(){
         if(isCompleted&&!prev.resolvedDate) rec.resolvedDate=today;
         else if(!isCompleted) rec.resolvedDate='';
         else rec.resolvedDate=prev.resolvedDate;
+        var timerChanged=_endorsementTimerDirty;
         var timerUpdate;
-        if(noTimer){
-          // Completed status or 0:0 duration — stop timer
+        if(NO_TIMER_ST.indexOf(newStatus)>-1){
+          rec.timerOverride=timerChanged?timerSecs:(prev.timerOverride||null);
           timerUpdate={timerStart:null,timerAlerted:false};
-        }else if(timerSecs&&prev.timerOverride!==timerSecs){
-          // Timer duration changed (including from null/unset to a value) — restart
+        }else if(timerChanged&&timerSecs){
+          rec.timerOverride=timerSecs;
           timerUpdate={timerStart:Date.now(),timerAlerted:false};
+        }else if(timerChanged&&!timerSecs){
+          rec.timerOverride=null;
+          timerUpdate={timerStart:null,timerAlerted:false};
         }else{
-          // Keep existing timer state exactly as-is (running or stopped)
+          rec.timerOverride=prev.timerOverride||null;
           timerUpdate={timerStart:prev.timerStart||null,timerAlerted:prev.timerAlerted||false};
         }
         DATA[idx]=Object.assign({},prev,rec,timerUpdate,{updatedBy:_currentUser?_currentUser.email:'',updatedAt:Date.now()});
@@ -2518,11 +2550,13 @@ function toggleSearchClear(){
 }
 
 function onModalTimerChange(){
+  markEndorsementTimerDirty();
   var v=document.getElementById('f-timer-sel').value;
   document.getElementById('f-timer-custom-wrap').style.display=v==='custom'?'':'none';
 }
 
 function onPriorityChange(){
+  if(editingId!==null) return;
   var pri=document.getElementById('f-pri-f').value;
   var timerSel=document.getElementById('f-timer-sel');
   var customWrap=document.getElementById('f-timer-custom-wrap');
@@ -3739,6 +3773,9 @@ window.uploadClientCSV=uploadClientCSV;
 window.exportByDateRange=exportByDateRange;
 window.exportCSV=exportCSV;
 window.initResizers=initResizers;
+window.markDIDTimerDirty=markDIDTimerDirty;
+window.markEndorsementTimerDirty=markEndorsementTimerDirty;
+window.markRRTimerDirty=markRRTimerDirty;
 window.onDIDPriorityChange=onDIDPriorityChange;
 window.onDIDTimerChange=onDIDTimerChange;
 window.onRRPriorityChange=onRRPriorityChange;
