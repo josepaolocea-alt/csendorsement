@@ -1475,6 +1475,21 @@ function timerAlertSummary(r){
   var detail=timerAlertDetail(r);
   return detail&&detail!==name?name+' - '+detail:name;
 }
+function searchValue(){
+  var el=document.getElementById('search-input');
+  return (el&&el.value?el.value:'').trim().toLowerCase();
+}
+function recordSearchText(r){
+  if(!r)return '';
+  return [
+    r.client,r.service,r.concern,r.remarks,r.platform,r.status,r.priority,r.am,r.startDate,r.resolvedDate,
+    r.desc,
+    r.rrSubject,r.rrRemarks,r.rrPriority,r.rrEffDate,r.rrDate,r.rrBy,r.roBy,r.rrStatus,r.rrAdvised,r.rrPosted,r.rrInv
+  ].join(' ').toLowerCase();
+}
+function matchesSearch(r,q){
+  return !q||recordSearchText(r).indexOf(q)>-1;
+}
 
 setInterval(function(){
   var changed=false;
@@ -1557,26 +1572,29 @@ window.closeTimerAlert=closeTimerAlert;
 function applyFilters(){
   if(currentTab==='did'){applyDIDFilters();return;}
   if(currentTab==='mine'){applyRRFilters();return;}
-  var q=document.getElementById('search-input').value.toLowerCase();
+  var q=searchValue();
   var fs=document.getElementById('f-svc').value;
   var fst=document.getElementById('f-st').value;
   var fp=document.getElementById('f-pri').value;
   var fpl=document.getElementById('f-plt').value;
   var IN_PROGRESS_ST=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client'];
   var COMPLETED_ST=DONE_ST.slice();
-  var filteringByStatus=fst&&fst!=='';
   filteredData=DATA.filter(function(r){
     if(r._type==='did'){
-      if(currentTab==='done') return DID_DONE_ST.indexOf(r.status)>-1;
-      return false;
+      if(currentTab!=='done') return false;
+      var didDone=DID_DONE_ST.indexOf(r.status)>-1;
+      var didStatusMatch=!fst||(
+        fst==='__completed__'?didDone:
+        fst==='__inprogress__'?false:
+        r.status===fst
+      );
+      return didDone&&matchesSearch(r,q)&&didStatusMatch&&(!fs||r.service===fs)&&(!fp||r.priority===fp)&&(!fpl||false);
     }
     if(r._type==='rr') return false; // RR only in mine tab
     var isDone=DONE_ST.indexOf(r.status)>-1;
-    if(!filteringByStatus){
-      if(currentTab==='done'&&!isDone)return false;
-      if(currentTab==='all'&&isDone)return false;
-    }
-    var mq=!q||[r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
+    if(currentTab==='done'&&!isDone)return false;
+    if(currentTab==='all'&&isDone)return false;
+    var mq=matchesSearch(r,q);
     var stMatch=!fst||(
       fst==='__inprogress__'?IN_PROGRESS_ST.indexOf(r.status)>-1:
       fst==='__completed__'?COMPLETED_ST.indexOf(r.status)>-1:
@@ -1598,12 +1616,12 @@ function applyFilters(){
 }
 
 function applyDIDFilters(){
-  var q=document.getElementById('search-input').value.toLowerCase();
+  var q=searchValue();
   filteredData=DATA.filter(function(r){
     if(r._type!=='did')return false;
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     if(isDone)return false;
-    return !q||[r.client,r.service,r.desc,r.remarks||'',r.status,r.priority].join(' ').toLowerCase().indexOf(q)>-1;
+    return matchesSearch(r,q);
   });
   // Sort by startDate descending, createdAt as tiebreaker
   filteredData.sort(function(a,b){
@@ -1748,10 +1766,10 @@ function updateRRStats(){
 }
 
 function applyRRFilters(){
-  var q=document.getElementById('search-input').value.toLowerCase();
+  var q=searchValue();
   filteredData=DATA.filter(function(r){
     if(r._type!=='rr')return false;
-    return !q||[r.rrSubject,r.rrRemarks,r.rrBy,r.roBy,r.rrStatus].join(' ').toLowerCase().indexOf(q)>-1;
+    return matchesSearch(r,q);
   });
   // Sort by rrDate descending, then createdAt descending as tiebreaker
   filteredData.sort(function(a,b){
