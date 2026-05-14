@@ -332,7 +332,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="auto-alert" onchange="saveSettings()" style="accent-color:var(--accent)"> Enable
       </label>
-      <span class="auto-label" style="margin-left:8px">Alarm tone:</span>
+      <span class="auto-label" style="margin-left:8px">Timer alarm:</span>
       <select class="fsel" id="alarm-tone" onchange="saveSettings()">
         <option value="beep">🔔 Classic Beep</option>
         <option value="siren">🚨 Siren</option>
@@ -342,6 +342,16 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="ding">✨ Ding Ding</option>
       </select>
       <button class="btn btn-secondary btn-sm" onclick="testAlert()">Test</button>
+      <span class="auto-label" style="margin-left:8px">Reminder alarm:</span>
+      <select class="fsel" id="reminder-alarm-tone" onchange="saveSettings()">
+        <option value="bell">🔕 Bell</option>
+        <option value="beep">🔔 Classic Beep</option>
+        <option value="siren">🚨 Siren</option>
+        <option value="pulse">💓 Pulse</option>
+        <option value="alarm">⏰ Alarm Clock</option>
+        <option value="ding">✨ Ding Ding</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="testReminderAlert()">Test</button>
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">📅 Export by date range:</span>
@@ -626,6 +636,14 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           </div>
           <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 01:00 = 1 hour &nbsp;|&nbsp; 00:30 = 30 min</span>
         </div>
+        <div class="fgrp full reminder-fields"><label>Remind Me</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="fc" id="f-remind-date" type="date" style="max-width:150px" title="Reminder date">
+            <input class="fc" id="f-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearReminderFields('f')">Clear</button>
+          </div>
+          <span style="font-size:11px;color:var(--text3);margin-top:3px">Leave blank for none. Time uses HH:MM:SS.</span>
+        </div>
       </div>
     </div>
     <div class="modal-body entry-comments">
@@ -721,6 +739,14 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
             <span style="font-size:11px;color:var(--text3)">HH:MM — e.g. 01:00 = 1 hour</span>
           </div>
         </div>
+        <div class="fgrp full reminder-fields"><label>Remind Me</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="fc" id="rr-remind-date" type="date" style="max-width:150px" title="Reminder date">
+            <input class="fc" id="rr-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearReminderFields('rr')">Clear</button>
+          </div>
+          <span style="font-size:11px;color:var(--text3);margin-top:3px">Leave blank for none. Time uses HH:MM:SS.</span>
+        </div>
         <div class="fgrp" style="flex-direction:row;align-items:center;gap:10px">
           <input type="checkbox" id="rr-completed" style="accent-color:#4ade80;width:16px;height:16px;cursor:pointer">
           <label style="text-transform:none;font-size:13px;color:var(--text);cursor:pointer" for="rr-completed">✅ Completed (row turns green)</label>
@@ -814,6 +840,14 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
             <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 24:00 = 1 day &nbsp;|&nbsp; 72:00 = 3 days</span>
           </div>
         </div>
+        <div class="fgrp full reminder-fields"><label>Remind Me</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="fc" id="d-remind-date" type="date" style="max-width:150px" title="Reminder date">
+            <input class="fc" id="d-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearReminderFields('d')">Clear</button>
+          </div>
+          <span style="font-size:11px;color:var(--text3);margin-top:3px">Leave blank for none. Time uses HH:MM:SS.</span>
+        </div>
       </div>
     </div>
     <div class="modal-body entry-comments">
@@ -877,11 +911,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 <div class="modal-ov hidden" id="timer-alert-modal" style="z-index:9500;background:rgba(0,0,0,.7)">
   <div class="modal timer-alert-box">
     <div class="modal-hdr" style="background:rgba(239,68,68,.15)">
-      <h3 style="color:#f87171">⏰ Timer Expired!</h3>
+      <h3 id="timer-alert-title" style="color:#f87171">⏰ Timer Expired!</h3>
       <button class="modal-cls" onclick="closeTimerAlert()">x</button>
     </div>
     <div class="modal-body" style="text-align:center;padding:24px">
-      <div style="font-size:40px;margin-bottom:12px">🚨</div>
+      <div id="timer-alert-icon" style="font-size:40px;margin-bottom:12px">🚨</div>
       <p id="timer-alert-msg" style="font-size:15px;color:var(--text);margin-bottom:4px"></p>
       <p style="font-size:12px;color:var(--text3);margin-top:8px">This alert will auto-dismiss in 10 seconds</p>
     </div>
@@ -937,7 +971,7 @@ const SETTINGS_DOC = 'app_settings/main';
 // ─── GLOBALS ────────────────────────────────────────────────
 var DATA = [];
 var idSeq = 1;
-var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep'};
+var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep', reminderTone:'bell'};
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
 var _cellStart = null, _dragging = false, _selCells = new Set();
@@ -1105,6 +1139,7 @@ function saveSettings(){
   SETTINGS.defaultTimer=sel==='custom'?(parseInt(ci.value)||30)*60:parseInt(sel);
   SETTINGS.autoAlert=document.getElementById('auto-alert').checked;
   SETTINGS.alarmTone=document.getElementById('alarm-tone').value;
+  SETTINGS.reminderTone=document.getElementById('reminder-alarm-tone').value;
   localStorage.setItem('end_settings',JSON.stringify(SETTINGS));
   // Also persist settings to Firestore
   setDoc(doc(db, 'app_settings', 'main'), SETTINGS).catch(function(){});
@@ -1203,6 +1238,43 @@ function fmtTime(s){
 }
 function pad(n){return n<10?'0'+n:String(n);}
 
+function localDateInput(ts){
+  if(!ts)return '';
+  var d=new Date(ts);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function localTimeInput(ts){
+  if(!ts)return '';
+  var d=new Date(ts);
+  return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+}
+function setReminderFields(prefix,ts){
+  var d=document.getElementById(prefix+'-remind-date');
+  var t=document.getElementById(prefix+'-remind-time');
+  if(!d||!t)return;
+  d.value=ts?localDateInput(ts):'';
+  t.value=ts?localTimeInput(ts):'';
+}
+function clearReminderFields(prefix){
+  setReminderFields(prefix,null);
+}
+function readReminderFields(prefix){
+  var d=document.getElementById(prefix+'-remind-date');
+  var t=document.getElementById(prefix+'-remind-time');
+  if(!d||!t)return {at:null};
+  var date=d.value,time=t.value;
+  if(!date&&!time)return {at:null};
+  if(!date||!time){toast('Set both reminder date and time, or leave both blank','error');return {invalid:true};}
+  if(time.length===5)time+=':00';
+  var dt=new Date(date+'T'+time);
+  if(isNaN(dt.getTime())){toast('Invalid reminder date or time','error');return {invalid:true};}
+  return {at:dt.getTime()};
+}
+function applyReminderToRecord(rec,prev,reminder){
+  rec.reminderAt=reminder.at||null;
+  rec.reminderAlerted=prev&&prev.reminderAt===rec.reminderAt?!!prev.reminderAlerted:false;
+}
+
 function timerHTML(r){
   var rem=r.timerStart?calcRem(r):null;
   var cls='tbadge'+(rem===null?'':(rem===0?' texp':rem<300?' twarn':''));
@@ -1297,12 +1369,13 @@ function getAudioCtx(){
   },{once:false,passive:true});
 });
 
-function testAlert(){playAlert();toast('Alert sound test!','info');}
-function playAlert(){
+function testAlert(){playAlert(SETTINGS.alarmTone||'beep');toast('Timer alarm sound test!','info');}
+function testReminderAlert(){playAlert(SETTINGS.reminderTone||'bell');toast('Reminder alarm sound test!','info');}
+function playAlert(toneOverride){
   try{
     var ctx=getAudioCtx();
     if(!ctx) return;
-    var tone=SETTINGS.alarmTone||'beep';
+    var tone=toneOverride||SETTINGS.alarmTone||'beep';
     if(tone==='beep'){
       // Classic triple beep
       [0,350,700].forEach(function(d){
@@ -1406,51 +1479,72 @@ function timerAlertSummary(r){
 setInterval(function(){
   var changed=false;
   DATA.forEach(function(r){
-    if(!r.timerStart)return;
-    var rem=calcRem(r);
-    if(rem===0&&!r.timerAlerted){
-      r.timerAlerted=true;
-      changed=true;
-      // Always play sound regardless of role or autoAlert setting
-      try{playAlert();}catch(e){
-        // Fallback: use HTML5 Audio with a data URI beep for Firefox
-        try{
-          var a=new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2ozNWCfz+OxbDE0X5XK3ataLC9bkL/UrFcqMFqIssiqUycvWYOotaFQJTBYfqGtl0olMVh5mKOLQCQzWHSQmX87IjVXb4iRdTYkN1dmf4lsMinBXl16f2JeJzLGXlp5eVpkJzHJW1l4eFpgJi');
-          a.volume=0.8;
-          a.play().catch(function(){});
-        }catch(e2){}
+    if(r.timerStart){
+      var rem=calcRem(r);
+      if(rem===0&&!r.timerAlerted){
+        r.timerAlerted=true;
+        changed=true;
+        try{playAlert(SETTINGS.alarmTone||'beep');}catch(e){
+          try{
+            var a=new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2ozNWCfz+OxbDE0X5XK3ataLC9bkL/UrFcqMFqIssiqUycvWYOotaFQJTBYfqGtl0olMVh5mKOLQCQzWHSQmX87IjVXb4iRdTYkN1dmf4lsMinBXl16f2JeJzLGXlp5eVpkJzHJW1l4eFpgJi');
+            a.volume=0.8;
+            a.play().catch(function(){});
+          }catch(e2){}
+        }
+        toast('⏰ Timer expired: '+timerAlertSummary(r),'error');
+        sendBrowserNotif('⏰ Timer Expired!',timerAlertSummary(r)+' — timer has expired.',r.id);
+        showTimerAlert(r);
       }
-      // Toast notification
-      toast('⏰ Timer expired: '+timerAlertSummary(r),'error');
-      // Browser notification (works even if tab is in background)
-      sendBrowserNotif(
-        '⏰ Timer Expired!',
-        timerAlertSummary(r)+' — timer has expired.',
-        r.id
-      );
-      // Show a visible alert modal so Viewer can't miss it
-      showTimerAlert(r);
+      var badge=document.getElementById('tb-'+r.id);
+      if(badge){
+        var isHHMM=r._type==='did'||r._type==='rr';
+        badge.textContent=fmtTime(rem);
+        badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'');
+      }
     }
-    var badge=document.getElementById('tb-'+r.id);
-    if(badge){
-      var isHHMM=r._type==='did'||r._type==='rr';
-      badge.textContent=fmtTime(rem);
-      badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'');
+    if(r.reminderAt&&!r.reminderAlerted&&Date.now()>=r.reminderAt){
+      r.reminderAlerted=true;
+      changed=true;
+      try{playAlert(SETTINGS.reminderTone||'bell');}catch(re){}
+      toast('🔔 Reminder: '+timerAlertSummary(r),'info');
+      sendBrowserNotif('🔔 Reminder',timerAlertSummary(r)+' — reminder time reached.',String(r.id)+'_reminder');
+      showReminderAlert(r);
     }
   });
-  if(changed){DATA.forEach(function(r){if(r.timerAlerted)saveOne(r);});}
+  if(changed){DATA.forEach(function(r){if(r.timerAlerted||r.reminderAlerted)saveOne(r);});}
 },1000);
 
 function showTimerAlert(r){
   var name=timerAlertName(r);
   var detail=timerAlertDetail(r);
   var modal=document.getElementById('timer-alert-modal');
+  var title=document.getElementById('timer-alert-title');
+  var icon=document.getElementById('timer-alert-icon');
   var msg=document.getElementById('timer-alert-msg');
   if(!modal||!msg)return;
+  if(title)title.textContent='⏰ Timer Expired!';
+  if(icon)icon.textContent='🚨';
   msg.innerHTML='<strong>'+escHtml(name)+'</strong>'
     +(detail&&detail!==name?'<br><span style="font-size:12px;color:var(--text3)">'+escHtml(detail)+'</span>':'');
   modal.classList.remove('hidden');
   // Auto-dismiss after 10s
+  clearTimeout(window._timerAlertTimeout);
+  window._timerAlertTimeout=setTimeout(function(){modal.classList.add('hidden');},10000);
+}
+function showReminderAlert(r){
+  var name=timerAlertName(r);
+  var detail=timerAlertDetail(r);
+  var modal=document.getElementById('timer-alert-modal');
+  var title=document.getElementById('timer-alert-title');
+  var icon=document.getElementById('timer-alert-icon');
+  var msg=document.getElementById('timer-alert-msg');
+  if(!modal||!msg)return;
+  if(title)title.textContent='🔔 Reminder';
+  if(icon)icon.textContent='🔔';
+  msg.innerHTML='<strong>'+escHtml(name)+'</strong>'
+    +(detail&&detail!==name?'<br><span style="font-size:12px;color:var(--text3)">'+escHtml(detail)+'</span>':'')
+    +'<br><span style="font-size:12px;color:var(--text3)">Reminder time reached.</span>';
+  modal.classList.remove('hidden');
   clearTimeout(window._timerAlertTimeout);
   window._timerAlertTimeout=setTimeout(function(){modal.classList.add('hidden');},10000);
 }
@@ -1690,6 +1784,7 @@ function openNewRRModal(){
   document.getElementById('rr-disregard').checked=false;
   document.getElementById('rr-timer-sel').value='28800';
   document.getElementById('rr-timer-custom-wrap').style.display='none';
+  setReminderFields('rr',null);
   document.getElementById('rr-comment-text').value='';
   _pendingAttachments['rr-attach-pending']=[];
   _pendingRRComments=[];
@@ -1727,6 +1822,7 @@ function openEditRR(id){
     document.getElementById('rr-timer-sel').value=rrTov;
     document.getElementById('rr-timer-custom-wrap').style.display='none';
   }
+  setReminderFields('rr',r.reminderAt||null);
   document.getElementById('rr-comment-text').value='';
   _pendingAttachments['rr-attach-pending']=[];
   renderPendingPreviews('rr-attach-pending');
@@ -1766,10 +1862,12 @@ function saveRRRecord(){
     rrDisregard:document.getElementById('rr-disregard').checked,
     timerOverride:rrTimerSecs
   };
+  var reminder=readReminderFields('rr');if(reminder.invalid)return;
   if(editingRRId){
     var idx=DATA.findIndex(function(d){return d.id===editingRRId;});
     if(idx>=0){
       var prev=DATA[idx];
+      applyReminderToRecord(rec,prev,reminder);
       var timerChanged=_rrTimerDirty;
       var timerUpdate;
       if(timerChanged&&rrTimerSecs){
@@ -1787,6 +1885,7 @@ function saveRRRecord(){
     }
     toast('Updated!','success');
   }else{
+    applyReminderToRecord(rec,null,reminder);
     var nr=Object.assign({id:idSeq++,_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
@@ -1995,6 +2094,7 @@ function openNewDIDModal(){
   document.getElementById('d-timer-custom-wrap').style.display='none';
   document.getElementById('d-timer-hh').value='';
   document.getElementById('d-timer-mm').value='';
+  setReminderFields('d',null);
   document.getElementById('d-resolved-display').textContent='—';
   document.getElementById('d-resolved-display').style.color='var(--text3)';
   var _dct0=document.getElementById('d-comment-text');_dct0.value='';_dct0.style.height='';
@@ -2034,6 +2134,7 @@ function openEditDID(id){
   }
   document.getElementById('d-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
   document.getElementById('d-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
+  setReminderFields('d',r.reminderAt||null);
   var _dct1=document.getElementById('d-comment-text');_dct1.value='';_dct1.style.height='';
   _pendingAttachments['did-attach-pending']=[];
   renderPendingPreviews('did-attach-pending');
@@ -2076,10 +2177,12 @@ function saveDIDRecord(){
     priority:document.getElementById('d-priority').value,
     timerOverride:dTimerSecs||null
   };
+  var reminder=readReminderFields('d');if(reminder.invalid)return;
   if(editingDIDId){
     var idx=DATA.findIndex(function(d){return d.id===editingDIDId;});
     if(idx>=0){
       var prev=DATA[idx];
+      applyReminderToRecord(rec,prev,reminder);
       if(isDone&&!prev.resolvedDate) rec.resolvedDate=today;
       else if(!isDone) rec.resolvedDate='';
       else rec.resolvedDate=prev.resolvedDate;
@@ -2101,6 +2204,7 @@ function saveDIDRecord(){
     }
     toast('Updated!','success');
   }else{
+    applyReminderToRecord(rec,null,reminder);
     if(isDone) rec.resolvedDate=today;
     // Timer logic for new: start automatically if duration > 0
     if(dTimerSecs>0){rec.timerStart=Date.now();rec.timerAlerted=false;}
@@ -2338,6 +2442,7 @@ function openNewModal(){
   document.getElementById('f-timer-hh').value='1';
   document.getElementById('f-timer-mm').value='0';
   document.getElementById('f-timer-custom-wrap').style.display='';
+  setReminderFields('f',null);
   document.getElementById('f-comment-text').value='';
   _pendingAttachments['endorse-attach-pending']=[];
   _pendingComments=[];
@@ -2376,6 +2481,7 @@ function openEdit(id){
     document.getElementById('f-timer-mm').value='0';
     document.getElementById('f-timer-custom-wrap').style.display='none';
   }
+  setReminderFields('f',r.reminderAt||null);
   document.getElementById('f-comment-text').value='';
   _pendingAttachments['endorse-attach-pending']=[];
   renderPendingPreviews('endorse-attach-pending');
@@ -2415,11 +2521,13 @@ function saveRecord(){
     startDate:document.getElementById('f-date').value,
     timerOverride:timerSecs
   };
+  var reminder=readReminderFields('f');if(reminder.invalid)return;
   if(editingId){
     try{
       var idx=DATA.findIndex(function(d){return d.id===editingId;});
       if(idx>=0){
         var prev=DATA[idx];
+        applyReminderToRecord(rec,prev,reminder);
         if(isCompleted&&!prev.resolvedDate) rec.resolvedDate=today;
         else if(!isCompleted) rec.resolvedDate='';
         else rec.resolvedDate=prev.resolvedDate;
@@ -2445,6 +2553,7 @@ function saveRecord(){
       toast(noTimer?'Updated & timer stopped!':'Updated!','success');
     }catch(e){console.error('saveRecord edit error:',e);toast('Saved but error occurred: '+e.message,'error');}
   }else{
+    applyReminderToRecord(rec,null,reminder);
     if(isCompleted){rec.resolvedDate=today;}
     if(noTimer){rec.timerStart=null;rec.timerAlerted=false;}
     var ne=Object.assign({id:idSeq++,_sel:false,timerStart:noTimer?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
@@ -2903,10 +3012,11 @@ function exportByDateRange(){
 }
 
 // Load settings from localStorage (fast, local)
-SETTINGS=JSON.parse(localStorage.getItem('end_settings')||'{"defaultTimer":3600,"autoAlert":false,"alarmTone":"beep"}');
+SETTINGS=Object.assign({defaultTimer:3600,autoAlert:false,alarmTone:'beep',reminderTone:'bell'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
 document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
 document.getElementById('auto-alert').checked=SETTINGS.autoAlert||false;
 document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
+document.getElementById('reminder-alarm-tone').value=SETTINGS.reminderTone||'bell';
 
 // ─── FIRESTORE REAL-TIME LISTENER ────────────────────────────
 function startFirestore(){
@@ -3773,6 +3883,7 @@ window.renderLogs=renderLogs;
 window.closeAddUserModal=closeAddUserModal;
 window.closeEditUserModal=closeEditUserModal;
 window.clearAllClients=clearAllClients;
+window.clearReminderFields=clearReminderFields;
 window.downloadSampleCSV=downloadSampleCSV;
 window.loadAdminData=loadAdminData;
 window.openAddUserModal=openAddUserModal;
@@ -3829,6 +3940,7 @@ window.startTmr=startTmr;
 window.stopTmr=stopTmr;
 window.switchTab=switchTab;
 window.testAlert=testAlert;
+window.testReminderAlert=testReminderAlert;
 window.toggleAll=toggleAll;
 window.toggleAutoPanel=toggleAutoPanel;
 window.toggleClientGrid=toggleClientGrid;
