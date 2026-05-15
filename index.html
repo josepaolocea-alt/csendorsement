@@ -52,7 +52,8 @@ body{font-family:var(--sf);background:var(--bg);color:var(--text);font-size:13.5
 .fsel{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-family:var(--sf);font-size:13px;outline:none;cursor:pointer;}
 select.fsel,select.fc{-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text3) 50%),linear-gradient(135deg,var(--text3) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px;}
 select.fsel{background-color:var(--bg2);}
-select.fsel:hover,select.fc:hover{border-color:var(--border2);}
+select.fsel:hover,select.fc:hover{border-color:var(--border2);background-color:var(--bg2);}
+select.fsel option,select.fc option{background:var(--bg2);color:var(--text);}
 select::-ms-expand{display:none;}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
 .table-scroll{overflow-x:auto;}
@@ -126,6 +127,10 @@ tr.row-done td{opacity:.5;}
 select.fc{background-color:var(--bg3);}
 select.fc:focus{background-color:var(--bg2);}
 textarea.fc{resize:vertical;min-height:70px;}
+.reminder-state{display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text3);background:var(--bg3);}
+.reminder-state.is-active{color:#4ade80;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.24);}
+.reminder-state.is-passed{color:#fbbf24;background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.24);}
+.reminder-state.is-invalid{color:#f87171;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.24);}
 .toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
 .toast{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 15px;font-size:13px;display:flex;align-items:center;gap:9px;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:toastIn .2s ease;min-width:210px;max-width:min(460px,calc(100vw - 40px));}
 .toast>span:last-child{line-height:1.35;white-space:normal;overflow-wrap:anywhere;}
@@ -389,6 +394,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </select>
     <select class="fsel" id="f-pri" onchange="applyFilters()"><option value="">All Priorities</option><option>High</option><option>Normal</option></select>
     <select class="fsel" id="f-plt" onchange="applyFilters()"><option value="">All Platforms</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
+    <select class="fsel" id="f-am-filter" onchange="applyFilters()"><option value="">All AM</option></select>
     <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">Settings ▾</button>
     <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export</button>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
@@ -638,9 +644,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
         <div class="fgrp full reminder-fields"><label>Remind Me</label>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input class="fc" id="f-remind-date" type="date" style="max-width:150px" title="Reminder date">
-            <input class="fc" id="f-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time">
+            <input class="fc" id="f-remind-date" type="date" style="max-width:150px" title="Reminder date" oninput="updateReminderIndicator('f')" onchange="updateReminderIndicator('f')">
+            <input class="fc" id="f-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time" oninput="updateReminderIndicator('f')" onchange="updateReminderIndicator('f')">
             <button type="button" class="btn btn-secondary btn-sm" onclick="clearReminderFields('f')">Clear</button>
+            <span class="reminder-state is-none" id="f-remind-state">No reminder set</span>
           </div>
           <span style="font-size:11px;color:var(--text3);margin-top:3px">Leave blank for none. Time uses HH:MM:SS.</span>
         </div>
@@ -741,9 +748,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
         <div class="fgrp full reminder-fields"><label>Remind Me</label>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input class="fc" id="rr-remind-date" type="date" style="max-width:150px" title="Reminder date">
-            <input class="fc" id="rr-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time">
+            <input class="fc" id="rr-remind-date" type="date" style="max-width:150px" title="Reminder date" oninput="updateReminderIndicator('rr')" onchange="updateReminderIndicator('rr')">
+            <input class="fc" id="rr-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time" oninput="updateReminderIndicator('rr')" onchange="updateReminderIndicator('rr')">
             <button type="button" class="btn btn-secondary btn-sm" onclick="clearReminderFields('rr')">Clear</button>
+            <span class="reminder-state is-none" id="rr-remind-state">No reminder set</span>
           </div>
           <span style="font-size:11px;color:var(--text3);margin-top:3px">Leave blank for none. Time uses HH:MM:SS.</span>
         </div>
@@ -807,7 +815,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp"><label>Status</label>
           <select class="fc" id="d-status">
             <optgroup label="In Progress">
-              <option>Pending AM</option><option>Pending CS</option><option>In Progress</option><option>Advised Client</option>
+              <option>Pending AM</option><option>Pending CS</option><option>Pending Product</option><option>In Progress</option><option>Advised Client</option>
             </optgroup>
             <optgroup label="Completed">
               <option>Done</option><option>Cancel by Client</option>
@@ -842,9 +850,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
         <div class="fgrp full reminder-fields"><label>Remind Me</label>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input class="fc" id="d-remind-date" type="date" style="max-width:150px" title="Reminder date">
-            <input class="fc" id="d-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time">
+            <input class="fc" id="d-remind-date" type="date" style="max-width:150px" title="Reminder date" oninput="updateReminderIndicator('d')" onchange="updateReminderIndicator('d')">
+            <input class="fc" id="d-remind-time" type="time" step="1" style="max-width:130px" title="Reminder time" oninput="updateReminderIndicator('d')" onchange="updateReminderIndicator('d')">
             <button type="button" class="btn btn-secondary btn-sm" onclick="clearReminderFields('d')">Clear</button>
+            <span class="reminder-state is-none" id="d-remind-state">No reminder set</span>
           </div>
           <span style="font-size:11px;color:var(--text3);margin-top:3px">Leave blank for none. Time uses HH:MM:SS.</span>
         </div>
@@ -1183,6 +1192,7 @@ function _doSwitchTab(tab,el){
   document.getElementById('f-st').value='';
   document.getElementById('f-pri').value='';
   document.getElementById('f-plt').value='';
+  var amFilter=document.getElementById('f-am-filter');if(amFilter)amFilter.value='';
   if(tab==='done') _donePage=0;
   if(tab==='mine') _rrPage=0;
   applyFilters();
@@ -1198,7 +1208,7 @@ function openNewModalCurrent(){
 var DONE_ST=['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Continue to Other Ticket'];
 var NO_TIMER_ST=['Done','Commercial Concern','Resolved','Posted','Advised Client','Lack of Update from Client','Continue to Other Ticket']; // statuses that stop/prevent timer
 var DID_DONE_ST=['Done','Cancel by Client'];
-var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','In Progress','Advised Client'];
+var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','Pending Product','In Progress','Advised Client'];
 
 function didStBadge(s){
   var greenSt=['Done','Cancel by Client','Advised Client'];
@@ -1248,27 +1258,54 @@ function localTimeInput(ts){
   var d=new Date(ts);
   return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
 }
+function getReminderFieldValue(prefix){
+  var d=document.getElementById(prefix+'-remind-date');
+  var t=document.getElementById(prefix+'-remind-time');
+  if(!d||!t)return {at:null};
+  var date=d.value,time=t.value;
+  if(!date&&!time)return {at:null};
+  if(!date||!time)return {invalid:true,partial:true};
+  if(time.length===5)time+=':00';
+  var dt=new Date(date+'T'+time);
+  if(isNaN(dt.getTime()))return {invalid:true};
+  return {at:dt.getTime()};
+}
+function updateReminderIndicator(prefix){
+  var chip=document.getElementById(prefix+'-remind-state');
+  if(!chip)return;
+  var v=getReminderFieldValue(prefix);
+  var cls='reminder-state ';
+  if(v.invalid){
+    chip.className=cls+'is-invalid';
+    chip.textContent=v.partial?'Set date and time':'Invalid reminder';
+  }else if(!v.at){
+    chip.className=cls+'is-none';
+    chip.textContent='No reminder set';
+  }else if(v.at>Date.now()){
+    chip.className=cls+'is-active';
+    chip.textContent='Reminder active';
+  }else{
+    chip.className=cls+'is-passed';
+    chip.textContent='Reminder time passed';
+  }
+}
 function setReminderFields(prefix,ts){
   var d=document.getElementById(prefix+'-remind-date');
   var t=document.getElementById(prefix+'-remind-time');
   if(!d||!t)return;
   d.value=ts?localDateInput(ts):'';
   t.value=ts?localTimeInput(ts):'';
+  updateReminderIndicator(prefix);
 }
 function clearReminderFields(prefix){
   setReminderFields(prefix,null);
 }
 function readReminderFields(prefix){
-  var d=document.getElementById(prefix+'-remind-date');
-  var t=document.getElementById(prefix+'-remind-time');
-  if(!d||!t)return {at:null};
-  var date=d.value,time=t.value;
-  if(!date&&!time)return {at:null};
-  if(!date||!time){toast('Set both reminder date and time, or leave both blank','error');return {invalid:true};}
-  if(time.length===5)time+=':00';
-  var dt=new Date(date+'T'+time);
-  if(isNaN(dt.getTime())){toast('Invalid reminder date or time','error');return {invalid:true};}
-  return {at:dt.getTime()};
+  var v=getReminderFieldValue(prefix);
+  if(!v.invalid)return {at:v.at||null};
+  toast(v.partial?'Set both reminder date and time, or leave both blank':'Invalid reminder date or time','error');
+  updateReminderIndicator(prefix);
+  return {invalid:true};
 }
 function applyReminderToRecord(rec,prev,reminder){
   rec.reminderAt=reminder.at||null;
@@ -1490,15 +1527,36 @@ function recordSearchText(r){
 function matchesSearch(r,q){
   return !q||recordSearchText(r).indexOf(q)>-1;
 }
+function matchesAM(r,fam){
+  if(!fam)return true;
+  return [r.am,r.rrBy,r.roBy].indexOf(fam)>-1;
+}
+
+var _sessionAlerted={};
+function currentAlertUserKey(){
+  return _currentUser&&_currentUser.email?_currentUser.email:'anon';
+}
+function localAlertKey(kind,r){
+  var basis=kind==='timer'?r.timerStart:r.reminderAt;
+  return 'cyn_alert_'+kind+'_'+currentAlertUserKey()+'_'+(r._type||'endorsement')+'_'+r.id+'_'+basis;
+}
+function hasLocalAlerted(kind,r){
+  var key=localAlertKey(kind,r);
+  if(_sessionAlerted[key])return true;
+  try{return localStorage.getItem(key)==='1';}catch(e){return false;}
+}
+function markLocalAlerted(kind,r){
+  var key=localAlertKey(kind,r);
+  _sessionAlerted[key]=true;
+  try{localStorage.setItem(key,'1');}catch(e){}
+}
 
 setInterval(function(){
-  var changed=false;
   DATA.forEach(function(r){
     if(r.timerStart){
       var rem=calcRem(r);
-      if(rem===0&&!r.timerAlerted){
-        r.timerAlerted=true;
-        changed=true;
+      if(rem===0&&!hasLocalAlerted('timer',r)){
+        markLocalAlerted('timer',r);
         try{playAlert(SETTINGS.alarmTone||'beep');}catch(e){
           try{
             var a=new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2ozNWCfz+OxbDE0X5XK3ataLC9bkL/UrFcqMFqIssiqUycvWYOotaFQJTBYfqGtl0olMVh5mKOLQCQzWHSQmX87IjVXb4iRdTYkN1dmf4lsMinBXl16f2JeJzLGXlp5eVpkJzHJW1l4eFpgJi');
@@ -1507,7 +1565,7 @@ setInterval(function(){
           }catch(e2){}
         }
         toast('⏰ Timer expired: '+timerAlertSummary(r),'error');
-        sendBrowserNotif('⏰ Timer Expired!',timerAlertSummary(r)+' — timer has expired.',r.id);
+        sendBrowserNotif('⏰ Timer Expired!',timerAlertSummary(r)+' — timer has expired.',String(r.id)+'_'+currentAlertUserKey()+'_timer');
         showTimerAlert(r);
       }
       var badge=document.getElementById('tb-'+r.id);
@@ -1517,16 +1575,15 @@ setInterval(function(){
         badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'');
       }
     }
-    if(r.reminderAt&&!r.reminderAlerted&&Date.now()>=r.reminderAt){
-      r.reminderAlerted=true;
-      changed=true;
+    if(r.reminderAt&&Date.now()>=r.reminderAt&&!hasLocalAlerted('reminder',r)){
+      markLocalAlerted('reminder',r);
       try{playAlert(SETTINGS.reminderTone||'bell');}catch(re){}
       toast('🔔 Reminder: '+timerAlertSummary(r),'info');
-      sendBrowserNotif('🔔 Reminder',timerAlertSummary(r)+' — reminder time reached.',String(r.id)+'_reminder');
+      sendBrowserNotif('🔔 Reminder',timerAlertSummary(r)+' — reminder time reached.',String(r.id)+'_'+currentAlertUserKey()+'_reminder');
       showReminderAlert(r);
     }
   });
-  if(changed){DATA.forEach(function(r){if(r.timerAlerted||r.reminderAlerted)saveOne(r);});}
+  ['f','rr','d'].forEach(updateReminderIndicator);
 },1000);
 
 function showTimerAlert(r){
@@ -1577,6 +1634,7 @@ function applyFilters(){
   var fst=document.getElementById('f-st').value;
   var fp=document.getElementById('f-pri').value;
   var fpl=document.getElementById('f-plt').value;
+  var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   var IN_PROGRESS_ST=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client'];
   var COMPLETED_ST=DONE_ST.slice();
   filteredData=DATA.filter(function(r){
@@ -1588,7 +1646,7 @@ function applyFilters(){
         fst==='__inprogress__'?false:
         r.status===fst
       );
-      return didDone&&matchesSearch(r,q)&&didStatusMatch&&(!fs||r.service===fs)&&(!fp||r.priority===fp)&&(!fpl||false);
+      return didDone&&matchesSearch(r,q)&&didStatusMatch&&(!fs||r.service===fs)&&(!fp||r.priority===fp)&&(!fpl||false)&&matchesAM(r,fam);
     }
     if(r._type==='rr') return false; // RR only in mine tab
     var isDone=DONE_ST.indexOf(r.status)>-1;
@@ -1600,7 +1658,7 @@ function applyFilters(){
       fst==='__completed__'?COMPLETED_ST.indexOf(r.status)>-1:
       r.status===fst
     );
-    return mq&&(!fs||r.service===fs)&&stMatch&&(!fp||r.priority===fp)&&(!fpl||r.platform===fpl);
+    return mq&&(!fs||r.service===fs)&&stMatch&&(!fp||r.priority===fp)&&(!fpl||r.platform===fpl)&&matchesAM(r,fam);
   });
   if(sortCol){
     filteredData.sort(function(a,b){
@@ -1617,11 +1675,12 @@ function applyFilters(){
 
 function applyDIDFilters(){
   var q=searchValue();
+  var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
     if(r._type!=='did')return false;
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     if(isDone)return false;
-    return matchesSearch(r,q);
+    return matchesSearch(r,q)&&matchesAM(r,fam);
   });
   // Sort by startDate descending, createdAt as tiebreaker
   filteredData.sort(function(a,b){
@@ -1767,9 +1826,10 @@ function updateRRStats(){
 
 function applyRRFilters(){
   var q=searchValue();
+  var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
     if(r._type!=='rr')return false;
-    return matchesSearch(r,q);
+    return matchesSearch(r,q)&&matchesAM(r,fam);
   });
   // Sort by rrDate descending, then createdAt descending as tiebreaker
   filteredData.sort(function(a,b){
@@ -3272,11 +3332,12 @@ function applyDropdownsToForms(){
   }
   // AM dropdowns (endorsement + DID modals) — uses rr_by options from Admin Panel
   var amItems=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
-  ['f-am','d-am'].forEach(function(id){
+  ['f-am','d-am','f-am-filter'].forEach(function(id){
     var amEl=document.getElementById(id);
     if(!amEl)return;
     var curAm=amEl.value;
-    amEl.innerHTML='<option value="">— None —</option>'
+    var isFilter=id==='f-am-filter';
+    amEl.innerHTML=(isFilter?'<option value="">All AM</option>':'<option value="">— None —</option>')
       +amItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(curAm) amEl.value=curAm;
   });
@@ -3967,6 +4028,7 @@ window.togglePassVis=togglePassVis;
 window.toggleRRField=toggleRRField;
 window.toggleRow=toggleRow;
 window.toggleTheme=toggleTheme;
+window.updateReminderIndicator=updateReminderIndicator;
 window.updateBulkBar=updateBulkBar;
 
 window.clearLogFilters=clearLogFilters;
