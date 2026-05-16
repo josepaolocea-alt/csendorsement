@@ -56,11 +56,10 @@ select.fsel:hover,select.fc:hover{border-color:var(--border2);background-color:v
 select.fsel option,select.fc option{background:var(--bg2);color:var(--text);}
 select::-ms-expand{display:none;}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
-.table-scroll{overflow-x:auto;}
+.table-scroll{overflow:auto;max-height:calc(100vh - 230px);}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead tr{background:var(--bg3);}
-th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:52px;background:var(--bg3);z-index:10;}
-th .col-rz{position:absolute;}
+th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--bg3);z-index:10;}
 th:hover{color:var(--text);}
 th.sort-asc::after{content:' \25B2';color:var(--accent);font-size:9px;}
 th.sort-desc::after{content:' \25BC';color:var(--accent);font-size:9px;}
@@ -170,7 +169,7 @@ textarea.fc{resize:vertical;min-height:70px;}
 .meta-info strong{color:var(--text2);}
 .log-table{width:100%;border-collapse:collapse;font-size:12.5px;}
 .log-table thead{background:var(--bg3);border-bottom:2px solid var(--border);}
-.log-table th{padding:7px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;user-select:none;position:sticky;top:52px;background:var(--bg3);z-index:10;}
+.log-table th{padding:7px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;user-select:none;position:sticky;top:0;background:var(--bg3);z-index:10;}
 .log-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;white-space:nowrap;}
 .log-table tr:last-child td{border-bottom:none;}
 .log-table tr:hover td{background:var(--bg3);}
@@ -213,10 +212,10 @@ textarea.fc{resize:vertical;min-height:70px;}
 .admin-ctitle{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;}
 .admin-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 .admin-tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.admin-tbl-scroll{overflow-x:auto;}
+.admin-tbl-scroll{overflow:auto;max-height:calc(100vh - 230px);}
 .admin-table{width:100%;border-collapse:collapse;font-size:12.5px;}
 .admin-table thead{background:var(--bg3);border-bottom:2px solid var(--border);}
-.admin-table th{padding:7px 10px;text-align:left;font-weight:600;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;user-select:none;position:sticky;top:52px;background:var(--bg3);z-index:10;}
+.admin-table th{padding:7px 10px;text-align:left;font-weight:600;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;user-select:none;position:sticky;top:0;background:var(--bg3);z-index:10;}
 .admin-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
 .admin-table tr:last-child td{border-bottom:none;}
 .admin-table tr:hover td{background:var(--bg3);}
@@ -519,7 +518,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <button class="btn btn-sm" onclick="clearAllLogs()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Clear All</button>
         </div>
       </div>
-      <div id="log-section-body" style="border-top:1px solid var(--border);overflow-x:auto">
+      <div id="log-section-body" style="border-top:1px solid var(--border);overflow:auto;max-height:calc(100vh - 230px)">
         <table class="log-table">
           <thead><tr>
             <th style="width:30px">#</th>
