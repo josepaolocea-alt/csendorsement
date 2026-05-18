@@ -402,6 +402,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <select class="fsel" id="f-am-filter" onchange="applyFilters()"><option value="">All AM</option></select>
     <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">Settings ▾</button>
     <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export</button>
+    <button class="btn btn-secondary btn-sm" id="daily-report-btn" onclick="openDailyReport()">Daily Report</button>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
     <button class="btn btn-sm" id="trash-restore-sel-btn" onclick="restoreSelected()" style="display:none;background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)">Restore Selected</button>
     <button class="btn btn-sm" id="trash-purge-sel-btn" onclick="purgeSelected()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected Now</button>
@@ -594,6 +595,25 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </div>
   </div>
 </div>
+<!-- DAILY REPORT MODAL -->
+<div class="modal-ov hidden" id="daily-report-modal" style="z-index:540">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-hdr"><h3>Daily Report</h3><button class="modal-cls" onclick="closeDailyReport()">x</button></div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <label style="font-size:12px;color:var(--text2)">Report date:</label>
+        <input class="fc" id="daily-report-date" type="date" style="width:160px" onchange="buildDailyReport()">
+        <button class="btn btn-primary btn-sm" onclick="copyDailyReport()" style="margin-left:auto">Copy to Clipboard</button>
+      </div>
+      <pre id="daily-report-text" style="white-space:pre-wrap;word-break:break-word;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12.5px;line-height:1.55;color:var(--text);max-height:55vh;overflow:auto;font-family:'DM Mono',monospace;margin:0">Loading...</pre>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeDailyReport()">Close</button>
+      <button class="btn btn-primary" onclick="copyDailyReport()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-ov hidden" id="record-modal">
   <div class="modal entry-modal">
     <div class="modal-hdr"><h3 id="modal-title">New Endorsement</h3><button class="modal-cls" onclick="closeModal()">x</button></div>
@@ -4191,6 +4211,172 @@ function clearModalMeta(pfx){
   if(meta) meta.style.display='none';
 }
 
+// ─── DAILY REPORT ───────────────────────────────────────────
+var _drLogs=null; // activity logs cache (null = could not load)
+
+function openDailyReport(){
+  document.getElementById('daily-report-modal').classList.remove('hidden');
+  var now=new Date();
+  document.getElementById('daily-report-date').value=
+    now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  document.getElementById('daily-report-text').textContent='Loading activity logs...';
+  getDocs(collection(db,'logs')).then(function(snap){
+    _drLogs=[];snap.forEach(function(d){_drLogs.push(d.data());});
+    buildDailyReport();
+  }).catch(function(e){
+    _drLogs=null;buildDailyReport();
+  });
+}
+function closeDailyReport(){document.getElementById('daily-report-modal').classList.add('hidden');}
+
+function _drSameDay(ts,dateStr){
+  if(!ts) return false;
+  var d=new Date(ts);
+  var s=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return s===dateStr;
+}
+function _drTime(ts){return new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});}
+function _drName(r){
+  if(r._type==='rr') return r.rrSubject||'(untitled RR)';
+  return r.client||r.desc||'(no client)';
+}
+function _drType(r){
+  if(r._type==='rr') return 'RR';
+  if(r._type==='did') return 'DID';
+  return 'Endorsement';
+}
+function _drStatus(r){
+  if(r._type==='rr'){
+    if(r.rrCompleted) return 'Completed';
+    if(r.rrDisregard) return 'Disregarded';
+    return r.rrStatus||'—';
+  }
+  return r.status||'—';
+}
+function _drPriority(r){return (r._type==='rr'?r.rrPriority:r.priority)||'';}
+function _drIsOpen(r){
+  if(r._type==='rr') return !r.rrCompleted&&!r.rrDisregard;
+  return DONE_ST.indexOf(r.status)===-1;
+}
+function _drStartDate(r){
+  if(r._type==='rr') return r.rrDate||r.rrEffDate||'';
+  return r.startDate||'';
+}
+
+function buildDailyReport(){
+  var dateStr=document.getElementById('daily-report-date').value;
+  var pre=document.getElementById('daily-report-text');
+  if(!dateStr){pre.textContent='Please pick a report date.';return;}
+  var dp=dateStr.split('-');
+  var prettyDate=new Date(parseInt(dp[0]),parseInt(dp[1])-1,parseInt(dp[2]))
+    .toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  var out=[];
+  out.push('DAILY REPORT — '+prettyDate);
+  out.push('Generated '+new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}));
+  out.push('');
+
+  // Section 1: Today's activity (logs + comments), grouped per entry
+  var groups={};
+  function addItem(name,ts,line){
+    if(!groups[name]) groups[name]=[];
+    groups[name].push({ts:ts,line:line});
+  }
+  var actionLbl={created:'Created',updated:'Updated',deleted:'Moved to Trash / Deleted',csv_import:'CSV Import'};
+  var otherCount={login:0,exported:0};
+  if(_drLogs){
+    _drLogs.forEach(function(l){
+      if(!_drSameDay(l.ts,dateStr)) return;
+      if(l.action==='login'){otherCount.login++;return;}
+      if(l.action==='exported'){otherCount.exported++;return;}
+      var lbl=actionLbl[l.action]||l.action;
+      var line='  • '+_drTime(l.ts)+' — '+lbl+' (by '+getUserDisplay(l.user)+')';
+      if(l.details) line+='\n      '+l.details;
+      addItem(l.record||'(unnamed)',l.ts,line);
+    });
+  }
+  DATA.forEach(function(r){
+    if(!r.comments||!r.comments.length) return;
+    r.comments.forEach(function(c){
+      if(!_drSameDay(c.ts,dateStr)) return;
+      var txt=String(c.text||'').replace(/\s+/g,' ').trim();
+      if(txt.length>240) txt=txt.slice(0,240)+'…';
+      var att=(c.attachments&&c.attachments.length)?' ['+c.attachments.length+' attachment(s)]':'';
+      addItem(_drName(r),c.ts,'  • '+_drTime(c.ts)+' — Comment by '+getUserDisplay(c.user)+': "'+txt+'"'+att);
+    });
+  });
+  var names=Object.keys(groups).sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;});
+  out.push("=== TODAY'S ACTIVITY ("+names.length+' entr'+(names.length===1?'y':'ies')+') ===');
+  if(_drLogs===null) out.push('(Activity logs could not be loaded — showing comment activity only.)');
+  if(!names.length){
+    out.push('No recorded activity for this date.');
+  }else{
+    names.forEach(function(n){
+      out.push('');
+      out.push('▸ '+n);
+      groups[n].sort(function(a,b){return a.ts-b.ts;}).forEach(function(it){out.push(it.line);});
+    });
+  }
+  if(otherCount.login||otherCount.exported){
+    var ex=[];
+    if(otherCount.login) ex.push(otherCount.login+' login'+(otherCount.login!==1?'s':''));
+    if(otherCount.exported) ex.push(otherCount.exported+' export'+(otherCount.exported!==1?'s':''));
+    out.push('');
+    out.push('Also today: '+ex.join(', ')+'.');
+  }
+  out.push('');
+
+  // Section 2: New entries today
+  var fresh=DATA.filter(function(r){return _drSameDay(r.createdAt,dateStr);});
+  fresh.sort(function(a,b){return (a.createdAt||0)-(b.createdAt||0);});
+  out.push('=== NEW ENTRIES TODAY ('+fresh.length+') ===');
+  if(!fresh.length){
+    out.push('No new entries created on this date.');
+  }else{
+    fresh.forEach(function(r){
+      var pri=_drPriority(r);
+      out.push('  • '+_drName(r)+' ('+_drType(r)+') — '+_drStatus(r)+(pri?' — '+pri+' priority':''));
+    });
+  }
+  out.push('');
+
+  // Section 3: Open / ongoing tickets (current state, all dates)
+  var open=DATA.filter(_drIsOpen);
+  open.sort(function(a,b){
+    var pa=_drPriority(a)==='High'?0:1, pb=_drPriority(b)==='High'?0:1;
+    if(pa!==pb) return pa-pb;
+    return _drName(a).toLowerCase()<_drName(b).toLowerCase()?-1:1;
+  });
+  out.push('=== OPEN / ONGOING TICKETS ('+open.length+') ===');
+  if(!open.length){
+    out.push('No open tickets — all caught up.');
+  }else{
+    open.forEach(function(r){
+      var pri=_drPriority(r), sd=_drStartDate(r);
+      out.push('  • '+_drName(r)+' ('+_drType(r)+') — '+_drStatus(r)
+        +(pri?' — '+pri+' priority':'')
+        +(sd?' — since '+sd:''));
+    });
+  }
+
+  pre.textContent=out.join('\n');
+}
+
+function copyDailyReport(){
+  var txt=document.getElementById('daily-report-text').textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('Report copied to clipboard','success');})
+      .catch(function(){_drFallbackCopy(txt);});
+  }else{_drFallbackCopy(txt);}
+}
+function _drFallbackCopy(txt){
+  var ta=document.createElement('textarea');
+  ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');toast('Report copied to clipboard','success');}
+  catch(e){toast('Could not copy — select the text manually','error');}
+  document.body.removeChild(ta);
+}
+
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
 window.addClientName=addClientName;
 window.addComment=addComment;
@@ -4317,6 +4503,10 @@ window.addRRComment=addRRComment;
 window.renderRRModalComments=renderRRModalComments;
 window.onSvcChange=onSvcChange;
 window._doSwitchTab=_doSwitchTab;
+window.openDailyReport=openDailyReport;
+window.closeDailyReport=closeDailyReport;
+window.buildDailyReport=buildDailyReport;
+window.copyDailyReport=copyDailyReport;
 
 // Double-click row to open edit modal
 function rowDblClick(e, id, type) {
