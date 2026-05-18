@@ -309,6 +309,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <button class="tab-btn" onclick="switchTab('did',this)">DID Order / Cancel</button>
   <button class="tab-btn" onclick="switchTab('done',this)">Done / Resolved</button>
   <button class="tab-btn" onclick="switchTab('mine',this)">Pending RR / RO</button>
+  <button class="tab-btn" onclick="switchTab('trash',this)">Trash</button>
   <button class="tab-btn" id="admin-tab-btn" style="display:none" onclick="switchTab('admin',this)">Admin</button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <div class="user-chip" id="user-chip" style="display:none">
@@ -402,8 +403,12 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">Settings ▾</button>
     <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export</button>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
+    <button class="btn btn-sm" id="trash-restore-sel-btn" onclick="restoreSelected()" style="display:none;background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)">Restore Selected</button>
+    <button class="btn btn-sm" id="trash-purge-sel-btn" onclick="purgeSelected()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected Now</button>
+    <button class="btn btn-sm" id="trash-empty-btn" onclick="emptyTrash()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Empty Trash (Delete All Now)</button>
     <span style="font-size:12px;color:var(--text3)" id="rec-count"></span>
   </div>
+  <div id="trash-info" style="display:none;margin:0 16px 8px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2)">Deleted entries are kept here for 30 days, then permanently removed automatically. Restore an entry to send it back to its original tab.</div>
 
   <div class="table-wrap" id="main-table-wrap">
     <div class="table-scroll">
@@ -1185,13 +1190,19 @@ function _doSwitchTab(tab,el){
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   el.classList.add('active');
   var isAdmin=tab==='admin';
+  var isTrash=tab==='trash';
   document.getElementById('stats-row').style.display=isAdmin?'none':'';
   document.querySelector('.toolbar').style.display=isAdmin?'none':'';
   document.getElementById('main-table-wrap').style.display=isAdmin?'none':'';
   document.getElementById('main-pagination').style.display=isAdmin?'none':'';
   document.getElementById('admin-panel').style.display=isAdmin?'':'none';
-  document.getElementById('new-btn').style.display=isAdmin?'none':'';
+  document.getElementById('new-btn').style.display=(isAdmin||isTrash)?'none':'';
+  document.getElementById('trash-info').style.display=isTrash?'':'none';
+  document.getElementById('trash-empty-btn').style.display=(isTrash&&window._canEdit)?'':'none';
   if(isAdmin){loadAdminData();return;}
+  DATA.forEach(function(r){r._sel=false;});
+  window._lastCheckAll=false;
+  updateBulkBar();
   document.getElementById('search-input').value='';
   document.getElementById('f-svc').value='';
   document.getElementById('f-st').value='';
@@ -1634,6 +1645,7 @@ window.closeTimerAlert=closeTimerAlert;
 function applyFilters(){
   if(currentTab==='did'){applyDIDFilters();return;}
   if(currentTab==='mine'){applyRRFilters();return;}
+  if(currentTab==='trash'){applyTrashFilters();return;}
   var q=searchValue();
   var fs=document.getElementById('f-svc').value;
   var fst=document.getElementById('f-st').value;
@@ -1643,6 +1655,7 @@ function applyFilters(){
   var IN_PROGRESS_ST=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client'];
   var COMPLETED_ST=DONE_ST.slice();
   filteredData=DATA.filter(function(r){
+    if(r._deleted) return false;
     if(r._type==='did'){
       if(currentTab!=='done') return false;
       var didDone=DID_DONE_ST.indexOf(r.status)>-1;
@@ -1683,6 +1696,7 @@ function applyDIDFilters(){
   var q=searchValue();
   var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
+    if(r._deleted)return false;
     if(r._type!=='did')return false;
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     if(isDone)return false;
@@ -1842,7 +1856,7 @@ function toggleRRField(id,field,val){
 }
 
 function updateRRStats(){
-  var rr=DATA.filter(function(r){return r._type==='rr';});
+  var rr=DATA.filter(function(r){return r._type==='rr'&&!r._deleted;});
   var total=rr.length,done=rr.filter(function(r){return r.rrCompleted;}).length,pending=total-done;
   document.getElementById('stats-row').innerHTML=
     '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
@@ -1854,6 +1868,7 @@ function applyRRFilters(){
   var q=searchValue();
   var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
+    if(r._deleted)return false;
     if(r._type!=='rr')return false;
     return matchesSearch(r,q)&&matchesAM(r,fam);
   });
@@ -1866,6 +1881,139 @@ function applyRRFilters(){
   pinToTop();
   renderRRRows();updateRRStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+}
+
+// ─── TRASH ──────────────────────────────────────────────────
+var TRASH_THEAD='<tr>'
+  +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
+  +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
+  +'<th style="width:100px">Type</th>'
+  +'<th>Client / Subject</th>'
+  +'<th>Detail</th>'
+  +'<th style="width:150px">Status</th>'
+  +'<th style="width:170px">Deleted On</th>'
+  +'<th style="width:170px">Actions</th>'
+  +'</tr>';
+
+function applyTrashFilters(){
+  var q=searchValue();
+  filteredData=DATA.filter(function(r){return r._deleted&&matchesSearch(r,q);});
+  filteredData.sort(function(a,b){return (b.deletedAt||0)-(a.deletedAt||0);});
+  renderTrashRows();updateTrashStats();
+  document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+}
+
+function updateTrashStats(){
+  var t=DATA.filter(function(r){return r._deleted;});
+  document.getElementById('stats-row').innerHTML=
+    '<div class="stat-chip">In Trash <strong>'+t.length+'</strong></div>';
+}
+
+function renderTrashRows(){
+  document.getElementById('main-thead').innerHTML=TRASH_THEAD;
+  var tbody=document.getElementById('main-tbody');
+  var pgDiv=document.getElementById('main-pagination');
+  if(pgDiv) pgDiv.innerHTML='';
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="8" class="empty">Trash is empty</td></tr>';return;}
+  var DAY=86400000;
+  tbody.innerHTML=filteredData.map(function(r){
+    var typeLabel=r._type==='did'?'DID':r._type==='rr'?'RR / RO':'Endorsement';
+    var name=r._type==='rr'?(r.rrSubject||'—'):(r.client||'—');
+    var detail=r._type==='rr'?(r.rrRemarks||''):r._type==='did'?(r.desc||''):(r.concern||'');
+    var status=r._type==='rr'?(r.rrStatus||''):(r.status||'');
+    var delTxt=r.deletedAt?new Date(r.deletedAt).toLocaleString():'—';
+    var daysLeft=r.deletedAt?Math.max(0,30-Math.floor((Date.now()-r.deletedAt)/DAY)):30;
+    return '<tr id="row-'+r.id+'">'
+      +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
+      +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
+      +'<td><span style="font-size:11px;color:var(--accent)">'+typeLabel+'</span></td>'
+      +'<td style="font-weight:600;max-width:200px" title="'+escHtml(name)+'">'+escHtml(name)+'</td>'
+      +'<td style="max-width:280px;color:var(--text2)" title="'+escHtml(detail)+'">'+escHtml(detail)+'</td>'
+      +'<td style="color:var(--text2)">'+escHtml(status)+'</td>'
+      +'<td style="color:var(--text3);font-size:11px">'+delTxt+'<br><span style="color:'+(daysLeft<=5?'#f87171':'var(--text3)')+'">'+daysLeft+' day'+(daysLeft!==1?'s':'')+' left</span></td>'
+      +'<td><div class="row-acts">'
+      +(window._canEdit?'<button class="btn btn-sm" onclick="restoreRec('+r.id+')" style="background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)">Restore</button>':'')
+      +(window._canEdit?'<button class="btn btn-sm" onclick="purgeRec('+r.id+')" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete</button>':'')
+      +'</div></td>'
+      +'</tr>';
+  }).join('');
+  initResizers();
+  var hdr=document.getElementById('chk-all');if(hdr&&window._lastCheckAll!==undefined)hdr.checked=window._lastCheckAll;
+}
+
+function restoreRec(id){
+  if(!window._canEdit){toast('You do not have permission to restore records','error');return;}
+  var r=DATA.find(function(d){return d.id===id;});
+  if(!r)return;
+  r._deleted=false;r.deletedAt=null;r._sel=false;
+  saveOne(r);
+  try{writeLog('updated',r.client||r.rrSubject||r.desc||'record','Restored from Trash');}catch(e){}
+  applyFilters();updateBulkBar();
+  toast('Entry restored','success');
+}
+
+function purgeRec(id){
+  if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
+  var r=DATA.find(function(d){return d.id===id;});
+  if(!r)return;
+  appConfirm('Permanently delete this entry? This cannot be undone.','Delete Forever').then(function(ok){
+    if(!ok)return;
+    deleteOne(id);
+    DATA=DATA.filter(function(d){return d.id!==id;});
+    try{writeLog('deleted',r.client||r.rrSubject||r.desc||'record','Permanently deleted from Trash');}catch(e){}
+    applyFilters();updateBulkBar();
+    toast('Entry permanently deleted','success');
+  });
+}
+
+function restoreSelected(){
+  if(!window._canEdit){toast('You do not have permission to restore records','error');return;}
+  var sel=DATA.filter(function(r){return r._sel&&r._deleted;});
+  if(!sel.length){toast('No trashed entries selected','info');return;}
+  sel.forEach(function(r){r._deleted=false;r.deletedAt=null;r._sel=false;saveOne(r);});
+  try{writeLog('updated','Trash','Restored '+sel.length+' entries');}catch(e){}
+  applyFilters();updateBulkBar();
+  toast(sel.length+' entr'+(sel.length!==1?'ies':'y')+' restored','success');
+}
+
+function purgeSelected(){
+  if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
+  var sel=DATA.filter(function(r){return r._sel&&r._deleted;});
+  if(!sel.length){toast('No trashed entries selected','info');return;}
+  appConfirm('Permanently delete '+sel.length+' selected entr'+(sel.length!==1?'ies':'y')+'? This cannot be undone.','Delete Now').then(function(ok){
+    if(!ok)return;
+    var ids=sel.map(function(r){return r.id;});
+    sel.forEach(function(r){deleteOne(r.id);});
+    DATA=DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
+    try{writeLog('deleted','Trash','Permanently deleted '+sel.length+' selected entries');}catch(e){}
+    applyFilters();updateBulkBar();
+    toast(sel.length+' entr'+(sel.length!==1?'ies':'y')+' permanently deleted','success');
+  });
+}
+
+function emptyTrash(){
+  if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
+  var t=DATA.filter(function(r){return r._deleted;});
+  if(!t.length){toast('Trash is already empty','info');return;}
+  appConfirm('Permanently delete all '+t.length+' entr'+(t.length!==1?'ies':'y')+' in Trash? This cannot be undone.','Delete All').then(function(ok){
+    if(!ok)return;
+    var ids=t.map(function(r){return r.id;});
+    t.forEach(function(r){deleteOne(r.id);});
+    DATA=DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
+    try{writeLog('deleted','Trash','Emptied Trash ('+t.length+' entries)');}catch(e){}
+    applyFilters();updateBulkBar();
+    toast(t.length+' entr'+(t.length!==1?'ies':'y')+' permanently deleted','success');
+  });
+}
+
+function purgeOldTrash(){
+  var cutoff=Date.now()-30*86400000;
+  var old=DATA.filter(function(r){return r._deleted&&r.deletedAt&&r.deletedAt<cutoff;});
+  if(!old.length)return;
+  var ids=old.map(function(r){return r.id;});
+  old.forEach(function(r){deleteOne(r.id);});
+  DATA=DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
+  try{writeLog('deleted','Trash','Auto-deleted '+old.length+' entr'+(old.length!==1?'ies':'y')+' older than 30 days');}catch(e){}
 }
 
 var editingRRId=null;
@@ -2091,7 +2239,7 @@ function renderRows(){
 }
 
 function updateStats(){
-  var endData=DATA.filter(function(r){return r._type!=='did';});
+  var endData=DATA.filter(function(r){return r._type!=='did'&&!r._deleted;});
   var total=endData.length,done=endData.filter(function(r){return DONE_ST.indexOf(r.status)>-1;}).length;
   var pending=total-done,high=endData.filter(function(r){return r.priority==='High';}).length;
   document.getElementById('stats-row').innerHTML=
@@ -2176,7 +2324,7 @@ function renderDIDRows(){
 }
 
 function updateDIDStats(){
-  var didData=DATA.filter(function(r){return r._type==='did';});
+  var didData=DATA.filter(function(r){return r._type==='did'&&!r._deleted;});
   var total=didData.length,done=didData.filter(function(r){return DID_DONE_ST.indexOf(r.status)>-1;}).length;
   var pending=total-done;
   document.getElementById('stats-row').innerHTML=
@@ -2417,8 +2565,16 @@ document.addEventListener('keydown',function(e){
 function updateBulkBar(){
   var sel=DATA.filter(function(r){return r._sel;});
   var btn=document.getElementById('bulk-delete-btn');
-  if(btn) btn.style.display=(sel.length>0&&window._canEdit)?'':'none';
+  var pBtn=document.getElementById('trash-purge-sel-btn');
+  var rBtn=document.getElementById('trash-restore-sel-btn');
+  var isTrash=currentTab==='trash';
+  var show=sel.length>0&&window._canEdit;
+  if(btn) btn.style.display=(show&&!isTrash)?'':'none';
   if(btn&&sel.length>0) btn.textContent='Delete '+sel.length+' Selected';
+  if(pBtn) pBtn.style.display=(show&&isTrash)?'':'none';
+  if(pBtn&&sel.length>0) pBtn.textContent='Delete '+sel.length+' Selected Now';
+  if(rBtn) rBtn.style.display=(show&&isTrash)?'':'none';
+  if(rBtn&&sel.length>0) rBtn.textContent='Restore '+sel.length+' Selected';
 }
 function toggleAll(chk){
   var checked=chk.checked;
@@ -2487,8 +2643,12 @@ function softDelete(deleted){
 function commitPendingDelete(){
   if(!_undoState) return;
   _undoState.deleted.forEach(function(r){
-    deleteOne(r.id);
-    try{writeLog('deleted',r.client||r.rrSubject||r.desc||'record','Deleted record');}catch(e){}
+    r._deleted=true;
+    r.deletedAt=Date.now();
+    r.timerStart=null;
+    r._sel=false;
+    saveOne(r);
+    try{writeLog('deleted',r.client||r.rrSubject||r.desc||'record','Moved to Trash');}catch(e){}
   });
   _undoState=null;
 }
@@ -3069,6 +3229,7 @@ function openCommentsModal(id){
   // Also re-render table so badge stays clear
   if(currentTab==='did') renderDIDRows();
   else if(currentTab==='mine') renderRRRows();
+  else if(currentTab==='trash') renderTrashRows();
   else renderRows();
   document.getElementById('comments-modal').classList.remove('hidden');
 }
@@ -3091,7 +3252,7 @@ function addCommentFromModal(){
   markRead(r.id);
   document.getElementById('cm-comment-text').value='';
   renderCmModalComments(r.comments);
-  if(currentTab==='did') renderDIDRows(); else if(currentTab==='mine') renderRRRows(); else renderRows();
+  if(currentTab==='did') renderDIDRows(); else if(currentTab==='mine') renderRRRows(); else if(currentTab==='trash') renderTrashRows(); else renderRows();
   toast('Comment added','success');
 }
 
@@ -3151,6 +3312,7 @@ function startFirestore(){
       loadClientsGlobal();
       loadNicknames();
       loadDropdownOptions();
+      purgeOldTrash();
       if(DATA.length===0){
         var samples=[
           {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Normal',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
@@ -3970,6 +4132,11 @@ function clearModalMeta(pfx){
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
 window.addClientName=addClientName;
 window.addComment=addComment;
+window.restoreRec=restoreRec;
+window.purgeRec=purgeRec;
+window.restoreSelected=restoreSelected;
+window.purgeSelected=purgeSelected;
+window.emptyTrash=emptyTrash;
 window.addCommentFromModal=addCommentFromModal;
 window.addDIDComment=addDIDComment;
 window.appConfirm=appConfirm;
