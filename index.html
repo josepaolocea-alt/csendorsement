@@ -968,7 +968,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 <script type="module">
 // ─── FIREBASE CONFIG ────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -985,10 +985,12 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const COLL = 'endorsements';
+const TRASH_COLL = 'endorsements_trash';
 const SETTINGS_DOC = 'app_settings/main';
 
 // ─── GLOBALS ────────────────────────────────────────────────
 var DATA = [];
+var TRASH_DATA = [];
 var idSeq = 1;
 var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep', reminderTone:'bell'};
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
@@ -1143,12 +1145,19 @@ async function saveOne(r){
   }
 }
 
-async function deleteOne(id){
+async function deleteTrashOne(id){
   try{
-    await deleteDoc(doc(db, COLL, String(id)));
+    await deleteDoc(doc(db, TRASH_COLL, String(id)));
   }catch(e){
-    console.error('Delete error',e);
+    console.error('Trash delete error',e);
   }
+}
+
+// Allocate a globally-unique, monotonic record id and persist the counter
+function allocId(){
+  var id=idSeq++;
+  setDoc(doc(db,'app_config','counter'),{nextId:idSeq},{merge:true}).catch(function(){});
+  return id;
 }
 
 function saveSettings(){
@@ -1201,6 +1210,7 @@ function _doSwitchTab(tab,el){
   document.getElementById('trash-empty-btn').style.display=(isTrash&&window._canEdit)?'':'none';
   if(isAdmin){loadAdminData();return;}
   DATA.forEach(function(r){r._sel=false;});
+  TRASH_DATA.forEach(function(r){r._sel=false;});
   window._lastCheckAll=false;
   updateBulkBar();
   document.getElementById('search-input').value='';
@@ -1211,7 +1221,7 @@ function _doSwitchTab(tab,el){
   var amFilter=document.getElementById('f-am-filter');if(amFilter)amFilter.value='';
   if(tab==='done') _donePage=0;
   if(tab==='mine') _rrPage=0;
-  applyFilters();
+  if(tab==='trash') loadTrash(); else applyFilters();
 }
 
 function openNewModalCurrent(){
@@ -1655,7 +1665,6 @@ function applyFilters(){
   var IN_PROGRESS_ST=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client'];
   var COMPLETED_ST=DONE_ST.slice();
   filteredData=DATA.filter(function(r){
-    if(r._deleted) return false;
     if(r._type==='did'){
       if(currentTab!=='done') return false;
       var didDone=DID_DONE_ST.indexOf(r.status)>-1;
@@ -1696,7 +1705,6 @@ function applyDIDFilters(){
   var q=searchValue();
   var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
-    if(r._deleted)return false;
     if(r._type!=='did')return false;
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     if(isDone)return false;
@@ -1856,7 +1864,7 @@ function toggleRRField(id,field,val){
 }
 
 function updateRRStats(){
-  var rr=DATA.filter(function(r){return r._type==='rr'&&!r._deleted;});
+  var rr=DATA.filter(function(r){return r._type==='rr';});
   var total=rr.length,done=rr.filter(function(r){return r.rrCompleted;}).length,pending=total-done;
   document.getElementById('stats-row').innerHTML=
     '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
@@ -1868,7 +1876,6 @@ function applyRRFilters(){
   var q=searchValue();
   var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
-    if(r._deleted)return false;
     if(r._type!=='rr')return false;
     return matchesSearch(r,q)&&matchesAM(r,fam);
   });
@@ -1895,18 +1902,36 @@ var TRASH_THEAD='<tr>'
   +'<th style="width:170px">Actions</th>'
   +'</tr>';
 
+// Fetch trashed records from the separate trash collection (only when Trash tab opens)
+async function loadTrash(){
+  var tbody=document.getElementById('main-tbody');
+  document.getElementById('main-thead').innerHTML=TRASH_THEAD;
+  if(tbody) tbody.innerHTML='<tr><td colspan="8" class="empty">Loading trash...</td></tr>';
+  document.getElementById('rec-count').textContent='';
+  document.getElementById('stats-row').innerHTML='';
+  try{
+    var snap=await getDocs(collection(db,TRASH_COLL));
+    TRASH_DATA=[];
+    snap.forEach(function(d){var x=d.data();x._sel=false;TRASH_DATA.push(x);});
+    purgeOldTrash(); // auto-remove entries older than 30 days
+    if(currentTab==='trash'){applyTrashFilters();updateBulkBar();}
+  }catch(e){
+    console.error('Trash load error',e);
+    if(currentTab==='trash'&&tbody) tbody.innerHTML='<tr><td colspan="8" class="empty">Failed to load trash</td></tr>';
+  }
+}
+
 function applyTrashFilters(){
   var q=searchValue();
-  filteredData=DATA.filter(function(r){return r._deleted&&matchesSearch(r,q);});
+  filteredData=TRASH_DATA.filter(function(r){return matchesSearch(r,q);});
   filteredData.sort(function(a,b){return (b.deletedAt||0)-(a.deletedAt||0);});
   renderTrashRows();updateTrashStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
 }
 
 function updateTrashStats(){
-  var t=DATA.filter(function(r){return r._deleted;});
   document.getElementById('stats-row').innerHTML=
-    '<div class="stat-chip">In Trash <strong>'+t.length+'</strong></div>';
+    '<div class="stat-chip">In Trash <strong>'+TRASH_DATA.length+'</strong></div>';
 }
 
 function renderTrashRows(){
@@ -1943,76 +1968,85 @@ function renderTrashRows(){
 
 function restoreRec(id){
   if(!window._canEdit){toast('You do not have permission to restore records','error');return;}
-  var r=DATA.find(function(d){return d.id===id;});
+  var r=TRASH_DATA.find(function(d){return d.id===id;});
   if(!r)return;
-  r._deleted=false;r.deletedAt=null;r._sel=false;
-  saveOne(r);
+  var rec=Object.assign({},r);delete rec.deletedAt;delete rec._sel;
+  setDoc(doc(db,COLL,String(id)),rec)
+    .then(function(){return deleteDoc(doc(db,TRASH_COLL,String(id)));})
+    .catch(function(e){console.error('Restore error',e);toast('Restore failed','error');});
   try{writeLog('updated',r.client||r.rrSubject||r.desc||'record','Restored from Trash');}catch(e){}
-  applyFilters();updateBulkBar();
+  TRASH_DATA=TRASH_DATA.filter(function(d){return d.id!==id;});
+  applyTrashFilters();updateBulkBar();
   toast('Entry restored','success');
 }
 
 function purgeRec(id){
   if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
-  var r=DATA.find(function(d){return d.id===id;});
+  var r=TRASH_DATA.find(function(d){return d.id===id;});
   if(!r)return;
   appConfirm('Permanently delete this entry? This cannot be undone.','Delete Forever').then(function(ok){
     if(!ok)return;
-    deleteOne(id);
-    DATA=DATA.filter(function(d){return d.id!==id;});
+    deleteTrashOne(id);
+    TRASH_DATA=TRASH_DATA.filter(function(d){return d.id!==id;});
     try{writeLog('deleted',r.client||r.rrSubject||r.desc||'record','Permanently deleted from Trash');}catch(e){}
-    applyFilters();updateBulkBar();
+    applyTrashFilters();updateBulkBar();
     toast('Entry permanently deleted','success');
   });
 }
 
 function restoreSelected(){
   if(!window._canEdit){toast('You do not have permission to restore records','error');return;}
-  var sel=DATA.filter(function(r){return r._sel&&r._deleted;});
+  var sel=TRASH_DATA.filter(function(r){return r._sel;});
   if(!sel.length){toast('No trashed entries selected','info');return;}
-  sel.forEach(function(r){r._deleted=false;r.deletedAt=null;r._sel=false;saveOne(r);});
+  sel.forEach(function(r){
+    var rec=Object.assign({},r);delete rec.deletedAt;delete rec._sel;
+    setDoc(doc(db,COLL,String(r.id)),rec)
+      .then(function(){return deleteDoc(doc(db,TRASH_COLL,String(r.id)));})
+      .catch(function(e){console.error('Restore error',e);});
+  });
+  var ids=sel.map(function(r){return r.id;});
+  TRASH_DATA=TRASH_DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
   try{writeLog('updated','Trash','Restored '+sel.length+' entries');}catch(e){}
-  applyFilters();updateBulkBar();
+  applyTrashFilters();updateBulkBar();
   toast(sel.length+' entr'+(sel.length!==1?'ies':'y')+' restored','success');
 }
 
 function purgeSelected(){
   if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
-  var sel=DATA.filter(function(r){return r._sel&&r._deleted;});
+  var sel=TRASH_DATA.filter(function(r){return r._sel;});
   if(!sel.length){toast('No trashed entries selected','info');return;}
   appConfirm('Permanently delete '+sel.length+' selected entr'+(sel.length!==1?'ies':'y')+'? This cannot be undone.','Delete Now').then(function(ok){
     if(!ok)return;
     var ids=sel.map(function(r){return r.id;});
-    sel.forEach(function(r){deleteOne(r.id);});
-    DATA=DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
+    sel.forEach(function(r){deleteTrashOne(r.id);});
+    TRASH_DATA=TRASH_DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
     try{writeLog('deleted','Trash','Permanently deleted '+sel.length+' selected entries');}catch(e){}
-    applyFilters();updateBulkBar();
+    applyTrashFilters();updateBulkBar();
     toast(sel.length+' entr'+(sel.length!==1?'ies':'y')+' permanently deleted','success');
   });
 }
 
 function emptyTrash(){
   if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
-  var t=DATA.filter(function(r){return r._deleted;});
-  if(!t.length){toast('Trash is already empty','info');return;}
-  appConfirm('Permanently delete all '+t.length+' entr'+(t.length!==1?'ies':'y')+' in Trash? This cannot be undone.','Delete All').then(function(ok){
+  if(!TRASH_DATA.length){toast('Trash is already empty','info');return;}
+  var n=TRASH_DATA.length;
+  appConfirm('Permanently delete all '+n+' entr'+(n!==1?'ies':'y')+' in Trash? This cannot be undone.','Delete All').then(function(ok){
     if(!ok)return;
-    var ids=t.map(function(r){return r.id;});
-    t.forEach(function(r){deleteOne(r.id);});
-    DATA=DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
-    try{writeLog('deleted','Trash','Emptied Trash ('+t.length+' entries)');}catch(e){}
-    applyFilters();updateBulkBar();
-    toast(t.length+' entr'+(t.length!==1?'ies':'y')+' permanently deleted','success');
+    TRASH_DATA.forEach(function(r){deleteTrashOne(r.id);});
+    TRASH_DATA=[];
+    try{writeLog('deleted','Trash','Emptied Trash ('+n+' entries)');}catch(e){}
+    applyTrashFilters();updateBulkBar();
+    toast(n+' entr'+(n!==1?'ies':'y')+' permanently deleted','success');
   });
 }
 
 function purgeOldTrash(){
   var cutoff=Date.now()-30*86400000;
-  var old=DATA.filter(function(r){return r._deleted&&r.deletedAt&&r.deletedAt<cutoff;});
+  var old=TRASH_DATA.filter(function(r){return r.deletedAt&&r.deletedAt<cutoff;});
   if(!old.length)return;
   var ids=old.map(function(r){return r.id;});
-  old.forEach(function(r){deleteOne(r.id);});
-  DATA=DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
+  old.forEach(function(r){deleteTrashOne(r.id);});
+  TRASH_DATA=TRASH_DATA.filter(function(d){return ids.indexOf(d.id)===-1;});
   try{writeLog('deleted','Trash','Auto-deleted '+old.length+' entr'+(old.length!==1?'ies':'y')+' older than 30 days');}catch(e){}
 }
 
@@ -2139,7 +2173,7 @@ function saveRRRecord(){
     toast('Updated!','success');
   }else{
     applyReminderToRecord(rec,null,reminder);
-    var nr=Object.assign({id:idSeq++,_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    var nr=Object.assign({id:allocId(),_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
     writeLog('created',nr.rrSubject||'RR record','Created RR entry');
@@ -2239,7 +2273,7 @@ function renderRows(){
 }
 
 function updateStats(){
-  var endData=DATA.filter(function(r){return r._type!=='did'&&!r._deleted;});
+  var endData=DATA.filter(function(r){return r._type!=='did';});
   var total=endData.length,done=endData.filter(function(r){return DONE_ST.indexOf(r.status)>-1;}).length;
   var pending=total-done,high=endData.filter(function(r){return r.priority==='High';}).length;
   document.getElementById('stats-row').innerHTML=
@@ -2324,7 +2358,7 @@ function renderDIDRows(){
 }
 
 function updateDIDStats(){
-  var didData=DATA.filter(function(r){return r._type==='did'&&!r._deleted;});
+  var didData=DATA.filter(function(r){return r._type==='did';});
   var total=didData.length,done=didData.filter(function(r){return DID_DONE_ST.indexOf(r.status)>-1;}).length;
   var pending=total-done;
   document.getElementById('stats-row').innerHTML=
@@ -2465,7 +2499,7 @@ function saveDIDRecord(){
     // Timer logic for new: start automatically if duration > 0
     if(dTimerSecs>0){rec.timerStart=Date.now();rec.timerAlerted=false;}
     else{rec.timerStart=null;rec.timerAlerted=false;}
-    var nd=Object.assign({id:idSeq++,_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    var nd=Object.assign({id:allocId(),_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     // Merge any buffered DID comments
     if(_pendingDIDComments.length){nd.comments=_pendingDIDComments.slice();_pendingDIDComments=[];}
     DATA.push(nd);saveOne(nd);
@@ -2563,11 +2597,11 @@ document.addEventListener('keydown',function(e){
 });
 
 function updateBulkBar(){
-  var sel=DATA.filter(function(r){return r._sel;});
+  var isTrash=currentTab==='trash';
+  var sel=(isTrash?TRASH_DATA:DATA).filter(function(r){return r._sel;});
   var btn=document.getElementById('bulk-delete-btn');
   var pBtn=document.getElementById('trash-purge-sel-btn');
   var rBtn=document.getElementById('trash-restore-sel-btn');
-  var isTrash=currentTab==='trash';
   var show=sel.length>0&&window._canEdit;
   if(btn) btn.style.display=(show&&!isTrash)?'':'none';
   if(btn&&sel.length>0) btn.textContent='Delete '+sel.length+' Selected';
@@ -2590,7 +2624,7 @@ function toggleAll(chk){
   window._lastCheckAll=checked;
 }
 function toggleRow(id,chk){
-  var r=DATA.find(function(d){return d.id===id;});
+  var r=(currentTab==='trash'?TRASH_DATA:DATA).find(function(d){return d.id===id;});
   if(r){
     r._sel=chk.checked;
     updateBulkBar();
@@ -2643,11 +2677,14 @@ function softDelete(deleted){
 function commitPendingDelete(){
   if(!_undoState) return;
   _undoState.deleted.forEach(function(r){
-    r._deleted=true;
-    r.deletedAt=Date.now();
-    r.timerStart=null;
-    r._sel=false;
-    saveOne(r);
+    var rec=Object.assign({},r);
+    rec.deletedAt=Date.now();
+    rec.timerStart=null;
+    delete rec._sel;
+    // Write to the trash collection first, then remove from the live collection
+    setDoc(doc(db,TRASH_COLL,String(r.id)),rec)
+      .then(function(){return deleteDoc(doc(db,COLL,String(r.id)));})
+      .catch(function(e){console.error('Trash move error',e);toast('Failed to move a record to Trash','error');});
     try{writeLog('deleted',r.client||r.rrSubject||r.desc||'record','Moved to Trash');}catch(e){}
   });
   _undoState=null;
@@ -2824,7 +2861,7 @@ function saveRecord(){
     applyReminderToRecord(rec,null,reminder);
     if(isCompleted){rec.resolvedDate=today;}
     if(noTimer){rec.timerStart=null;rec.timerAlerted=false;}
-    var ne=Object.assign({id:idSeq++,_sel:false,timerStart:noTimer?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
+    var ne=Object.assign({id:allocId(),_sel:false,timerStart:noTimer?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     // Merge any buffered comments
     if(_pendingComments.length){ne.comments=_pendingComments.slice();_pendingComments=[];}
     DATA.push(ne);saveOne(ne);
@@ -3131,7 +3168,7 @@ function _renderCommentList(comments,containerId,recordId,source){
       +'<div class="comment-meta"><span class="comment-author">💬 '+getUserDisplay(c.user||'')+'</span>'
       +'<div style="display:flex;align-items:center;gap:4px"><span class="comment-time">'+fmtCommentTime(c.ts)+'</span>'+editBtn+delBtn+'</div>'
       +'</div>'
-      +(c.text?'<div class="comment-text" id="ct_'+safeCont+'_'+safeTs+'">'+c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'')
+      +'<div class="comment-text" id="ct_'+safeCont+'_'+safeTs+'"'+(c.text?'':' style="display:none"')+'>'+(c.text?c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</div>'
       +renderCommentAttachments(c.attachments)
       +'</div>';
   }).join('');
@@ -3288,21 +3325,25 @@ document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
 document.getElementById('reminder-alarm-tone').value=SETTINGS.reminderTone||'bell';
 
 // ─── FIRESTORE REAL-TIME LISTENER ────────────────────────────
-function startFirestore(){
+async function startFirestore(){
   if(_firestoreUnsub) return; // already listening
   showLoader('Loading data...');
+  // Seed the id counter so new ids never collide with trashed records
+  try{
+    var cSnap=await getDoc(doc(db,'app_config','counter'));
+    if(cSnap.exists()&&typeof cSnap.data().nextId==='number') idSeq=cSnap.data().nextId;
+  }catch(e){console.error('Counter read error',e);}
   _firestoreUnsub = onSnapshot(collection(db, COLL), function(snapshot){
     var oldData=DATA.slice();
     var selMap={};
     oldData.forEach(function(r){selMap[r.id]=r._sel;});
     DATA=[];
-    idSeq=1;
     snapshot.forEach(function(docSnap){
       var r=docSnap.data();
       r._sel=selMap[r.id]||false;
       if(r.priority==='Medium'||r.priority==='Low'){r.priority='Normal';}
       DATA.push(r);
-      if(r.id>=idSeq) idSeq=r.id+1;
+      if(r.id>=idSeq) idSeq=r.id+1; // counter stays monotonic, never reused
     });
     if(_fbReady) checkNewComments(oldData,DATA);
     DATA.forEach(function(r){migratePriority(r);});
@@ -3312,14 +3353,14 @@ function startFirestore(){
       loadClientsGlobal();
       loadNicknames();
       loadDropdownOptions();
-      purgeOldTrash();
+      setDoc(doc(db,'app_config','counter'),{nextId:idSeq},{merge:true}).catch(function(){});
       if(DATA.length===0){
         var samples=[
           {client:'MAYA',service:'VOIP',concern:'Choppy/Static Line',platform:'WhatsApp',status:'Advised Client',priority:'Normal',startDate:'2026-05-01',endorsed:0,timerStart:null,timerAlerted:false,_sel:false,comments:[]},
           {client:'GCASH',service:'Payment',concern:'Transaction timeout issue',platform:'Email',status:'Pending at NOC',priority:'High',startDate:'2026-05-02',endorsed:1,timerStart:null,timerAlerted:false,_sel:false,comments:[]}
         ];
         samples.forEach(function(s){
-          var nr=Object.assign({id:idSeq++},s);
+          var nr=Object.assign({id:allocId()},s);
           DATA.push(nr);
           saveOne(nr);
         });
@@ -4038,17 +4079,38 @@ function clearAllLogs(){
   });
 }
 
+// Resolve the comment array + persistence for a record, falling back to the
+// pending buffers when the entry is new and not yet saved (recordId is empty).
+function _commentCtx(source,recordId){
+  var rid=parseInt(recordId);
+  if(rid){
+    var r=DATA.find(function(d){return d.id===rid;});
+    if(!r) return null;
+    if(!r.comments) r.comments=[];
+    return {list:r.comments,save:function(){saveOne(r);},rerender:function(){_rerenderComments(source,r.comments);}};
+  }
+  var buf=source==='did'?_pendingDIDComments:source==='rr'?_pendingRRComments:_pendingComments;
+  return {list:buf,save:function(){},rerender:function(){_rerenderComments(source,buf);}};
+}
+function _rerenderComments(source,list){
+  if(source==='endorsement') renderModalComments(list);
+  else if(source==='did') renderDIDModalComments(list);
+  else if(source==='rr') renderRRModalComments(list);
+  else renderCmModalComments(list);
+}
+
 function editComment(btn){
   var ts=parseInt(btn.dataset.ts);
   var source=btn.dataset.src;
   var recordId=btn.dataset.rid;
   var containerId=btn.dataset.cid;
-  var r=DATA.find(function(d){return d.id===parseInt(recordId);});
-  if(!r||!r.comments) return;
-  var cm=r.comments.find(function(c){return c.ts===ts;});
+  var ctx=_commentCtx(source,recordId);
+  if(!ctx) return;
+  var cm=ctx.list.find(function(c){return c.ts===ts;});
   if(!cm) return;
   var el=document.getElementById('ct_'+containerId+'_'+ts);
   if(!el) return;
+  el.style.display='';
   var old=cm.text||'';
   el.innerHTML='<textarea style="width:100%;background:var(--bg4);border:1px solid var(--accent);border-radius:6px;padding:6px;color:var(--text);font-family:var(--sf);font-size:13px;resize:vertical;min-height:50px" id="cedit_ta_'+containerId+'_'+ts+'">'+old.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</textarea>'
     +'<div style="display:flex;gap:6px;margin-top:5px">'
@@ -4062,7 +4124,10 @@ function cancelCommentEdit(btn){
   var containerId=btn.dataset.cid;
   var old=btn.dataset.old||'';
   var el=document.getElementById('ct_'+containerId+'_'+ts);
-  if(el) el.innerHTML=old.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if(el){
+    el.innerHTML=old.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    el.style.display=old?'':'none';
+  }
 }
 
 function saveCommentEdit(btn){
@@ -4073,20 +4138,17 @@ function saveCommentEdit(btn){
   var ta=document.getElementById('cedit_ta_'+containerId+'_'+ts);
   if(!ta) return;
   var newText=ta.value.trim();
-  var r=DATA.find(function(d){return d.id===parseInt(recordId);});
-  if(!r||!r.comments) return;
-  var cm=r.comments.find(function(c){return c.ts===ts;});
+  var ctx=_commentCtx(source,recordId);
+  if(!ctx) return;
+  var cm=ctx.list.find(function(c){return c.ts===ts;});
   if(!cm) return;
   // Security: Viewer can only edit own comments
   var isOwner=_currentUser&&cm.user===_currentUser.email;
   var isAdminOrSemi=_currentUserRole==='Admin'||_currentUserRole==='Semi-Admin';
   if(!isOwner&&!isAdminOrSemi){toast('You can only edit your own comments','error');return;}
   cm.text=newText;
-  saveOne(r);
-  if(source==='endorsement') renderModalComments(r.comments);
-  else if(source==='did') renderDIDModalComments(r.comments);
-  else if(source==='rr') renderRRModalComments(r.comments);
-  else renderCmModalComments(r.comments);
+  ctx.save();
+  ctx.rerender();
   toast('Comment updated','success');
 }
 
@@ -4096,14 +4158,13 @@ function deleteComment(btn){
   var recordId=btn.dataset.rid;
   appConfirm('Delete this comment? This cannot be undone.','Delete').then(function(ok){
     if(!ok) return;
-    var r=DATA.find(function(d){return d.id===parseInt(recordId);});
-    if(!r||!r.comments) return;
-    r.comments=r.comments.filter(function(c){return c.ts!==ts;});
-    saveOne(r);
-    if(source==='endorsement') renderModalComments(r.comments);
-    else if(source==='did') renderDIDModalComments(r.comments);
-    else if(source==='rr') renderRRModalComments(r.comments);
-    else renderCmModalComments(r.comments);
+    var ctx=_commentCtx(source,recordId);
+    if(!ctx) return;
+    var idx=ctx.list.findIndex(function(c){return c.ts===ts;});
+    if(idx<0) return;
+    ctx.list.splice(idx,1);
+    ctx.save();
+    ctx.rerender();
     toast('Comment deleted','info');
   });
 }
