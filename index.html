@@ -90,6 +90,8 @@ tr.row-done td{opacity:.5;}
 .pri-med{background:rgba(156,163,175,.15);color:#9ca3af;}
 .pri-low{background:rgba(156,163,175,.15);color:#9ca3af;}
 .timer-cell{display:flex;align-items:center;gap:5px;}
+tr.pinned-row>td{background:rgba(251,191,36,.07);}
+tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:70px;text-align:center;}
 .tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
@@ -737,6 +739,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
             <option value="3600">1 Hour</option>
             <option value="14400">4 Hours</option>
             <option value="28800" selected>8 Hours</option>
+            <option value="259200">3 Days (72 Hours)</option>
             <option value="custom">Custom...</option>
           </select>
           <div id="rr-timer-custom-wrap" style="display:none;flex-direction:column;gap:5px;margin-top:5px">
@@ -1671,6 +1674,7 @@ function applyFilters(){
       return (b.createdAt||0)-(a.createdAt||0);
     });
   }
+  pinToTop();
   renderRows();updateStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
 }
@@ -1690,9 +1694,27 @@ function applyDIDFilters(){
     if(d!==0) return d;
     return (b.createdAt||0)-(a.createdAt||0);
   });
+  pinToTop();
   renderDIDRows();updateDIDStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
 }
+
+// ─── PIN TO TOP ─────────────────────────────────────────────
+function pinToTop(){
+  var p=[],n=[];
+  for(var i=0;i<filteredData.length;i++){(filteredData[i].pinned?p:n).push(filteredData[i]);}
+  filteredData=p.concat(n);
+}
+function togglePin(id){
+  if(!window._canEdit)return;
+  var r=DATA.find(function(d){return d.id===id;});
+  if(!r)return;
+  r.pinned=!r.pinned;
+  saveOne(r);
+  toast(r.pinned?'Pinned to top':'Unpinned','info');
+  applyFilters();
+}
+window.togglePin=togglePin;
 
 // ─── RR / RO ────────────────────────────────────────────────
 var RR_BM=['Ma\'am Kath','Sir Jason','Ma\'am Shayne'];
@@ -1748,7 +1770,7 @@ var RR_THEAD='<tr>'
   +'<th style="width:110px">Posted</th>'
   +'<th style="width:120px">Updated Inv.</th>'
   +'<th style="width:160px">Timer</th>'
-  +'<th style="width:80px">Actions</th>'
+  +'<th style="width:100px">Actions</th>'
   +'</tr>';
 
 function renderRRPagination(total){
@@ -1787,6 +1809,7 @@ function renderRRRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="15" class="empty">No RR/RO records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
+    if(r.pinned)rowCls=(rowCls?rowCls+' ':'')+'pinned-row';
     var unreadBadge=(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})();
     return '<tr class="'+rowCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'rr\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
@@ -1805,6 +1828,7 @@ function renderRRRows(){
       +'<td>'+rrTimerHTML(r)+'</td>'
       +'<td><div class="row-acts">'
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+unreadBadge+'</button>'
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:#fbbf24':'opacity:.55')+'">📌</button>':'')
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
@@ -1839,6 +1863,7 @@ function applyRRFilters(){
     if(d!==0) return d;
     return (b.createdAt||0)-(a.createdAt||0);
   });
+  pinToTop();
   renderRRRows();updateRRStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
 }
@@ -2018,7 +2043,7 @@ function renderRows(){
   if(!displayData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     if(r._type==='did'){
-      return '<tr id="row-'+r.id+'" style="opacity:0.6;cursor:pointer" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
+      return '<tr class="'+(r.pinned?'pinned-row':'')+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
@@ -2031,12 +2056,13 @@ function renderRows(){
         +'<td></td>'
         +'<td><div class="row-acts">'
         +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()+'</button>'
+        +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:#fbbf24':'opacity:.55')+'">📌</button>':'')
         +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
         +'</div></td>'
         +'</tr>';
     }
     var isDone=DONE_ST.indexOf(r.status)>-1;
-    return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'end\')" style="cursor:pointer">'
+    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'end\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
@@ -2055,6 +2081,7 @@ function renderRows(){
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
       +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()
       +'</button>'
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:#fbbf24':'opacity:.55')+'">📌</button>':'')
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
@@ -2124,7 +2151,7 @@ function renderDIDRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
-    return '<tr class="'+(isDone?'row-done':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer">'
+    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
@@ -2137,8 +2164,9 @@ function renderDIDRows(){
       +'<td>'+didTimerHTML(r)+'</td>'
       +'<td><div class="row-acts">'
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
-      +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})() 
+      +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()
       +'</button>'
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:#fbbf24':'opacity:.55')+'">📌</button>':'')
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
@@ -2939,11 +2967,11 @@ function _renderCommentList(comments,containerId,recordId,source){
     var delBtn=isAdminOrSemi
       ?'<button data-ts="'+safeTs+'" data-rid="'+safeRid+'" data-src="'+safeSrc+'" data-cid="'+safeCont+'" onclick="deleteComment(this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:#f87171;padding:0 4px" title="Delete">🗑️</button>'
       :'';
-    return '<div class="comment-item" id="ci_'+safeTs+'">'
+    return '<div class="comment-item" id="ci_'+safeCont+'_'+safeTs+'">'
       +'<div class="comment-meta"><span class="comment-author">💬 '+getUserDisplay(c.user||'')+'</span>'
       +'<div style="display:flex;align-items:center;gap:4px"><span class="comment-time">'+fmtCommentTime(c.ts)+'</span>'+editBtn+delBtn+'</div>'
       +'</div>'
-      +(c.text?'<div class="comment-text" id="ct_'+safeTs+'">'+c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'')
+      +(c.text?'<div class="comment-text" id="ct_'+safeCont+'_'+safeTs+'">'+c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'')
       +renderCommentAttachments(c.attachments)
       +'</div>';
   }).join('');
@@ -3857,20 +3885,21 @@ function editComment(btn){
   if(!r||!r.comments) return;
   var cm=r.comments.find(function(c){return c.ts===ts;});
   if(!cm) return;
-  var el=document.getElementById('ct_'+ts);
+  var el=document.getElementById('ct_'+containerId+'_'+ts);
   if(!el) return;
   var old=cm.text||'';
-  el.innerHTML='<textarea style="width:100%;background:var(--bg4);border:1px solid var(--accent);border-radius:6px;padding:6px;color:var(--text);font-family:var(--sf);font-size:13px;resize:vertical;min-height:50px" id="cedit_ta_'+ts+'">'+old.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</textarea>'
+  el.innerHTML='<textarea style="width:100%;background:var(--bg4);border:1px solid var(--accent);border-radius:6px;padding:6px;color:var(--text);font-family:var(--sf);font-size:13px;resize:vertical;min-height:50px" id="cedit_ta_'+containerId+'_'+ts+'">'+old.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</textarea>'
     +'<div style="display:flex;gap:6px;margin-top:5px">'
     +'<button class="btn btn-primary btn-sm" data-ts="'+ts+'" data-src="'+source+'" data-rid="'+recordId+'" data-cid="'+containerId+'" onclick="saveCommentEdit(this)">Save</button>'
-    +'<button class="btn btn-secondary btn-sm" data-ts="'+ts+'" data-old="'+old.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'" onclick="cancelCommentEdit(this)">Cancel</button>'
+    +'<button class="btn btn-secondary btn-sm" data-ts="'+ts+'" data-cid="'+containerId+'" data-old="'+old.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'" onclick="cancelCommentEdit(this)">Cancel</button>'
     +'</div>';
 }
 
 function cancelCommentEdit(btn){
   var ts=btn.dataset.ts;
+  var containerId=btn.dataset.cid;
   var old=btn.dataset.old||'';
-  var el=document.getElementById('ct_'+ts);
+  var el=document.getElementById('ct_'+containerId+'_'+ts);
   if(el) el.innerHTML=old.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
@@ -3878,7 +3907,8 @@ function saveCommentEdit(btn){
   var ts=parseInt(btn.dataset.ts);
   var source=btn.dataset.src;
   var recordId=btn.dataset.rid;
-  var ta=document.getElementById('cedit_ta_'+ts);
+  var containerId=btn.dataset.cid;
+  var ta=document.getElementById('cedit_ta_'+containerId+'_'+ts);
   if(!ta) return;
   var newText=ta.value.trim();
   var r=DATA.find(function(d){return d.id===parseInt(recordId);});
