@@ -1256,6 +1256,12 @@ var NO_TIMER_ST=['Done','Commercial Concern','Resolved','Posted','Advised Client
 var DID_DONE_ST=['Done','Cancel by Client'];
 var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','Pending Product','In Progress','Advised Client'];
 
+function isRecordCompleted(r){
+  if(r._type==='rr')return !!r.rrCompleted;
+  if(r._type==='did')return DID_DONE_ST.indexOf(r.status)>-1;
+  return DONE_ST.indexOf(r.status)>-1;
+}
+
 function didStBadge(s){
   var greenSt=['Done','Cancel by Client','Advised Client'];
   var blueSt=['In Progress'];
@@ -1621,7 +1627,7 @@ setInterval(function(){
         badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'');
       }
     }
-    if(r.reminderAt&&Date.now()>=r.reminderAt&&!hasLocalAlerted('reminder',r)){
+    if(r.reminderAt&&Date.now()>=r.reminderAt&&!hasLocalAlerted('reminder',r)&&!isRecordCompleted(r)){
       markLocalAlerted('reminder',r);
       try{playAlert(SETTINGS.reminderTone||'bell');}catch(re){}
       toast('🔔 Reminder: '+timerAlertSummary(r),'info');
