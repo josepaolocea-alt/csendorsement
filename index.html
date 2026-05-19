@@ -186,6 +186,7 @@ textarea.fc{resize:vertical;min-height:70px;}
 .attach-zone.drag-over{border-color:var(--accent);background:rgba(91,124,255,.07);}
 .attach-input-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .attach-input-row textarea{flex:1;min-width:180px;}
+.attach-input-row label{display:none;}
 .attach-previews{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
 .attach-thumb{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--bg3);}
 .attach-thumb img{width:90px;height:70px;object-fit:cover;display:block;}
@@ -687,9 +688,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <h4>💬 Comments <span class="comment-badge" id="modal-comment-count">0</span></h4>
         <div class="comment-list" id="modal-comment-list"></div>
         <div class="comment-new">
-          <label>Add Comment / Attachment</label>
+          <label>Add Comment</label>
           <div class="attach-zone" id="endorse-attach-zone" ondragover="onDragOver(event,'endorse-attach-zone')" ondragleave="onDragLeave('endorse-attach-zone')" ondrop="onDrop(event,'endorse-attach-zone','endorse-attach-pending')">
-            <textarea class="fc" id="f-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'endorse-attach-pending')"></textarea>
+            <textarea class="fc" id="f-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'endorse-attach-pending')"></textarea>
             <div class="attach-previews" id="endorse-attach-pending"></div>
             <div class="attach-input-row">
               <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'endorse-attach-pending')"></label>
@@ -800,9 +801,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <h4>💬 Comments <span class="comment-badge" id="rr-modal-comment-count">0</span></h4>
         <div class="comment-list" id="rr-modal-comment-list"></div>
         <div class="comment-new">
-          <label>Add Comment / Attachment</label>
+          <label>Add Comment</label>
           <div class="attach-zone" id="rr-attach-zone" ondragover="onDragOver(event,'rr-attach-zone')" ondragleave="onDragLeave('rr-attach-zone')" ondrop="onDrop(event,'rr-attach-zone','rr-attach-pending')">
-            <textarea class="fc" id="rr-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'rr-attach-pending')"></textarea>
+            <textarea class="fc" id="rr-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'rr-attach-pending')"></textarea>
             <div class="attach-previews" id="rr-attach-pending"></div>
             <div class="attach-input-row">
               <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'rr-attach-pending')"></label>
@@ -894,9 +895,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <h4>💬 Comments <span class="comment-badge" id="did-modal-comment-count">0</span></h4>
         <div class="comment-list" id="did-modal-comment-list"></div>
         <div class="comment-new">
-          <label>Add Comment / Attachment</label>
+          <label>Add Comment</label>
           <div class="attach-zone" id="did-attach-zone" ondragover="onDragOver(event,'did-attach-zone')" ondragleave="onDragLeave('did-attach-zone')" ondrop="onDrop(event,'did-attach-zone','did-attach-pending')">
-            <textarea class="fc" id="d-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'did-attach-pending')"></textarea>
+            <textarea class="fc" id="d-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'did-attach-pending')"></textarea>
             <div class="attach-previews" id="did-attach-pending"></div>
             <div class="attach-input-row">
               <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'did-attach-pending')"></label>
@@ -929,9 +930,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-body">
       <div class="comment-list" id="cm-list"></div>
       <div class="comment-new">
-        <label>Add Comment / Attachment</label>
+        <label>Add Comment</label>
         <div class="attach-zone" id="cm-attach-zone" ondragover="onDragOver(event,'cm-attach-zone')" ondragleave="onDragLeave('cm-attach-zone')" ondrop="onDrop(event,'cm-attach-zone','cm-attach-pending')">
-          <textarea class="fc" id="cm-comment-text" placeholder="Write a comment, paste image (Ctrl+V), or drag & drop files..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'cm-attach-pending')"></textarea>
+          <textarea class="fc" id="cm-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:hidden" oninput="autoResize(this)" onpaste="onPasteAttach(event,'cm-attach-pending')"></textarea>
           <div class="attach-previews" id="cm-attach-pending"></div>
           <div class="attach-input-row">
             <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'cm-attach-pending')"></label>
@@ -3102,16 +3103,9 @@ function removePending(zoneId,idx){
 }
 
 async function addFilesToPending(files,zoneId){
-  if(!_pendingAttachments[zoneId]) _pendingAttachments[zoneId]=[];
-  for(var i=0;i<files.length;i++){
-    var f=files[i];
-    if(f.size>5*1024*1024){toast(f.name+' is over 5MB — skipped','error');continue;}
-    try{
-      var data=await readFileAsBase64(f);
-      _pendingAttachments[zoneId].push({name:f.name,data:data,isImage:isImage(f.name),type:f.type});
-    }catch(e){toast('Failed to read '+f.name,'error');}
-  }
-  renderPendingPreviews(zoneId);
+  // Attachments are disabled: storing files (especially screenshots) as base64
+  // bloats the record's Firestore document and can exceed its 1 MB limit.
+  // Pasting a screenshot still works — it is OCR'd into text instead.
 }
 
 function onFileInput(e,zoneId){addFilesToPending(e.target.files,zoneId);e.target.value='';}
