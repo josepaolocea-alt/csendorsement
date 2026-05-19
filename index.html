@@ -4530,5 +4530,104 @@ window.rowDblClick = rowDblClick;
   });
 })();
 </script>
+
+<!-- ─── PASTE-SCREENSHOT-TO-TEXT (OCR) ───────────────────────── -->
+<script>
+(function(){
+  // Lazy-load Tesseract.js only the first time a screenshot is pasted,
+  // so the app stays fast for users who never use this feature.
+  var tesseractPromise = null;
+  function loadTesseract(){
+    if(tesseractPromise) return tesseractPromise;
+    tesseractPromise = new Promise(function(resolve,reject){
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+      s.onload = function(){ resolve(window.Tesseract); };
+      s.onerror = function(){ reject(new Error('Could not load the text-reading tool')); };
+      document.head.appendChild(s);
+    });
+    return tesseractPromise;
+  }
+
+  // A persistent little indicator shown while the screenshot is being read.
+  var indicator = null;
+  function showIndicator(){
+    if(indicator) return;
+    indicator = document.createElement('div');
+    indicator.textContent = 'Reading screenshot…';
+    indicator.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);'
+      + 'background:#222;color:#fff;padding:10px 18px;border-radius:8px;font:14px sans-serif;'
+      + 'box-shadow:0 4px 16px rgba(0,0,0,.35);z-index:99999;';
+    document.body.appendChild(indicator);
+  }
+  function hideIndicator(){
+    if(indicator && indicator.parentNode) indicator.remove();
+    indicator = null;
+  }
+  function notify(msg,type){
+    if(typeof window.toast === 'function'){ window.toast(msg,type); }
+  }
+
+  // Only text-style fields make sense for OCR'd text.
+  function isTextField(el){
+    if(!el) return false;
+    if(el.tagName === 'TEXTAREA') return true;
+    if(el.tagName !== 'INPUT') return false;
+    var t = (el.type || 'text').toLowerCase();
+    return ['text','search','tel','url','email',''].indexOf(t) !== -1;
+  }
+
+  function insertText(el, text){
+    var start = (el.selectionStart != null) ? el.selectionStart : el.value.length;
+    var end   = (el.selectionEnd   != null) ? el.selectionEnd   : el.value.length;
+    el.value = el.value.slice(0,start) + text + el.value.slice(end);
+    var pos = start + text.length;
+    try { el.selectionStart = el.selectionEnd = pos; } catch(_){}
+    el.dispatchEvent(new Event('input', { bubbles:true }));
+  }
+
+  document.addEventListener('paste', function(e){
+    var el = e.target;
+    if(!isTextField(el)) return;
+    var cd = e.clipboardData;
+    if(!cd || !cd.items) return;
+
+    var imgFile = null;
+    for(var i=0;i<cd.items.length;i++){
+      if(cd.items[i].type && cd.items[i].type.indexOf('image') === 0){
+        imgFile = cd.items[i].getAsFile();
+        break;
+      }
+    }
+    if(!imgFile) return; // No image — let the normal paste happen.
+
+    e.preventDefault();
+    showIndicator();
+
+    loadTesseract()
+      .then(function(Tesseract){
+        return Tesseract.recognize(imgFile, 'eng');
+      })
+      .then(function(result){
+        var text = (result && result.data && result.data.text || '').trim();
+        if(el.tagName !== 'TEXTAREA'){
+          text = text.replace(/\s*\n\s*/g,' ').trim(); // single-line fields
+        }
+        hideIndicator();
+        if(!text){
+          notify('No text found in that screenshot','error');
+          return;
+        }
+        insertText(el, text);
+        notify('Screenshot text added — please double-check it','success');
+      })
+      .catch(function(err){
+        hideIndicator();
+        console.error('OCR error', err);
+        notify('Could not read the screenshot — try typing it instead','error');
+      });
+  }, true);
+})();
+</script>
 </body>
 </html>
