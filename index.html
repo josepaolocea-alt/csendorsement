@@ -2184,6 +2184,7 @@ function saveRRRecord(){
     if(idx>=0){
       var prev=DATA[idx];
       applyReminderToRecord(rec,prev,reminder);
+      if(rec.rrCompleted) rec.pinned=false;
       var timerChanged=_rrTimerDirty;
       var timerUpdate;
       if(timerChanged&&rrTimerSecs){
@@ -2505,6 +2506,7 @@ function saveDIDRecord(){
       if(isDone&&!prev.resolvedDate) rec.resolvedDate=today;
       else if(!isDone) rec.resolvedDate='';
       else rec.resolvedDate=prev.resolvedDate;
+      if(isDone) rec.pinned=false;
       var timerChanged=_didTimerDirty;
       var timerUpd={};
       if(timerChanged&&dTimerSecs>0){
@@ -2865,6 +2867,7 @@ function saveRecord(){
         if(isCompleted&&!prev.resolvedDate) rec.resolvedDate=today;
         else if(!isCompleted) rec.resolvedDate='';
         else rec.resolvedDate=prev.resolvedDate;
+        if(isCompleted) rec.pinned=false;
         var timerChanged=_endorsementTimerDirty;
         var timerUpdate;
         if(NO_TIMER_ST.indexOf(newStatus)>-1){
