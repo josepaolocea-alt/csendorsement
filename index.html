@@ -1751,15 +1751,30 @@ function applyDIDFilters(){
 }
 
 // ─── PIN TO TOP ─────────────────────────────────────────────
+function resetCompletedPin(r,save){
+  if(!r||!r.pinned||!isRecordCompleted(r))return false;
+  r.pinned=false;
+  if(save&&window._canEdit)saveOne(r);
+  return true;
+}
 function pinToTop(){
   var p=[],n=[];
-  for(var i=0;i<filteredData.length;i++){(filteredData[i].pinned?p:n).push(filteredData[i]);}
+  for(var i=0;i<filteredData.length;i++){
+    resetCompletedPin(filteredData[i],true);
+    (filteredData[i].pinned?p:n).push(filteredData[i]);
+  }
   filteredData=p.concat(n);
 }
 function togglePin(id){
   if(!window._canEdit)return;
   var r=DATA.find(function(d){return d.id===id;});
   if(!r)return;
+  if(isRecordCompleted(r)){
+    resetCompletedPin(r,true);
+    toast('Completed entries stay unpinned','info');
+    applyFilters();
+    return;
+  }
   r.pinned=!r.pinned;
   saveOne(r);
   toast(r.pinned?'Pinned to top':'Unpinned','info');
