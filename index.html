@@ -1908,12 +1908,13 @@ function toggleRRField(id,field,val){
 }
 
 function updateRRStats(){
-  var rr=DATA.filter(function(r){return r._type==='rr';});
-  var total=rr.length,done=rr.filter(function(r){return r.rrCompleted;}).length,pending=total-done;
+  var total=filteredData.length;
+  var pending=filteredData.filter(function(r){return !r.rrCompleted;}).length;
+  var high=filteredData.filter(function(r){return r.rrPriority==='Critical'||r.rrPriority==='Urgent';}).length;
   document.getElementById('stats-row').innerHTML=
     '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
     +'<div class="stat-chip">Pending <strong>'+pending+'</strong></div>'
-    +'<div class="stat-chip">Completed <strong>'+done+'</strong></div>';
+    +'<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
 }
 
 function applyRRFilters(){
@@ -2318,14 +2319,15 @@ function renderRows(){
 }
 
 function updateStats(){
-  var endData=DATA.filter(function(r){return r._type!=='did';});
-  var total=endData.length,done=endData.filter(function(r){return DONE_ST.indexOf(r.status)>-1;}).length;
-  var pending=total-done,high=endData.filter(function(r){return r.priority==='High';}).length;
-  document.getElementById('stats-row').innerHTML=
-    '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
-    +'<div class="stat-chip">Pending <strong>'+pending+'</strong></div>'
-    +'<div class="stat-chip">Completed <strong>'+done+'</strong></div>'
-    +'<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
+  var total=filteredData.length;
+  var high=filteredData.filter(function(r){return r.priority==='High';}).length;
+  var html='<div class="stat-chip">Total <strong>'+total+'</strong></div>';
+  if(currentTab!=='done'){
+    var pending=filteredData.filter(function(r){return r.status&&r.status.indexOf('Pending')===0;}).length;
+    html+='<div class="stat-chip">Pending <strong>'+pending+'</strong></div>';
+  }
+  html+='<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
+  document.getElementById('stats-row').innerHTML=html;
 }
 
 var DID_THEAD='<tr>'
@@ -2403,13 +2405,13 @@ function renderDIDRows(){
 }
 
 function updateDIDStats(){
-  var didData=DATA.filter(function(r){return r._type==='did';});
-  var total=didData.length,done=didData.filter(function(r){return DID_DONE_ST.indexOf(r.status)>-1;}).length;
-  var pending=total-done;
+  var total=filteredData.length;
+  var pending=filteredData.filter(function(r){return r.status&&r.status.indexOf('Pending')===0;}).length;
+  var high=filteredData.filter(function(r){return r.priority==='High';}).length;
   document.getElementById('stats-row').innerHTML=
     '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
-    +'<div class="stat-chip">In Progress <strong>'+pending+'</strong></div>'
-    +'<div class="stat-chip">Completed <strong>'+done+'</strong></div>';
+    +'<div class="stat-chip">Pending <strong>'+pending+'</strong></div>'
+    +'<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
 }
 
 var editingDIDId=null;
