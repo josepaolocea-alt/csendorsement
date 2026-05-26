@@ -86,6 +86,14 @@ tr.row-done td{opacity:.5;}
 .st-green{background:rgba(34,197,94,.12);color:#4ade80;}
 .st-yellow{background:rgba(234,179,8,.12);color:#facc15;}
 .st-gray{background:var(--bg4);color:var(--text3);}
+.age-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:rgba(251,191,36,.16);color:#fbbf24;border:1px solid rgba(251,191,36,.28);font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
+tr.advised-age-row>td{background:rgba(251,191,36,.08)!important;}
+tr.advised-age-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
+tr.advised-age-stripe>td{background:repeating-linear-gradient(135deg,rgba(251,191,36,.10) 0,rgba(251,191,36,.10) 8px,rgba(251,191,36,.04) 8px,rgba(251,191,36,.04) 16px)!important;}
+tr.advised-age-pulse>td{animation:advisedAgePulse 1.8s ease-in-out infinite;}
+tr.advised-age-pulse>td:first-child{animation:advisedAgePulseBar 1.8s ease-in-out infinite;}
+@keyframes advisedAgePulse{0%,100%{background:rgba(251,191,36,.07)}50%{background:rgba(251,191,36,.16)}}
+@keyframes advisedAgePulseBar{0%,100%{box-shadow:inset 3px 0 0 #fbbf24}50%{box-shadow:inset 7px 0 0 #f59e0b}}
 .pri-high{background:rgba(239,68,68,.15);color:#f87171;}
 .pri-med{background:rgba(156,163,175,.15);color:#9ca3af;}
 .pri-low{background:rgba(156,163,175,.15);color:#9ca3af;}
@@ -363,6 +371,20 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="ding">✨ Ding Ding</option>
       </select>
       <button class="btn btn-secondary btn-sm" onclick="testReminderAlert()">Test</button>
+    </div>
+    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <span class="auto-label">Advised Client aging:</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="advised-aging-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
+      </label>
+      <span class="auto-label">show after</span>
+      <input class="fc" id="advised-aging-days" type="number" min="1" max="365" value="7" style="width:76px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
+      <span class="auto-label">days</span>
+      <select class="fsel" id="advised-aging-effect" onchange="onAgingSettingChange()">
+        <option value="soft">Soft highlight</option>
+        <option value="pulse">Pulse</option>
+        <option value="stripe">Stripe</option>
+      </select>
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">📅 Filter by date range:</span>
@@ -1066,7 +1088,7 @@ const SETTINGS_DOC = 'app_settings/main';
 var DATA = [];
 var TRASH_DATA = [];
 var idSeq = 1;
-var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep', reminderTone:'bell'};
+var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep', reminderTone:'bell', advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft'};
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
 var _cellStart = null, _dragging = false, _selCells = new Set();
@@ -1242,9 +1264,19 @@ function saveSettings(){
   SETTINGS.autoAlert=document.getElementById('auto-alert').checked;
   SETTINGS.alarmTone=document.getElementById('alarm-tone').value;
   SETTINGS.reminderTone=document.getElementById('reminder-alarm-tone').value;
+  var agingEnabled=document.getElementById('advised-aging-enabled');
+  var agingDays=document.getElementById('advised-aging-days');
+  var agingEffect=document.getElementById('advised-aging-effect');
+  SETTINGS.advisedAgingEnabled=agingEnabled?agingEnabled.checked:true;
+  SETTINGS.advisedAgingDays=agingDays?Math.max(1,parseInt(agingDays.value,10)||7):7;
+  SETTINGS.advisedAgingEffect=agingEffect?agingEffect.value:'soft';
   localStorage.setItem('end_settings',JSON.stringify(SETTINGS));
   // Also persist settings to Firestore
   setDoc(doc(db, 'app_settings', 'main'), SETTINGS).catch(function(){});
+}
+function onAgingSettingChange(){
+  saveSettings();
+  applyFilters();
 }
 function onTimerChange(){
   var sel=document.getElementById('default-timer').value;
@@ -1340,6 +1372,31 @@ function stBadge(s){
   else if(greenSt.indexOf(s)>-1)cls='st-green';
   else if(graySt.indexOf(s)>-1)cls='st-gray';
   return '<span class="badge '+cls+'"><span class="bdot"></span>'+(s||'')+'</span>';
+}
+function entryAgeDays(r){
+  if(!r)return null;
+  var start=r.advisedClientAt?Number(r.advisedClientAt):NaN;
+  if(isNaN(start)&&r.startDate)start=new Date(String(r.startDate)+'T00:00:00').getTime();
+  if(isNaN(start))return null;
+  return Math.max(0,Math.floor((Date.now()-start)/86400000));
+}
+function advisedAgingThreshold(){
+  return Math.max(1,parseInt(SETTINGS.advisedAgingDays,10)||7);
+}
+function isAdvisedAgingDue(r){
+  if(!SETTINGS.advisedAgingEnabled||!r||r.status!=='Advised Client'||isRecordCompleted(r))return false;
+  var age=entryAgeDays(r);
+  return age!==null&&age>=advisedAgingThreshold();
+}
+function advisedAgingRowClass(r){
+  if(!isAdvisedAgingDue(r))return '';
+  var effect=SETTINGS.advisedAgingEffect==='pulse'||SETTINGS.advisedAgingEffect==='stripe'?SETTINGS.advisedAgingEffect:'soft';
+  return ' advised-age-row advised-age-'+effect;
+}
+function advisedAgingBadge(r){
+  if(!isAdvisedAgingDue(r))return '';
+  var age=entryAgeDays(r);
+  return '<span class="age-alert-badge" title="Advised Client for '+age+' days">Lack update '+age+'d</span>';
 }
 function priBadge(p){var cls={High:'pri-high',Normal:'pri-med'}[p]||'pri-med';return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';}
 function fmtDate(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
@@ -2321,14 +2378,15 @@ function renderRows(){
   }
   if(!displayData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
+    var agingCls=advisedAgingRowClass(r);
     if(r._type==='did'){
-      return '<tr class="'+(r.pinned?'pinned-row':'')+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
+      return '<tr class="'+(r.pinned?'pinned-row':'')+agingCls+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
         +'<td title="'+(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+(r.desc||'')+'</td>'
         +'<td></td>'
-        +'<td>'+didStBadge(r.status)+'</td>'
+        +'<td>'+didStBadge(r.status)+advisedAgingBadge(r)+'</td>'
         +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
         +'<td style="color:#4ade80">'+fmtDate(r.resolvedDate)+'</td>'
         +'<td>'+didPriBadge(r.priority)+'</td>'
@@ -2341,14 +2399,14 @@ function renderRows(){
         +'</tr>';
     }
     var isDone=DONE_ST.indexOf(r.status)>-1;
-    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'end\')" style="cursor:pointer">'
+    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'end\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
       +'<td title="'+(r.concern||'')+'" style="max-width:260px;color:var(--text2)">'+(r.concern||'')+'</td>'
       +'<td>'+pltBadge(r.platform)+'</td>'
-      +'<td>'+stBadge(r.status)+'</td>'
+      +'<td>'+stBadge(r.status)+advisedAgingBadge(r)+'</td>'
       +(currentTab==='done'
         ?'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
          +'<td style="color:'+(r.resolvedDate?'#4ade80':'var(--text3)')+'">'+( r.resolvedDate?fmtDate(r.resolvedDate):'—')+'</td>'
@@ -2431,12 +2489,13 @@ function renderDIDRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
-    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer">'
+    var agingCls=advisedAgingRowClass(r);
+    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
       +'<td title="'+(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+(r.desc||'')+'</td>'
-      +'<td>'+didStBadge(r.status)+'</td>'
+      +'<td>'+didStBadge(r.status)+advisedAgingBadge(r)+'</td>'
       +'<td>'+rrBadge(r.am||'','rrby')+'</td>'
       +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
       +'<td>'+didPriBadge(r.priority)+'</td>'
@@ -2574,6 +2633,8 @@ function saveDIDRecord(){
       if(isDone&&!prev.resolvedDate) rec.resolvedDate=today;
       else if(!isDone) rec.resolvedDate='';
       else rec.resolvedDate=prev.resolvedDate;
+      if(newStatus==='Advised Client') rec.advisedClientAt=prev.status==='Advised Client'?(prev.advisedClientAt||null):Date.now();
+      else rec.advisedClientAt=null;
       if(isDone) rec.pinned=false;
       var timerChanged=_didTimerDirty;
       var timerUpd={};
@@ -2595,6 +2656,7 @@ function saveDIDRecord(){
   }else{
     applyReminderToRecord(rec,null,reminder);
     if(isDone) rec.resolvedDate=today;
+    if(newStatus==='Advised Client') rec.advisedClientAt=Date.now();
     // Timer logic for new: start automatically if duration > 0
     if(dTimerSecs>0){rec.timerStart=Date.now();rec.timerAlerted=false;}
     else{rec.timerStart=null;rec.timerAlerted=false;}
@@ -2935,6 +2997,8 @@ function saveRecord(){
         if(isCompleted&&!prev.resolvedDate) rec.resolvedDate=today;
         else if(!isCompleted) rec.resolvedDate='';
         else rec.resolvedDate=prev.resolvedDate;
+        if(newStatus==='Advised Client') rec.advisedClientAt=prev.status==='Advised Client'?(prev.advisedClientAt||null):Date.now();
+        else rec.advisedClientAt=null;
         if(isCompleted) rec.pinned=false;
         var timerChanged=_endorsementTimerDirty;
         var timerUpdate;
@@ -2960,6 +3024,7 @@ function saveRecord(){
   }else{
     applyReminderToRecord(rec,null,reminder);
     if(isCompleted){rec.resolvedDate=today;}
+    if(newStatus==='Advised Client') rec.advisedClientAt=Date.now();
     if(noTimer){rec.timerStart=null;rec.timerAlerted=false;}
     var ne=Object.assign({id:allocId(),_sel:false,timerStart:noTimer?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     // Merge any buffered comments
@@ -3416,11 +3481,14 @@ function matchesDateRange(r){
 }
 
 // Load settings from localStorage (fast, local)
-SETTINGS=Object.assign({defaultTimer:3600,autoAlert:false,alarmTone:'beep',reminderTone:'bell'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
+SETTINGS=Object.assign({defaultTimer:3600,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
 document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
 document.getElementById('auto-alert').checked=SETTINGS.autoAlert||false;
 document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
 document.getElementById('reminder-alarm-tone').value=SETTINGS.reminderTone||'bell';
+document.getElementById('advised-aging-enabled').checked=SETTINGS.advisedAgingEnabled!==false;
+document.getElementById('advised-aging-days').value=SETTINGS.advisedAgingDays||7;
+document.getElementById('advised-aging-effect').value=SETTINGS.advisedAgingEffect||'soft';
 
 // ─── FIRESTORE REAL-TIME LISTENER ────────────────────────────
 async function startFirestore(){
@@ -4725,6 +4793,7 @@ window.markEndorsementTimerDirty=markEndorsementTimerDirty;
 window.markRRTimerDirty=markRRTimerDirty;
 window.onDIDPriorityChange=onDIDPriorityChange;
 window.onDIDTimerChange=onDIDTimerChange;
+window.onAgingSettingChange=onAgingSettingChange;
 window.onRRPriorityChange=onRRPriorityChange;
 window.onRRTimerChange=onRRTimerChange;
 window.rrTimerHTML=rrTimerHTML;
