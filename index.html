@@ -600,13 +600,32 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 </div>
 <!-- DAILY REPORT MODAL -->
 <div class="modal-ov hidden" id="daily-report-modal" style="z-index:540">
-  <div class="modal" style="max-width:680px">
+  <div class="modal" style="max-width:780px">
     <div class="modal-hdr"><h3>Daily Report</h3><button class="modal-cls" onclick="closeDailyReport()">x</button></div>
     <div class="modal-body">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <label style="font-size:12px;color:var(--text2)">Report date:</label>
-        <input class="fc" id="daily-report-date" type="date" style="width:160px" onchange="buildDailyReport()">
-        <button class="btn btn-primary btn-sm" onclick="copyDailyReport()" style="margin-left:auto">Copy to Clipboard</button>
+        <label style="font-size:12px;color:var(--text2)">Range:</label>
+        <select class="fc" id="daily-report-range" style="width:150px" onchange="onDailyReportRangeChange()">
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="2days">Past 2 days</option>
+          <option value="7days">Past 7 days</option>
+          <option value="custom">Specific date</option>
+        </select>
+        <input class="fc" id="daily-report-date" type="date" style="width:160px;display:none" onchange="buildDailyReport()">
+        <button class="btn btn-primary btn-sm" id="ai-summary-btn" onclick="generateAISummary()" style="margin-left:auto;background:linear-gradient(135deg,#8b5cf6,#3b82f6);border:none">✨ AI Summary</button>
+        <button class="btn btn-secondary btn-sm" onclick="copyDailyReport()">Copy Report</button>
+      </div>
+      <div id="ai-summary-section" style="display:none;margin-bottom:14px;padding:14px;background:linear-gradient(135deg,rgba(139,92,246,0.08),rgba(59,130,246,0.08));border:1px solid rgba(139,92,246,0.35);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">✨ AI Summary</span>
+          <span id="ai-summary-loading" style="font-size:11px;color:var(--text3);display:none">Generating...</span>
+          <span style="margin-left:auto;display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="copyAISummary()" style="font-size:11px;padding:4px 10px">Copy</button>
+            <button class="btn btn-secondary btn-sm" onclick="closeAISummary()" style="font-size:11px;padding:4px 10px">Hide</button>
+          </span>
+        </div>
+        <div id="ai-summary-text" style="font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap"></div>
       </div>
       <pre id="daily-report-text" style="white-space:pre-wrap;word-break:break-word;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12.5px;line-height:1.55;color:var(--text);max-height:55vh;overflow:auto;font-family:'DM Mono',monospace;margin:0">Loading...</pre>
     </div>
@@ -1003,6 +1022,9 @@ const firebaseConfig = {
   appId: "1:73262340807:web:6b487173b1a2ed80917ce2",
   measurementId: "G-RX9RWJRLYZ"
 };
+
+// Gemini API key — restricted to https://josepaolocea-alt.github.io/* + Generative Language API
+const GEMINI_API_KEY = "AIzaSyBcrDJCZWCgjYZNs5iyz3dXVX5bk5lKABw";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -4246,6 +4268,13 @@ function openDailyReport(){
   var now=new Date();
   document.getElementById('daily-report-date').value=
     now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  // Reset to default range and hide AI summary
+  document.getElementById('daily-report-range').value='today';
+  document.getElementById('daily-report-date').style.display='none';
+  document.getElementById('ai-summary-section').style.display='none';
+  document.getElementById('ai-summary-text').textContent='';
+  var aiBtn=document.getElementById('ai-summary-btn');
+  if(aiBtn){aiBtn.disabled=false;aiBtn.innerHTML='✨ AI Summary';}
   document.getElementById('daily-report-text').textContent='Loading activity logs...';
   getDocs(collection(db,'logs')).then(function(snap){
     _drLogs=[];snap.forEach(function(d){_drLogs.push(d.data());});
@@ -4256,11 +4285,54 @@ function openDailyReport(){
 }
 function closeDailyReport(){document.getElementById('daily-report-modal').classList.add('hidden');}
 
-function _drSameDay(ts,dateStr){
-  if(!ts) return false;
-  var d=new Date(ts);
-  var s=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  return s===dateStr;
+function onDailyReportRangeChange(){
+  var range=document.getElementById('daily-report-range').value;
+  var dateInput=document.getElementById('daily-report-date');
+  dateInput.style.display=(range==='custom')?'':'none';
+  // Hide previous AI summary when range changes
+  document.getElementById('ai-summary-section').style.display='none';
+  buildDailyReport();
+}
+
+function _drFmtShort(ts){
+  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function _drFmtFull(ts){
+  return new Date(ts).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+
+function _drGetRange(){
+  var range=document.getElementById('daily-report-range').value;
+  var now=new Date();
+  var startOfToday=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  var endOfToday=startOfToday+86400000-1;
+  if(range==='today'){
+    return {start:startOfToday,end:endOfToday,label:'Today ('+_drFmtShort(startOfToday)+')'};
+  }
+  if(range==='yesterday'){
+    var ys=startOfToday-86400000;
+    return {start:ys,end:startOfToday-1,label:'Yesterday ('+_drFmtShort(ys)+')'};
+  }
+  if(range==='2days'){
+    var s2=startOfToday-86400000;
+    return {start:s2,end:endOfToday,label:'Past 2 days ('+_drFmtShort(s2)+' to '+_drFmtShort(startOfToday)+')'};
+  }
+  if(range==='7days'){
+    var s7=startOfToday-86400000*6;
+    return {start:s7,end:endOfToday,label:'Past 7 days ('+_drFmtShort(s7)+' to '+_drFmtShort(startOfToday)+')'};
+  }
+  // custom — single date
+  var dateStr=document.getElementById('daily-report-date').value;
+  if(!dateStr) return null;
+  var dp=dateStr.split('-');
+  var d=new Date(parseInt(dp[0]),parseInt(dp[1])-1,parseInt(dp[2]));
+  var s=d.getTime();
+  return {start:s,end:s+86400000-1,label:_drFmtFull(s)};
+}
+
+function _drInRange(ts,range){
+  if(!ts||!range) return false;
+  return ts>=range.start&&ts<=range.end;
 }
 function _drTime(ts){return new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});}
 function _drName(r){
@@ -4291,18 +4363,15 @@ function _drStartDate(r){
 }
 
 function buildDailyReport(){
-  var dateStr=document.getElementById('daily-report-date').value;
+  var range=_drGetRange();
   var pre=document.getElementById('daily-report-text');
-  if(!dateStr){pre.textContent='Please pick a report date.';return;}
-  var dp=dateStr.split('-');
-  var prettyDate=new Date(parseInt(dp[0]),parseInt(dp[1])-1,parseInt(dp[2]))
-    .toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  if(!range){pre.textContent='Please pick a date.';return;}
   var out=[];
-  out.push('DAILY REPORT — '+prettyDate);
+  out.push('DAILY REPORT — '+range.label);
   out.push('Generated '+new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}));
   out.push('');
 
-  // Section 1: Today's activity (logs + comments), grouped per entry
+  // Section 1: Activity (logs + comments), grouped per entry
   var groups={};
   function addItem(name,ts,line){
     if(!groups[name]) groups[name]=[];
@@ -4312,11 +4381,11 @@ function buildDailyReport(){
   var otherCount={login:0,exported:0};
   if(_drLogs){
     _drLogs.forEach(function(l){
-      if(!_drSameDay(l.ts,dateStr)) return;
+      if(!_drInRange(l.ts,range)) return;
       if(l.action==='login'){otherCount.login++;return;}
       if(l.action==='exported'){otherCount.exported++;return;}
       var lbl=actionLbl[l.action]||l.action;
-      var line='  • '+_drTime(l.ts)+' — '+lbl+' (by '+getUserDisplay(l.user)+')';
+      var line='  • '+_drFmtShort(l.ts)+' '+_drTime(l.ts)+' — '+lbl+' (by '+getUserDisplay(l.user)+')';
       if(l.details) line+='\n      '+l.details;
       addItem(l.record||'(unnamed)',l.ts,line);
     });
@@ -4324,18 +4393,18 @@ function buildDailyReport(){
   DATA.forEach(function(r){
     if(!r.comments||!r.comments.length) return;
     r.comments.forEach(function(c){
-      if(!_drSameDay(c.ts,dateStr)) return;
+      if(!_drInRange(c.ts,range)) return;
       var txt=String(c.text||'').replace(/\s+/g,' ').trim();
       if(txt.length>240) txt=txt.slice(0,240)+'…';
       var att=(c.attachments&&c.attachments.length)?' ['+c.attachments.length+' attachment(s)]':'';
-      addItem(_drName(r),c.ts,'  • '+_drTime(c.ts)+' — Comment by '+getUserDisplay(c.user)+': "'+txt+'"'+att);
+      addItem(_drName(r),c.ts,'  • '+_drFmtShort(c.ts)+' '+_drTime(c.ts)+' — Comment by '+getUserDisplay(c.user)+': "'+txt+'"'+att);
     });
   });
   var names=Object.keys(groups).sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;});
-  out.push("=== TODAY'S ACTIVITY ("+names.length+' entr'+(names.length===1?'y':'ies')+') ===');
+  out.push('=== ACTIVITY ('+names.length+' entr'+(names.length===1?'y':'ies')+') ===');
   if(_drLogs===null) out.push('(Activity logs could not be loaded — showing comment activity only.)');
   if(!names.length){
-    out.push('No recorded activity for this date.');
+    out.push('No recorded activity for this range.');
   }else{
     names.forEach(function(n){
       out.push('');
@@ -4348,16 +4417,16 @@ function buildDailyReport(){
     if(otherCount.login) ex.push(otherCount.login+' login'+(otherCount.login!==1?'s':''));
     if(otherCount.exported) ex.push(otherCount.exported+' export'+(otherCount.exported!==1?'s':''));
     out.push('');
-    out.push('Also today: '+ex.join(', ')+'.');
+    out.push('Also: '+ex.join(', ')+'.');
   }
   out.push('');
 
-  // Section 2: New entries today
-  var fresh=DATA.filter(function(r){return _drSameDay(r.createdAt,dateStr);});
+  // Section 2: New entries in range
+  var fresh=DATA.filter(function(r){return _drInRange(r.createdAt,range);});
   fresh.sort(function(a,b){return (a.createdAt||0)-(b.createdAt||0);});
-  out.push('=== NEW ENTRIES TODAY ('+fresh.length+') ===');
+  out.push('=== NEW ENTRIES ('+fresh.length+') ===');
   if(!fresh.length){
-    out.push('No new entries created on this date.');
+    out.push('No new entries created in this range.');
   }else{
     fresh.forEach(function(r){
       var pri=_drPriority(r);
@@ -4402,6 +4471,96 @@ function _drFallbackCopy(txt){
   try{document.execCommand('copy');toast('Report copied to clipboard','success');}
   catch(e){toast('Could not copy — select the text manually','error');}
   document.body.removeChild(ta);
+}
+
+// ─── AI SUMMARY (Gemini API) ─────────────────────────────────
+function closeAISummary(){
+  document.getElementById('ai-summary-section').style.display='none';
+}
+
+function copyAISummary(){
+  var txt=document.getElementById('ai-summary-text').textContent;
+  if(!txt){toast('No summary to copy','error');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('AI summary copied','success');})
+      .catch(function(){_drFallbackCopy(txt);});
+  }else{_drFallbackCopy(txt);}
+}
+
+function generateAISummary(){
+  var btn=document.getElementById('ai-summary-btn');
+  var section=document.getElementById('ai-summary-section');
+  var loading=document.getElementById('ai-summary-loading');
+  var textEl=document.getElementById('ai-summary-text');
+
+  if(!GEMINI_API_KEY||GEMINI_API_KEY.indexOf('AIza')!==0){
+    toast('Gemini API key not configured','error');
+    return;
+  }
+
+  var reportText=document.getElementById('daily-report-text').textContent||'';
+  if(!reportText.trim()||reportText.indexOf('Loading')===0){
+    toast('Report not ready yet — please wait','error');
+    return;
+  }
+
+  var range=_drGetRange();
+  var rangeLabel=range?range.label:'recent period';
+
+  // Show section + loading state
+  section.style.display='';
+  loading.style.display='';
+  textEl.textContent='';
+  btn.disabled=true;
+  btn.innerHTML='✨ Generating...';
+
+  var prompt='You are an executive assistant summarizing customer support (CS) team activity for a manager.\n\n'+
+    'TIME PERIOD: '+rangeLabel+'\n\n'+
+    'Your task: Read the structured activity data below and write a concise, intelligent summary that gives the manager a clear picture of what happened. Do NOT just restate the data line-by-line — synthesize patterns and insights.\n\n'+
+    'STRUCTURE your summary like this:\n'+
+    '1. Opening line — overall snapshot (e.g., "A steady day with X endorsements created and Y resolved...")\n'+
+    '2. Key activities — what got done, what was worked on (group similar items, name clients/teammates)\n'+
+    '3. Concerns / things to watch — stuck tickets, High priority items still open, anything overdue\n'+
+    '4. Highlights — positive notes if any (completions, fast resolutions, etc.)\n'+
+    '5. Suggested next steps — 1-2 brief action items if relevant\n\n'+
+    'RULES:\n'+
+    '- Use plain prose with short bullet points where helpful — NO markdown headers (no #, ##), NO bold/italic markdown\n'+
+    '- Be specific: mention actual client names, team member names (use the display names from the data), and counts\n'+
+    '- Keep it under ~300 words\n'+
+    '- If there is very little activity, say so honestly and keep it brief\n'+
+    '- Friendly but professional tone\n\n'+
+    '--- ACTIVITY DATA ---\n'+reportText;
+
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_API_KEY,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents:[{parts:[{text:prompt}]}],
+      generationConfig:{temperature:0.7,maxOutputTokens:1200}
+    })
+  }).then(function(res){
+    if(!res.ok){
+      return res.text().then(function(t){throw new Error('API '+res.status+': '+t.slice(0,300));});
+    }
+    return res.json();
+  }).then(function(data){
+    var summary=data&&data.candidates&&data.candidates[0]&&data.candidates[0].content
+                &&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]
+                &&data.candidates[0].content.parts[0].text;
+    if(!summary){
+      var blocked=data&&data.promptFeedback&&data.promptFeedback.blockReason;
+      throw new Error(blocked?('Blocked: '+blocked):'No summary returned');
+    }
+    textEl.textContent=summary.trim();
+  }).catch(function(err){
+    textEl.textContent='⚠️ Could not generate summary.\n\n'+err.message+
+      '\n\nCommon causes:\n• API key not yet active (wait ~5 min after creating restrictions)\n• Daily quota reached (1,500/day free tier)\n• Network issue';
+    console.error('AI summary failed:',err);
+  }).then(function(){
+    loading.style.display='none';
+    btn.disabled=false;
+    btn.innerHTML='✨ Regenerate';
+  });
 }
 
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
@@ -4535,6 +4694,10 @@ window.openDailyReport=openDailyReport;
 window.closeDailyReport=closeDailyReport;
 window.buildDailyReport=buildDailyReport;
 window.copyDailyReport=copyDailyReport;
+window.onDailyReportRangeChange=onDailyReportRangeChange;
+window.generateAISummary=generateAISummary;
+window.copyAISummary=copyAISummary;
+window.closeAISummary=closeAISummary;
 
 // Double-click row to open edit modal
 function rowDblClick(e, id, type) {
