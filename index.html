@@ -630,8 +630,37 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <pre id="daily-report-text" style="white-space:pre-wrap;word-break:break-word;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12.5px;line-height:1.55;color:var(--text);max-height:55vh;overflow:auto;font-family:'DM Mono',monospace;margin:0">Loading...</pre>
     </div>
     <div class="modal-ftr">
+      <button class="btn btn-secondary btn-sm" onclick="openGeminiKeyModal()" style="margin-right:auto;font-size:11px;opacity:0.7" title="Set or change your Gemini API key">⚙ AI Key</button>
       <button class="btn btn-secondary" onclick="closeDailyReport()">Close</button>
       <button class="btn btn-primary" onclick="copyDailyReport()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- GEMINI API KEY MODAL -->
+<div class="modal-ov hidden" id="gemini-key-modal" style="z-index:560">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-hdr"><h3>Set Up AI Summary</h3><button class="modal-cls" onclick="closeGeminiKeyModal()">x</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin:0 0 10px;line-height:1.55">
+        The AI Summary feature uses Google's free Gemini API. You need a free API key — it's stored only in <strong>your browser</strong>, never in the app code or sent anywhere else.
+      </p>
+      <p style="font-size:13px;color:var(--text2);margin:0 0 14px;line-height:1.55">
+        <strong>Don't have a key yet?</strong> <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#8b5cf6;text-decoration:underline">Get a free one here</a> — takes ~30 seconds, no credit card needed.
+      </p>
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px;font-weight:500">Paste your API key:</label>
+      <input class="fc" id="gemini-key-input" type="password" placeholder="AIzaSy..." style="width:100%;font-family:'DM Mono',monospace;font-size:12.5px;box-sizing:border-box" autocomplete="off" spellcheck="false">
+      <div id="gemini-key-err" style="display:none;color:#f87171;font-size:12px;margin-top:8px"></div>
+      <p style="font-size:11px;color:var(--text3);margin:14px 0 0;line-height:1.5">
+        Free tier: 1,500 requests/day, ~15/minute. The key is saved in this browser only — if you clear browser data or switch devices, you'll need to enter it again.
+      </p>
+      <p id="gemini-key-existing" style="display:none;font-size:11px;color:var(--text3);margin:8px 0 0;line-height:1.5">
+        <button class="btn btn-secondary btn-sm" onclick="clearGeminiKeyFromModal()" style="font-size:11px;padding:4px 10px;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.3)">Remove saved key</button>
+      </p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeGeminiKeyModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveGeminiKeyFromModal()">Save Key</button>
     </div>
   </div>
 </div>
@@ -1023,8 +1052,8 @@ const firebaseConfig = {
   measurementId: "G-RX9RWJRLYZ"
 };
 
-// Gemini API key — restricted to https://josepaolocea-alt.github.io/* + Generative Language API
-const GEMINI_API_KEY = "AIzaSyBcrDJCZWCgjYZNs5iyz3dXVX5bk5lKABw";
+// Gemini API key is stored per-user in localStorage (see getStoredGeminiKey).
+// Each user enters their own free key on first AI Summary use — never committed to the public repo.
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -4474,6 +4503,60 @@ function _drFallbackCopy(txt){
 }
 
 // ─── AI SUMMARY (Gemini API) ─────────────────────────────────
+var _pendingAISummary=false;
+
+function getStoredGeminiKey(){
+  try{return localStorage.getItem('gemini_api_key')||'';}catch(e){return '';}
+}
+function saveGeminiKey(key){
+  try{localStorage.setItem('gemini_api_key',key);}catch(e){}
+}
+function clearStoredGeminiKey(){
+  try{localStorage.removeItem('gemini_api_key');}catch(e){}
+}
+
+function openGeminiKeyModal(){
+  var input=document.getElementById('gemini-key-input');
+  var existing=getStoredGeminiKey();
+  input.value=existing;
+  document.getElementById('gemini-key-err').style.display='none';
+  document.getElementById('gemini-key-existing').style.display=existing?'':'none';
+  document.getElementById('gemini-key-modal').classList.remove('hidden');
+  setTimeout(function(){input.focus();input.select();},80);
+}
+function closeGeminiKeyModal(){
+  document.getElementById('gemini-key-modal').classList.add('hidden');
+  _pendingAISummary=false;
+}
+function saveGeminiKeyFromModal(){
+  var input=document.getElementById('gemini-key-input');
+  var err=document.getElementById('gemini-key-err');
+  var key=(input.value||'').trim();
+  if(!key){
+    err.textContent='Please paste your API key.';
+    err.style.display='';
+    return;
+  }
+  if(key.indexOf('AIza')!==0||key.length<30){
+    err.textContent='That doesn\'t look like a valid Gemini key (should start with "AIza" and be ~39 characters).';
+    err.style.display='';
+    return;
+  }
+  saveGeminiKey(key);
+  document.getElementById('gemini-key-modal').classList.add('hidden');
+  toast('API key saved to this browser','success');
+  if(_pendingAISummary){
+    _pendingAISummary=false;
+    generateAISummary();
+  }
+}
+function clearGeminiKeyFromModal(){
+  clearStoredGeminiKey();
+  document.getElementById('gemini-key-input').value='';
+  document.getElementById('gemini-key-existing').style.display='none';
+  toast('Saved key removed','success');
+}
+
 function closeAISummary(){
   document.getElementById('ai-summary-section').style.display='none';
 }
@@ -4488,15 +4571,17 @@ function copyAISummary(){
 }
 
 function generateAISummary(){
+  var key=getStoredGeminiKey();
+  if(!key){
+    _pendingAISummary=true;
+    openGeminiKeyModal();
+    return;
+  }
+
   var btn=document.getElementById('ai-summary-btn');
   var section=document.getElementById('ai-summary-section');
   var loading=document.getElementById('ai-summary-loading');
   var textEl=document.getElementById('ai-summary-text');
-
-  if(!GEMINI_API_KEY||GEMINI_API_KEY.indexOf('AIza')!==0){
-    toast('Gemini API key not configured','error');
-    return;
-  }
 
   var reportText=document.getElementById('daily-report-text').textContent||'';
   if(!reportText.trim()||reportText.indexOf('Loading')===0){
@@ -4531,7 +4616,7 @@ function generateAISummary(){
     '- Friendly but professional tone\n\n'+
     '--- ACTIVITY DATA ---\n'+reportText;
 
-  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GEMINI_API_KEY,{
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
@@ -4540,7 +4625,12 @@ function generateAISummary(){
     })
   }).then(function(res){
     if(!res.ok){
-      return res.text().then(function(t){throw new Error('API '+res.status+': '+t.slice(0,300));});
+      return res.text().then(function(t){
+        var e=new Error('API '+res.status+': '+t.slice(0,300));
+        e._status=res.status;
+        e._body=t;
+        throw e;
+      });
     }
     return res.json();
   }).then(function(data){
@@ -4553,8 +4643,24 @@ function generateAISummary(){
     }
     textEl.textContent=summary.trim();
   }).catch(function(err){
-    textEl.textContent='⚠️ Could not generate summary.\n\n'+err.message+
-      '\n\nCommon causes:\n• API key not yet active (wait ~5 min after creating restrictions)\n• Daily quota reached (1,500/day free tier)\n• Network issue';
+    var keyIssue=err._status===400||err._status===403||(err._body&&/api key|API_KEY|invalid|leaked/i.test(err._body));
+    var msg='⚠️ Could not generate summary.\n\n'+err.message;
+    if(keyIssue){
+      msg+='\n\nThis looks like an API key problem. Click "Change API Key" below to update it.';
+    }else{
+      msg+='\n\nCommon causes:\n• Daily quota reached (1,500/day free tier)\n• Rate limit (max ~15/min) — wait a minute and retry\n• Network issue';
+    }
+    textEl.innerHTML='';
+    var pre=document.createElement('div');
+    pre.style.whiteSpace='pre-wrap';
+    pre.textContent=msg;
+    textEl.appendChild(pre);
+    var fixBtn=document.createElement('button');
+    fixBtn.className='btn btn-secondary btn-sm';
+    fixBtn.style.cssText='margin-top:10px;font-size:11px;padding:5px 12px';
+    fixBtn.textContent=keyIssue?'Change API Key':'Update API Key';
+    fixBtn.onclick=openGeminiKeyModal;
+    textEl.appendChild(fixBtn);
     console.error('AI summary failed:',err);
   }).then(function(){
     loading.style.display='none';
@@ -4698,6 +4804,10 @@ window.onDailyReportRangeChange=onDailyReportRangeChange;
 window.generateAISummary=generateAISummary;
 window.copyAISummary=copyAISummary;
 window.closeAISummary=closeAISummary;
+window.openGeminiKeyModal=openGeminiKeyModal;
+window.closeGeminiKeyModal=closeGeminiKeyModal;
+window.saveGeminiKeyFromModal=saveGeminiKeyFromModal;
+window.clearGeminiKeyFromModal=clearGeminiKeyFromModal;
 
 // Double-click row to open edit modal
 function rowDblClick(e, id, type) {
