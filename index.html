@@ -1074,6 +1074,24 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   </div>
 </div>
 
+<!-- EDIT DROPDOWN OPTION MODAL -->
+<div class="modal-ov hidden" id="edit-dropdown-modal" style="z-index:610">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr"><h3 id="edit-dropdown-title">Edit Option</h3><button class="modal-cls" onclick="closeDropdownEditModal()">x</button></div>
+    <div class="modal-body">
+      <div class="fgrp">
+        <label id="edit-dropdown-label">Option</label>
+        <input class="fc" id="edit-dropdown-value" placeholder="Enter new value..." onkeydown="if(event.key==='Enter')saveDropdownEdit()">
+      </div>
+      <p id="edit-dropdown-note" style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5"></p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeDropdownEditModal()">Cancel</button>
+      <button class="btn btn-primary" id="edit-dropdown-save" onclick="saveDropdownEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM MODAL -->
 <div class="modal-ov hidden" id="confirm-modal" style="z-index:600">
   <div class="modal" style="max-width:360px">
@@ -3909,6 +3927,7 @@ function applyDropdownsToForms(){
 }
 
 var _dropdownPanelOpen=false;
+var _editingDropdownOption=null;
 function toggleDropdownPanel(){
   _dropdownPanelOpen=!_dropdownPanelOpen;
   var wrap=document.getElementById('dropdown-options-wrap');
@@ -3928,9 +3947,9 @@ function renderDropdownOptionsPanel(){
       +'<strong style="font-size:13px">'+escHtml(DROPDOWN_OPTS[key].label)+'</strong>'
       +'</div>'
       +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
-      +items.map(function(v){
+      +items.map(function(v,optIdx){
         return '<div class="client-tag">'+escHtml(v)
-          +'<button class="tag-edit" data-key="'+key+'" data-val="'+escHtml(v)+'" onclick="renameDropdownOption(this)" title="Edit">Edit</button>'
+          +'<button class="tag-edit" data-key="'+key+'" data-idx="'+optIdx+'" onclick="renameDropdownOption(this)" title="Edit">Edit</button>'
           +'<button data-key="'+key+'" data-val="'+escHtml(v)+'" onclick="deleteDropdownOption(this)" title="Delete">×</button>'
           +'</div>';
       }).join('')
@@ -3967,18 +3986,47 @@ function dropdownRecordFields(key){
 }
 function renameDropdownOption(btn){
   var key=btn.dataset.key;
-  var oldVal=btn.dataset.val;
+  var idx=parseInt(btn.dataset.idx,10);
+  var items=(_dropdownData[key]||DROPDOWN_OPTS[key].defaults).slice();
+  var oldVal=items[idx];
+  if(!oldVal){toast('Option not found','error');return;}
   var label=DROPDOWN_OPTS[key]?DROPDOWN_OPTS[key].label:key;
-  var next=window.prompt('Edit '+label+' option:',oldVal);
-  if(next===null)return;
-  next=next.trim();
-  if(!next){toast('Enter a value','error');return;}
-  if(next===oldVal){toast('No change','info');return;}
+  _editingDropdownOption={key:key,idx:idx,oldVal:oldVal,label:label};
+  var title=document.getElementById('edit-dropdown-title');
+  var lbl=document.getElementById('edit-dropdown-label');
+  var inp=document.getElementById('edit-dropdown-value');
+  var note=document.getElementById('edit-dropdown-note');
+  if(title)title.textContent='Edit '+label+' Option';
+  if(lbl)lbl.textContent=label;
+  if(inp)inp.value=oldVal;
+  if(note)note.textContent='Existing records using "'+oldVal+'" will also be updated.';
+  document.getElementById('edit-dropdown-modal').classList.remove('hidden');
+  setTimeout(function(){if(inp){inp.focus();inp.select();}},20);
+}
+
+function closeDropdownEditModal(){
+  var modal=document.getElementById('edit-dropdown-modal');
+  if(modal)modal.classList.add('hidden');
+  _editingDropdownOption=null;
+}
+
+function saveDropdownEdit(){
+  if(!_editingDropdownOption)return;
+  var key=_editingDropdownOption.key;
+  var oldVal=_editingDropdownOption.oldVal;
+  var idx=_editingDropdownOption.idx;
+  var label=_editingDropdownOption.label;
+  var inp=document.getElementById('edit-dropdown-value');
+  var next=(inp?inp.value:'').trim();
+  if(!next){toast('Enter a value','error');if(inp)inp.focus();return;}
+  if(next===oldVal){toast('No change','info');closeDropdownEditModal();return;}
   var items=(_dropdownData[key]||DROPDOWN_OPTS[key].defaults).slice();
   if(items.indexOf(next)>-1){toast('Already exists','error');return;}
-  var idx=items.indexOf(oldVal);
-  if(idx<0){toast('Option not found','error');return;}
+  if(items[idx]!==oldVal)idx=items.indexOf(oldVal);
+  if(idx<0){toast('Option not found','error');closeDropdownEditModal();return;}
   items[idx]=next;
+  var saveBtn=document.getElementById('edit-dropdown-save');
+  if(saveBtn)saveBtn.disabled=true;
   setDoc(doc(db,'dropdown_options',key),{items:items}).then(function(){
     _dropdownData[key]=items;
     var fields=dropdownRecordFields(key);
@@ -3990,14 +4038,17 @@ function renameDropdownOption(btn){
       });
       if(touched)changed.push(r);
     });
-    Promise.all(changed.map(saveOne)).then(function(){
+    return Promise.all(changed.map(saveOne)).then(function(){
       applyDropdownsToForms();
       if(currentTab==='admin')renderDropdownOptionsPanel();
       applyFilters();
+      closeDropdownEditModal();
       toast('Updated '+oldVal+' to '+next+(changed.length?' in '+changed.length+' record'+(changed.length!==1?'s':''):'') ,'success');
       try{writeLog('updated','Dropdown option','Renamed '+label+': '+oldVal+' to '+next);}catch(e){}
     });
-  }).catch(function(e){toast('Error: '+e.message,'error');});
+  }).catch(function(e){toast('Error: '+e.message,'error');}).finally(function(){
+    if(saveBtn)saveBtn.disabled=false;
+  });
 }
 
 function deleteDropdownOption(btn){
@@ -4970,6 +5021,8 @@ window.clearAllLogs=clearAllLogs;
 window.exportLogs=exportLogs;
 window.renderLogs=renderLogs;
 window.renameDropdownOption=renameDropdownOption;
+window.closeDropdownEditModal=closeDropdownEditModal;
+window.saveDropdownEdit=saveDropdownEdit;
 window.closeAddUserModal=closeAddUserModal;
 window.closeEditUserModal=closeEditUserModal;
 window.clearAllClients=clearAllClients;
