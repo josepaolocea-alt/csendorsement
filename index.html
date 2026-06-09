@@ -105,6 +105,15 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
 @keyframes timerPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.18)}50%{box-shadow:0 0 0 4px rgba(248,113,113,.08)}}
 .row-acts{display:flex;gap:4px;}
+.copyable-cell{position:relative;padding-right:36px!important;}
+.cell-copy-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;cursor:pointer;transition:.15s;z-index:3;}
+.copyable-cell:hover .cell-copy-btn,.cell-copy-btn:focus{opacity:1;pointer-events:auto;}
+.cell-copy-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--accent);transform:translateY(-1px);}
+.copy-icon{position:relative;width:14px;height:14px;display:block;}
+.copy-icon:before,.copy-icon:after{content:'';position:absolute;width:9px;height:11px;border:1.7px solid currentColor;border-radius:2px;background:transparent;}
+.copy-icon:before{left:1px;top:1px;opacity:.7;}
+.copy-icon:after{left:4px;top:4px;background:var(--bg3);}
+.cell-copy-btn:hover .copy-icon:after{background:var(--bg4);}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.5);}
 .modal-ov:not(.hidden){animation:ovFadeIn .16s ease-out;}
@@ -1398,6 +1407,40 @@ function advisedAgingBadge(r){
   var age=entryAgeDays(r);
   return '<span class="age-alert-badge" title="Advised Client for '+age+' days">Lack update '+age+'d</span>';
 }
+function copyCellButton(id,field){
+  return '<button type="button" class="cell-copy-btn" onclick="copyRowField(event,'+id+',\''+field+'\')" title="Copy"><span class="copy-icon"></span></button>';
+}
+function rowFieldText(r,field){
+  if(!r)return '';
+  if(field==='concern')return r.concern||'';
+  if(field==='desc')return r.desc||'';
+  if(field==='rrSubject')return r.rrSubject||'';
+  return '';
+}
+function writeClipboardText(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(text);
+  return new Promise(function(resolve,reject){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=text;
+      ta.style.position='fixed';
+      ta.style.left='-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      ok?resolve():reject();
+    }catch(e){reject(e);}
+  });
+}
+function copyRowField(e,id,field){
+  if(e){e.preventDefault();e.stopPropagation();}
+  var r=DATA.find(function(d){return d.id===id;});
+  var text=rowFieldText(r,field).trim();
+  if(!text){toast('Nothing to copy','info');return;}
+  writeClipboardText(text).then(function(){toast('Copied','success');}).catch(function(){toast('Copy failed','error');});
+}
 function priBadge(p){var cls={High:'pri-high',Normal:'pri-med'}[p]||'pri-med';return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';}
 function fmtDate(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 
@@ -1989,7 +2032,7 @@ function renderRRRows(){
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
-      +'<td style="font-weight:600;max-width:220px;white-space:normal" title="'+(r.rrSubject||'')+'">'+(r.rrSubject||'')+'</td>'
+      +'<td class="copyable-cell" style="font-weight:600;max-width:220px;white-space:normal" title="'+(r.rrSubject||'')+'">'+(r.rrSubject||'')+copyCellButton(r.id,'rrSubject')+'</td>'
       +'<td>'+fmtDate(r.rrEffDate)+'</td>'
       +'<td style="max-width:200px;white-space:normal;color:var(--text2);font-size:12px">'+(r.rrRemarks||'')+'</td>'
       +'<td>'+fmtDate(r.rrDate)+'</td>'
@@ -2384,7 +2427,7 @@ function renderRows(){
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
-        +'<td title="'+(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+(r.desc||'')+'</td>'
+        +'<td class="copyable-cell" title="'+(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
         +'<td></td>'
         +'<td>'+didStBadge(r.status)+advisedAgingBadge(r)+'</td>'
         +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
@@ -2404,7 +2447,7 @@ function renderRows(){
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
-      +'<td title="'+(r.concern||'')+'" style="max-width:260px;color:var(--text2)">'+(r.concern||'')+'</td>'
+      +'<td class="copyable-cell" title="'+(r.concern||'')+'" style="max-width:260px;color:var(--text2)">'+(r.concern||'')+copyCellButton(r.id,'concern')+'</td>'
       +'<td>'+pltBadge(r.platform)+'</td>'
       +'<td>'+stBadge(r.status)+advisedAgingBadge(r)+'</td>'
       +(currentTab==='done'
@@ -2494,7 +2537,7 @@ function renderDIDRows(){
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
-      +'<td title="'+(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+(r.desc||'')+'</td>'
+      +'<td class="copyable-cell" title="'+(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
       +'<td>'+didStBadge(r.status)+advisedAgingBadge(r)+'</td>'
       +'<td>'+rrBadge(r.am||'','rrby')+'</td>'
       +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
@@ -4764,6 +4807,7 @@ window.closeModal=closeModal;
 window.closeRRModal=closeRRModal;
 window.collectAndClearPending=collectAndClearPending;
 window.confirmResolve=confirmResolve;
+window.copyRowField=copyRowField;
 window.delRec=delRec;
 window.doLogin=doLogin;
 window.doLogout=doLogout;
