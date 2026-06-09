@@ -108,7 +108,7 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .copyable-cell{position:relative;padding-right:28px!important;}
 .cell-copy-btn{position:absolute;top:7px;right:7px;width:18px;height:18px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;cursor:pointer;transition:.15s;z-index:3;}
 .copyable-cell:hover .cell-copy-btn,.cell-copy-btn:focus{opacity:1;pointer-events:auto;}
-.cell-copy-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--accent);transform:translateY(-1px);}
+.cell-copy-btn:hover,.cell-copy-btn:focus{background:var(--bg4);color:var(--text);border-color:var(--border2);box-shadow:0 0 0 1px rgba(255,255,255,.06);transform:translateY(-1px);outline:none;}
 .copy-icon{position:relative;width:11px;height:11px;display:block;}
 .copy-icon:before,.copy-icon:after{content:'';position:absolute;width:7px;height:9px;border:1.4px solid currentColor;border-radius:2px;background:transparent;}
 .copy-icon:before{left:1px;top:1px;opacity:.7;}
