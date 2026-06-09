@@ -261,6 +261,8 @@ textarea.fc{resize:vertical;min-height:70px;}
 .client-tag{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:12px;color:var(--text2);}
 .client-tag button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;line-height:1;padding:0;}
 .client-tag button:hover{color:#f87171;}
+.client-tag button.tag-edit:hover{color:var(--accent);}
+.client-tag button.tag-del:hover{color:#f87171;}
 .client-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
 
 .rr-bm{background:rgba(156,163,175,.15);color:#9ca3af;}
@@ -3849,6 +3851,7 @@ function renderDropdownOptionsPanel(){
       +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
       +items.map(function(v){
         return '<div class="client-tag">'+escHtml(v)
+          +'<button class="tag-edit" data-key="'+key+'" data-val="'+escHtml(v)+'" onclick="renameDropdownOption(this)" title="Edit">Edit</button>'
           +'<button data-key="'+key+'" data-val="'+escHtml(v)+'" onclick="deleteDropdownOption(this)" title="Delete">×</button>'
           +'</div>';
       }).join('')
@@ -3872,6 +3875,49 @@ function addDropdownOption(key){
   setDoc(doc(db,'dropdown_options',key),{items:items}).then(function(){
     inp.value='';
     toast('Added: '+val,'success');
+  }).catch(function(e){toast('Error: '+e.message,'error');});
+}
+
+function dropdownRecordFields(key){
+  if(key==='service')return ['service'];
+  if(key==='platform')return ['platform'];
+  if(key==='status_ip'||key==='status_done')return ['status'];
+  if(key==='rr_by')return ['rrBy','am'];
+  if(key==='ro_by')return ['roBy'];
+  return [];
+}
+function renameDropdownOption(btn){
+  var key=btn.dataset.key;
+  var oldVal=btn.dataset.val;
+  var label=DROPDOWN_OPTS[key]?DROPDOWN_OPTS[key].label:key;
+  var next=window.prompt('Edit '+label+' option:',oldVal);
+  if(next===null)return;
+  next=next.trim();
+  if(!next){toast('Enter a value','error');return;}
+  if(next===oldVal){toast('No change','info');return;}
+  var items=(_dropdownData[key]||DROPDOWN_OPTS[key].defaults).slice();
+  if(items.indexOf(next)>-1){toast('Already exists','error');return;}
+  var idx=items.indexOf(oldVal);
+  if(idx<0){toast('Option not found','error');return;}
+  items[idx]=next;
+  setDoc(doc(db,'dropdown_options',key),{items:items}).then(function(){
+    _dropdownData[key]=items;
+    var fields=dropdownRecordFields(key);
+    var changed=[];
+    DATA.forEach(function(r){
+      var touched=false;
+      fields.forEach(function(f){
+        if(r[f]===oldVal){r[f]=next;touched=true;}
+      });
+      if(touched)changed.push(r);
+    });
+    Promise.all(changed.map(saveOne)).then(function(){
+      applyDropdownsToForms();
+      if(currentTab==='admin')renderDropdownOptionsPanel();
+      applyFilters();
+      toast('Updated '+oldVal+' to '+next+(changed.length?' in '+changed.length+' record'+(changed.length!==1?'s':''):'') ,'success');
+      try{writeLog('updated','Dropdown option','Renamed '+label+': '+oldVal+' to '+next);}catch(e){}
+    });
   }).catch(function(e){toast('Error: '+e.message,'error');});
 }
 
@@ -4834,6 +4880,7 @@ window.doLogout=doLogout;
 window.clearAllLogs=clearAllLogs;
 window.exportLogs=exportLogs;
 window.renderLogs=renderLogs;
+window.renameDropdownOption=renameDropdownOption;
 window.closeAddUserModal=closeAddUserModal;
 window.closeEditUserModal=closeEditUserModal;
 window.clearAllClients=clearAllClients;
