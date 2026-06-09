@@ -137,6 +137,11 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .entry-comments .comment-new{margin:0;padding:14px 16px;background:var(--bg2);border-top:1px solid var(--border);}
 .entry-comments .attach-zone{padding:10px;}
 .entry-comments textarea.fc{min-height:64px!important;max-height:150px;}
+.modal-footer-left{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap;}
+.modal-pin-toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.modal-pin-toggle:hover{background:var(--bg4);color:var(--text);}
+.modal-pin-toggle input{accent-color:#fbbf24;width:14px;height:14px;cursor:pointer;}
+.entry-modal .modal-ftr .meta-info{margin-right:auto;}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .fgrp{display:flex;flex-direction:column;gap:5px;}
 .fgrp.full{grid-column:1/-1;}
@@ -782,6 +787,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </div>
     </div>
     <div class="modal-ftr" style="justify-content:space-between;align-items:center">
+      <label class="modal-pin-toggle" title="Pin this entry to the top"><input type="checkbox" id="f-pin"> Pin to top</label>
       <div class="meta-info" id="modal-meta" style="display:none">
         <span>👤 Created by: <strong id="modal-created-by">—</strong></span>
         <span id="modal-updated-row" style="display:none">✏️ Last updated by: <strong id="modal-updated-by">—</strong> <span id="modal-updated-at" style="color:var(--text3)"></span></span>
@@ -895,6 +901,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </div>
     </div>
     <div class="modal-ftr" style="justify-content:space-between;align-items:center">
+      <label class="modal-pin-toggle" title="Pin this entry to the top"><input type="checkbox" id="rr-pin"> Pin to top</label>
       <div class="meta-info" id="rr-modal-meta" style="display:none">
         <span>👤 Created by: <strong id="rr-modal-created-by">—</strong></span>
         <span id="rr-modal-updated-row" style="display:none">✏️ Last updated by: <strong id="rr-modal-updated-by">—</strong> <span id="rr-modal-updated-at" style="color:var(--text3)"></span></span>
@@ -989,6 +996,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </div>
     </div>
     <div class="modal-ftr" style="justify-content:space-between;align-items:center">
+      <label class="modal-pin-toggle" title="Pin this entry to the top"><input type="checkbox" id="d-pin"> Pin to top</label>
       <div class="meta-info" id="did-modal-meta" style="display:none">
         <span>👤 Created by: <strong id="did-modal-created-by">—</strong></span>
         <span id="did-modal-updated-row" style="display:none">✏️ Last updated by: <strong id="did-modal-updated-by">—</strong> <span id="did-modal-updated-at" style="color:var(--text3)"></span></span>
@@ -2265,6 +2273,7 @@ function openNewRRModal(){
   document.getElementById('rr-inv').value='None';
   document.getElementById('rr-completed').checked=false;
   document.getElementById('rr-disregard').checked=false;
+  document.getElementById('rr-pin').checked=false;
   document.getElementById('rr-timer-sel').value='28800';
   document.getElementById('rr-timer-custom-wrap').style.display='none';
   setReminderFields('rr',null);
@@ -2294,6 +2303,7 @@ function openEditRR(id){
   document.getElementById('rr-inv').value=r.rrInv||'None';
   document.getElementById('rr-completed').checked=!!r.rrCompleted;
   document.getElementById('rr-disregard').checked=!!r.rrDisregard;
+  document.getElementById('rr-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
   var rrTov=r.timerOverride||28800;
   var rrKnown=[3600,14400,28800];
   if(rrKnown.indexOf(rrTov)===-1){
@@ -2343,6 +2353,7 @@ function saveRRRecord(){
     rrInv:document.getElementById('rr-inv').value,
     rrCompleted:document.getElementById('rr-completed').checked,
     rrDisregard:document.getElementById('rr-disregard').checked,
+    pinned:document.getElementById('rr-pin').checked,
     timerOverride:rrTimerSecs
   };
   var reminder=readReminderFields('rr');if(reminder.invalid)return;
@@ -2370,6 +2381,7 @@ function saveRRRecord(){
     toast('Updated!','success');
   }else{
     applyReminderToRecord(rec,null,reminder);
+    if(rec.rrCompleted) rec.pinned=false;
     var nr=Object.assign({id:allocId(),_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
@@ -2577,6 +2589,7 @@ function openNewDIDModal(){
   document.getElementById('d-desc').value='';
   document.getElementById('d-remarks').value='';autoResizeId('d-remarks');
   document.getElementById('d-status').value='Pending AM';
+  document.getElementById('d-pin').checked=false;
   document.getElementById('d-am').value='';
   document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('d-priority').value='Normal';
@@ -2606,6 +2619,7 @@ function openEditDID(id){
   document.getElementById('d-desc').value=r.desc||'';
   document.getElementById('d-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('d-remarks');},0);
   document.getElementById('d-status').value=r.status||'Pending AM';
+  document.getElementById('d-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
   document.getElementById('d-am').value=r.am||'';
   document.getElementById('d-date').value=r.startDate||'';
   document.getElementById('d-priority').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
@@ -2665,6 +2679,7 @@ function saveDIDRecord(){
     am:document.getElementById('d-am').value,
     startDate:document.getElementById('d-date').value,
     priority:document.getElementById('d-priority').value,
+    pinned:document.getElementById('d-pin').checked,
     timerOverride:dTimerSecs||null
   };
   var reminder=readReminderFields('d');if(reminder.invalid)return;
@@ -2699,6 +2714,7 @@ function saveDIDRecord(){
   }else{
     applyReminderToRecord(rec,null,reminder);
     if(isDone) rec.resolvedDate=today;
+    if(isDone) rec.pinned=false;
     if(newStatus==='Advised Client') rec.advisedClientAt=Date.now();
     // Timer logic for new: start automatically if duration > 0
     if(dTimerSecs>0){rec.timerStart=Date.now();rec.timerAlerted=false;}
@@ -2941,6 +2957,7 @@ function openNewModal(){
   document.getElementById('f-remarks').value='';autoResizeId('f-remarks');
   document.getElementById('f-plt-f').value='';
   document.getElementById('f-st-f').value='Pending at CS';
+  document.getElementById('f-pin').checked=false;
   document.getElementById('f-am').value='';
   document.getElementById('f-pri-f').value='Normal';
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
@@ -2972,6 +2989,7 @@ function openEdit(id){
   document.getElementById('f-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('f-remarks');},0);
   document.getElementById('f-plt-f').value=r.platform||'';
   document.getElementById('f-st-f').value=r.status||'Pending at CS';
+  document.getElementById('f-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
   document.getElementById('f-am').value=r.am||'';
   document.getElementById('f-pri-f').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
   document.getElementById('f-date').value=r.startDate||'';
@@ -3028,6 +3046,7 @@ function saveRecord(){
     am:document.getElementById('f-am').value,
     priority:document.getElementById('f-pri-f').value,
     startDate:document.getElementById('f-date').value,
+    pinned:document.getElementById('f-pin').checked,
     timerOverride:timerSecs
   };
   var reminder=readReminderFields('f');if(reminder.invalid)return;
@@ -3067,6 +3086,7 @@ function saveRecord(){
   }else{
     applyReminderToRecord(rec,null,reminder);
     if(isCompleted){rec.resolvedDate=today;}
+    if(isCompleted){rec.pinned=false;}
     if(newStatus==='Advised Client') rec.advisedClientAt=Date.now();
     if(noTimer){rec.timerStart=null;rec.timerAlerted=false;}
     var ne=Object.assign({id:allocId(),_sel:false,timerStart:noTimer?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
