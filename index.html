@@ -105,14 +105,14 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
 @keyframes timerPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.18)}50%{box-shadow:0 0 0 4px rgba(248,113,113,.08)}}
 .row-acts{display:flex;gap:4px;}
-.copyable-cell{position:relative;padding-right:36px!important;}
-.cell-copy-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;cursor:pointer;transition:.15s;z-index:3;}
+.copyable-cell{position:relative;padding-right:28px!important;}
+.cell-copy-btn{position:absolute;top:7px;right:7px;width:18px;height:18px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;cursor:pointer;transition:.15s;z-index:3;}
 .copyable-cell:hover .cell-copy-btn,.cell-copy-btn:focus{opacity:1;pointer-events:auto;}
 .cell-copy-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--accent);transform:translateY(-1px);}
-.copy-icon{position:relative;width:14px;height:14px;display:block;}
-.copy-icon:before,.copy-icon:after{content:'';position:absolute;width:9px;height:11px;border:1.7px solid currentColor;border-radius:2px;background:transparent;}
+.copy-icon{position:relative;width:11px;height:11px;display:block;}
+.copy-icon:before,.copy-icon:after{content:'';position:absolute;width:7px;height:9px;border:1.4px solid currentColor;border-radius:2px;background:transparent;}
 .copy-icon:before{left:1px;top:1px;opacity:.7;}
-.copy-icon:after{left:4px;top:4px;background:var(--bg3);}
+.copy-icon:after{left:3px;top:3px;background:var(--bg3);}
 .cell-copy-btn:hover .copy-icon:after{background:var(--bg4);}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.5);}
