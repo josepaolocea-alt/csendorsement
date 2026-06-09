@@ -1117,6 +1117,8 @@ var _firestoreUnsub = null;
 var _adminLoaded = false;
 var _currentUser = null;
 var _currentUserRole = 'Viewer';
+var PRIMARY_ADMIN_EMAIL = 'jpgc06.2023@gmail.com';
+var DEFAULT_SEMI_ADMIN_EMAILS = ['customersupport@cynsolutions.ph'];
 window._canEdit=false;
 window._canAdd=false;
 var CLIENTS = []; // loaded from Firestore
@@ -1176,31 +1178,44 @@ function togglePassVis(){
   else{p.type='password';e.textContent='👁';}
 }
 
+function normalizeEmail(email){
+  return String(email||'').trim().toLowerCase();
+}
+function enforcedRoleForEmail(email,storedRole){
+  email=normalizeEmail(email);
+  if(email===PRIMARY_ADMIN_EMAIL)return 'Admin';
+  if(DEFAULT_SEMI_ADMIN_EMAILS.indexOf(email)>-1)return 'Semi-Admin';
+  if(storedRole==='Admin')return 'Semi-Admin';
+  return storedRole||'Viewer';
+}
+
 function setUserDisplay(user){
   _currentUser=user;
-  var email=user.email||'';
+  var email=normalizeEmail(user.email||'');
   var initials=email.charAt(0).toUpperCase();
   document.getElementById('user-avatar').textContent=initials;
   document.getElementById('user-email-display').textContent=email;
 
   // Check/create user record in Firestore
-  var uid=email.replace(/[^a-z0-9]/gi,'_');
+  var uid=email.replace(/[^a-z0-9]/g,'_');
   getDocs(collection(db,'users')).then(function(snap){
     var found=null;
     snap.forEach(function(d){
-      if(d.data().email===email) found=d.data();
+      if(normalizeEmail(d.data().email)===email) found=d.data();
     });
     if(!found){
-      var role=snap.empty?'Admin':'Viewer';
+      var role=enforcedRoleForEmail(email,'Viewer');
       setDoc(doc(db,'users',uid),{name:email,email:email,role:role,addedAt:Date.now()}).then(function(){
         _currentUserRole=role;
         applyRolePermissions(role);
         writeLog('login',email,'Signed in — role: '+role);
-        toast(snap.empty?'You are set as Admin (first user)':'Account created as Viewer','info');
+        toast(role==='Admin'?'Signed in as Admin':role==='Semi-Admin'?'Signed in as Semi-Admin':'Account created as Viewer','info');
       });
     }else{
-      _currentUserRole=found.role||'Viewer';
+      var safeRole=enforcedRoleForEmail(email,found.role||'Viewer');
+      _currentUserRole=safeRole;
       applyRolePermissions(_currentUserRole);
+      if(found.role!==safeRole){setDoc(doc(db,'users',uid),{email:email,role:safeRole},{merge:true}).catch(function(){});}
       writeLog('login',email,'Signed in — role: '+_currentUserRole);
       // Re-render any open comment modals now that user is confirmed
       if(_commentModalId){var rc=DATA.find(function(d){return d.id===_commentModalId;});if(rc)renderCmModalComments(rc.comments||[]);}
@@ -3956,13 +3971,15 @@ function loadAdminUsers(){
     var rows=[];
     snap.forEach(function(d){
       var u=d.data();
-      var roleCls=u.role==='Admin'?'role-admin':u.role==='Semi-Admin'?'role-semi':'role-viewer';
+      var shownRole=enforcedRoleForEmail(u.email,u.role||'Viewer');
+      if(u.role!==shownRole){setDoc(doc(db,'users',d.id),{role:shownRole},{merge:true}).catch(function(){});}
+      var roleCls=shownRole==='Admin'?'role-admin':shownRole==='Semi-Admin'?'role-semi':'role-viewer';
       var added=u.addedAt?new Date(u.addedAt).toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}):'—';
       rows.push('<tr>'
         +'<td style="font-weight:600">'+escHtml(u.name||u.email)+'</td>'
         +'<td style="color:var(--text2)">'+escHtml(u.email)+'</td>'
         +'<td style="color:var(--accent)">'+escHtml(u.nickname||'—')+'</td>'
-        +'<td><span class="role-badge '+roleCls+'">'+escHtml(u.role||'Viewer')+'</span></td>'
+        +'<td><span class="role-badge '+roleCls+'">'+escHtml(shownRole)+'</span></td>'
         +'<td style="color:var(--text3)">'+added+'</td>'
         +'<td><button class="adm-link" onclick="openEditUser(\''+d.id+'\')">Edit</button></td>'
         +'</tr>');
@@ -3989,6 +4006,9 @@ function saveUserRecord(){
   var email=document.getElementById('au-email').value.trim().toLowerCase();
   var role=document.getElementById('au-role').value;
   if(!email){toast('Email is required','error');return;}
+  var requestedRole=role;
+  role=enforcedRoleForEmail(email,role);
+  if(requestedRole!==role)toast('Only '+PRIMARY_ADMIN_EMAIL+' can be Admin. Role saved as '+role+'.','info');
   var id=email.replace(/[^a-z0-9]/g,'_');
   setDoc(doc(db,'users',id),{name:name||email,nickname:document.getElementById('au-nick').value.trim(),email:email,role:role,addedAt:Date.now()})
     .then(function(){
@@ -4007,7 +4027,7 @@ function openEditUser(uid){
         document.getElementById('eu-name').value=u.name||'';
         document.getElementById('eu-nick').value=u.nickname||'';
         document.getElementById('eu-email').value=u.email||'';
-        document.getElementById('eu-role').value=u.role||'Viewer';
+        document.getElementById('eu-role').value=enforcedRoleForEmail(u.email,u.role||'Viewer');
         // If editing own admin account, hide role field entirely
         var isSelf=_currentUser&&u.email===_currentUser.email;
         var roleWrap=document.getElementById('eu-role-wrap');
@@ -4026,7 +4046,12 @@ function saveEditUser(){
   var roleWrap=document.getElementById('eu-role-wrap');
   var roleVisible=roleWrap&&roleWrap.style.display!=='none';
   var updates={name:name,nickname:nick};
-  if(roleVisible) updates.role=document.getElementById('eu-role').value;
+  if(roleVisible){
+    var editEmail=normalizeEmail(document.getElementById('eu-email').value);
+    var requestedRole=document.getElementById('eu-role').value;
+    updates.role=enforcedRoleForEmail(editEmail,requestedRole);
+    if(requestedRole!==updates.role)toast('Only '+PRIMARY_ADMIN_EMAIL+' can be Admin. Role saved as '+updates.role+'.','info');
+  }
   setDoc(doc(db,'users',_editingUserId),updates,{merge:true}).then(function(){
     toast('User updated!','success');
     closeEditUserModal();
