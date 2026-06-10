@@ -1418,6 +1418,21 @@ function isRecordCompleted(r){
   return DONE_ST.indexOf(r.status)>-1;
 }
 
+function recordStatusStopsTimer(r){
+  if(!r)return false;
+  if(r._type==='rr')return !!r.rrCompleted;
+  if(r._type==='did')return DID_DONE_ST.indexOf(r.status)>-1||r.status==='Advised Client';
+  return NO_TIMER_ST.indexOf(r.status)>-1||r.status==='Advised Client';
+}
+
+function stopTimerForStatusIfNeeded(r){
+  if(!r||!r.timerStart||!recordStatusStopsTimer(r))return false;
+  r.timerStart=null;
+  r.timerAlerted=false;
+  r.autoRestartTimer=false;
+  return true;
+}
+
 function didStBadge(s){
   var greenSt=['Done','Cancel by Client','Advised Client'];
   var blueSt=['In Progress'];
@@ -2746,6 +2761,7 @@ function saveDIDRecord(){
   if(!client){toast('Client / Vendor is required','error');return;}
   var newStatus=document.getElementById('d-status').value;
   var isDone=DID_DONE_ST.indexOf(newStatus)>-1;
+  var statusStopsTimer=isDone||newStatus==='Advised Client';
   var today=new Date().toISOString().split('T')[0];
   // Read timer duration
   var dTimerSel=document.getElementById('d-timer-sel').value;
@@ -2785,10 +2801,13 @@ function saveDIDRecord(){
       if(newStatus==='Advised Client') rec.advisedClientAt=prev.status==='Advised Client'?(prev.advisedClientAt||null):Date.now();
       else rec.advisedClientAt=null;
       if(isDone) rec.pinned=false;
-      if(isDone||newStatus==='Advised Client') rec.autoRestartTimer=false;
+      if(statusStopsTimer) rec.autoRestartTimer=false;
       var timerChanged=_didTimerDirty;
       var timerUpd={};
-      if(timerChanged&&dTimerSecs>0){
+      if(statusStopsTimer){
+        rec.timerOverride=timerChanged?dTimerSecs:(prev.timerOverride||null);
+        timerUpd={timerStart:null,timerAlerted:false};
+      }else if(timerChanged&&dTimerSecs>0){
         rec.timerOverride=dTimerSecs;
         timerUpd={timerStart:Date.now(),timerAlerted:false};
       }else if(timerChanged&&dTimerSecs<=0){
@@ -2807,10 +2826,11 @@ function saveDIDRecord(){
     applyReminderToRecord(rec,null,reminder);
     if(isDone) rec.resolvedDate=today;
     if(isDone) rec.pinned=false;
-    if(isDone||newStatus==='Advised Client') rec.autoRestartTimer=false;
+    if(statusStopsTimer) rec.autoRestartTimer=false;
     if(newStatus==='Advised Client') rec.advisedClientAt=Date.now();
     // Timer logic for new: start automatically if duration > 0
-    if(dTimerSecs>0){rec.timerStart=Date.now();rec.timerAlerted=false;}
+    if(statusStopsTimer){rec.timerStart=null;rec.timerAlerted=false;}
+    else if(dTimerSecs>0){rec.timerStart=Date.now();rec.timerAlerted=false;}
     else{rec.timerStart=null;rec.timerAlerted=false;}
     var nd=Object.assign({id:allocId(),_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     // Merge any buffered DID comments
@@ -3129,7 +3149,8 @@ function saveRecord(){
   }
   var newStatus=document.getElementById('f-st-f').value;
   var isCompleted=DONE_ST.indexOf(newStatus)>-1;
-  var noTimer=NO_TIMER_ST.indexOf(newStatus)>-1||timerSecs===null;
+  var statusStopsTimer=NO_TIMER_ST.indexOf(newStatus)>-1||newStatus==='Advised Client';
+  var noTimer=statusStopsTimer||timerSecs===null;
   var today=new Date().toISOString().split('T')[0];
   var rec={
     client:client,
@@ -3159,10 +3180,10 @@ function saveRecord(){
         if(newStatus==='Advised Client') rec.advisedClientAt=prev.status==='Advised Client'?(prev.advisedClientAt||null):Date.now();
         else rec.advisedClientAt=null;
         if(isCompleted) rec.pinned=false;
-        if(isCompleted||newStatus==='Advised Client') rec.autoRestartTimer=false;
+        if(statusStopsTimer) rec.autoRestartTimer=false;
         var timerChanged=_endorsementTimerDirty;
         var timerUpdate;
-        if(NO_TIMER_ST.indexOf(newStatus)>-1){
+        if(statusStopsTimer){
           rec.timerOverride=timerChanged?timerSecs:(prev.timerOverride||null);
           timerUpdate={timerStart:null,timerAlerted:false};
         }else if(timerChanged&&timerSecs){
@@ -3185,7 +3206,7 @@ function saveRecord(){
     applyReminderToRecord(rec,null,reminder);
     if(isCompleted){rec.resolvedDate=today;}
     if(isCompleted){rec.pinned=false;}
-    if(isCompleted||newStatus==='Advised Client') rec.autoRestartTimer=false;
+    if(statusStopsTimer) rec.autoRestartTimer=false;
     if(newStatus==='Advised Client') rec.advisedClientAt=Date.now();
     if(noTimer){rec.timerStart=null;rec.timerAlerted=false;}
     var ne=Object.assign({id:allocId(),_sel:false,timerStart:noTimer?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
@@ -3674,7 +3695,12 @@ async function startFirestore(){
       if(r.id>=idSeq) idSeq=r.id+1; // counter stays monotonic, never reused
     });
     if(_fbReady) checkNewComments(oldData,DATA);
-    DATA.forEach(function(r){migratePriority(r);});
+    var statusStoppedTimers=[];
+    DATA.forEach(function(r){
+      migratePriority(r);
+      if(stopTimerForStatusIfNeeded(r))statusStoppedTimers.push(r);
+    });
+    statusStoppedTimers.forEach(function(r){saveOne(r);});
     if(!_fbReady){
       _fbReady=true;
       hideLoader();
