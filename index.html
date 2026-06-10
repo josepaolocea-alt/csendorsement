@@ -1600,15 +1600,22 @@ function timerHTML(r){
   var ts=rem===null?'--:--':fmtTime(rem);
   var btns='';
   if(window._canEdit){
-    btns=r.timerStart
-      ?'<button class="btn-icon btn-sm" onclick="resetTmr('+r.id+')" title="Reset">&#8635;</button><button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>'
-      :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
+    if(recordStatusStopsTimer(r)){
+      btns=r.timerStart?'<button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>':'';
+    }else{
+      btns=r.timerStart
+        ?'<button class="btn-icon btn-sm" onclick="resetTmr('+r.id+')" title="Reset">&#8635;</button><button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>'
+        :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
+    }
   }
   return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'">'+ts+'</span>'+btns+'</div>';
 }
 
-function startTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);applyFilters();}
-function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);}
+function timerBlockedToast(r){
+  toast(r&&r.status==='Advised Client'?'Timer is disabled while status is Advised Client':'Timer is disabled for this status','info');
+}
+function startTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;if(recordStatusStopsTimer(r)){timerBlockedToast(r);return;}r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);applyFilters();}
+function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;if(recordStatusStopsTimer(r)){timerBlockedToast(r);return;}r.timerStart=Date.now();r.timerAlerted=false;saveOne(r);}
 function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;saveOne(r);applyFilters();}
 
 function markEndorsementTimerDirty(){if(editingId!==null)_endorsementTimerDirty=true;}
