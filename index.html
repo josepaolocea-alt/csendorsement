@@ -1659,7 +1659,7 @@ function fmtDate(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toL
 
 function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.defaultTimer;}
 function calcRem(r){if(!r.timerStart)return null;var elapsed=Math.floor((Date.now()-r.timerStart)/1000);return Math.max(0,getTimerSecs(r)-elapsed);}
-var AUTO_RESTART_VISIBLE_MS=60000;
+var AUTO_RESTART_VISIBLE_MS=300000;
 function isAutoRestartRecent(r){
   return !!(r&&r.autoRestartedAt&&Date.now()-Number(r.autoRestartedAt)<AUTO_RESTART_VISIBLE_MS);
 }
