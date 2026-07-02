@@ -94,6 +94,7 @@ tr.row-done td{opacity:.5;}
 .st-gray{background:var(--bg4);color:var(--text3);}
 .age-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(244,63,94,.16));color:var(--fx-color,#fb7185);border:1px solid var(--fx-border,rgba(244,63,94,.30));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
 .rr-ro-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(14,165,233,.16));color:var(--fx-color,#38bdf8);border:1px solid var(--fx-border,rgba(14,165,233,.32));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
+.sla-text-badge{display:inline-flex;align-items:center;margin-right:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(250,204,21,.16));color:var(--fx-color,#facc15);border:1px solid var(--fx-border,rgba(250,204,21,.30));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
 /* Shared row alert effects (Advised Client aging + RR/RO missing RO by). Colors come from --fx-* vars set inline per row. Animated variants use non-!important backgrounds so keyframes can win. */
 tr.fx-row>td:first-child{box-shadow:inset 3px 0 0 var(--fx-color,#fb7185);}
 tr.fx-soft>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
@@ -429,6 +430,35 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <button class="btn btn-secondary btn-sm" onclick="testReminderAlert()">Test</button>
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <span class="auto-label">Payment timer:</span>
+      <select class="fsel" id="payment-timer" onchange="saveSettings()">
+        <option value="1800">30 Minutes</option>
+        <option value="3600">1 Hour</option>
+        <option value="7200">2 Hours</option>
+        <option value="86400">1 Day (24 Hours)</option>
+        <option value="259200">3 Days (72 Hours)</option>
+        <option value="604800">7 Days (168 Hours)</option>
+        <option value="custom">Custom...</option>
+      </select>
+      <input class="fc" id="payment-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
+      <span class="auto-label" style="margin-left:8px">but if Client / Vendor is</span>
+      <select class="fsel" id="payment-client" onchange="saveSettings()" style="max-width:230px">
+        <option value="">— None (off) —</option>
+      </select>
+      <span class="auto-label">use</span>
+      <select class="fsel" id="payment-client-timer" onchange="saveSettings()">
+        <option value="1800">30 Minutes</option>
+        <option value="3600">1 Hour</option>
+        <option value="7200">2 Hours</option>
+        <option value="86400">1 Day (24 Hours)</option>
+        <option value="259200">3 Days (72 Hours)</option>
+        <option value="604800">7 Days (168 Hours)</option>
+        <option value="custom">Custom...</option>
+      </select>
+      <input class="fc" id="payment-client-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
+      <span class="auto-label" style="color:var(--text3)">applies when a new entry's Service is Payment</span>
+    </div>
+    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">Timer expired effect:</span>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="timer-fx-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
@@ -489,12 +519,12 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">SLA escalation:</span>
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
-        <input type="checkbox" id="sla-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
-      </label>
-      <span class="auto-label" style="color:var(--text3)">highlights open tasks that need escalation</span>
+      <span class="auto-label" style="color:var(--text3)">highlights open tasks that need escalation — turn each level on or off below</span>
     </div>
     <div class="auto-row" style="margin-top:6px">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="sla-l2-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
+      </label>
       <span class="auto-label">Escalate to L2 after</span>
       <input class="fc" id="sla-l2-hours" type="number" min="1" max="168" step="0.5" value="3" style="width:64px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
       <span class="auto-label">hrs</span>
@@ -506,11 +536,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="glow">Glow</option>
         <option value="shimmer">Shimmer</option>
         <option value="outline">Outline</option>
+        <option value="text">Text in Concern</option>
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="sla-l2-color-picker"></div>
     </div>
     <div class="auto-row" style="margin-top:6px">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="sla-cto-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
+      </label>
       <span class="auto-label">Escalate to CTO after</span>
       <input class="fc" id="sla-cto-hours" type="number" min="1" max="168" step="0.5" value="6" style="width:64px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
       <span class="auto-label">hrs</span>
@@ -522,11 +556,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="glow">Glow</option>
         <option value="shimmer">Shimmer</option>
         <option value="outline">Outline</option>
+        <option value="text">Text in Concern</option>
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="sla-cto-color-picker"></div>
     </div>
     <div class="auto-row" style="margin-top:6px">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="sla-am-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
+      </label>
       <span class="auto-label">Escalate to AM after</span>
       <input class="fc" id="sla-am-hours" type="number" min="1" max="168" step="0.5" value="8" style="width:64px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
       <span class="auto-label">hrs</span>
@@ -538,6 +576,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="glow">Glow</option>
         <option value="shimmer">Shimmer</option>
         <option value="outline">Outline</option>
+        <option value="text">Text in Concern</option>
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="sla-am-color-picker"></div>
@@ -952,10 +991,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
-          <select class="fc" id="f-client-sel" onchange="syncClientInput('f-client-sel','f-client');applyClientLink('f')">
+          <select class="fc" id="f-client-sel" onchange="syncClientInput('f-client-sel','f-client');applyClientLink('f');applyPaymentTimerRule()">
             <option value="">— Select Client —</option>
           </select>
-          <input class="fc" id="f-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase()" style="margin-top:5px;display:none">
+          <input class="fc" id="f-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase();applyPaymentTimerRule()" style="margin-top:5px;display:none">
         </div>
         <div class="fgrp"><label>Service</label>
           <select class="fc" id="f-svc-f" onchange="onSvcChange()"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
@@ -1383,7 +1422,7 @@ const SETTINGS_DOC = 'app_settings/main';
 var DATA = [];
 var TRASH_DATA = [];
 var idSeq = 1;
-var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
+var SETTINGS = {defaultTimer:3600, paymentTimer:86400, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
 var EFFECT_COLOR_PALETTE=['#000000','#434343','#666666','#999999','#cccccc','#ffffff','#f87171','#fb7185','#f97316','#facc15','#4ade80','#22c55e','#38bdf8','#60a5fa','#818cf8','#a78bfa','#c084fc','#f472b6','#14b8a6','#94a3b8'];
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
@@ -1653,6 +1692,20 @@ function saveSettings(){
   var ci=document.getElementById('custom-mins');
   ci.style.display=sel==='custom'?'':'none';
   SETTINGS.defaultTimer=sel==='custom'?(parseInt(ci.value)||30)*60:parseInt(sel);
+  var paySel=document.getElementById('payment-timer');
+  var payHrs=document.getElementById('payment-timer-hours');
+  if(paySel&&payHrs){
+    payHrs.style.display=paySel.value==='custom'?'':'none';
+    SETTINGS.paymentTimer=paySel.value==='custom'?Math.max(1,parseInt(payHrs.value,10)||24)*3600:parseInt(paySel.value,10)||86400;
+  }
+  var payClientSel=document.getElementById('payment-client');
+  if(payClientSel) SETTINGS.paymentClientName=payClientSel.value||'';
+  var pcSel=document.getElementById('payment-client-timer');
+  var pcHrs=document.getElementById('payment-client-timer-hours');
+  if(pcSel&&pcHrs){
+    pcHrs.style.display=pcSel.value==='custom'?'':'none';
+    SETTINGS.paymentClientTimer=pcSel.value==='custom'?Math.max(1,parseInt(pcHrs.value,10)||24)*3600:parseInt(pcSel.value,10)||86400;
+  }
   SETTINGS.autoAlert=document.getElementById('auto-alert').checked;
   SETTINGS.alarmTone=document.getElementById('alarm-tone').value;
   SETTINGS.reminderTone=document.getElementById('reminder-alarm-tone').value;
@@ -1677,8 +1730,13 @@ function saveSettings(){
   SETTINGS.rrRoAlertTime=rrRoAlertTime&&rrRoAlertTime.value?rrRoAlertTime.value:'18:00';
   SETTINGS.rrRoAlertEffect=rrRoAlertEffect?rrRoAlertEffect.value:'pulse';
   SETTINGS.rrRoAlertColor=normalizeColorHex(SETTINGS.rrRoAlertColor,'#38bdf8');
-  var slaEnabled=document.getElementById('sla-enabled');
-  SETTINGS.slaEnabled=slaEnabled?slaEnabled.checked:false;
+  var slaL2En=document.getElementById('sla-l2-enabled');
+  var slaCtoEn=document.getElementById('sla-cto-enabled');
+  var slaAmEn=document.getElementById('sla-am-enabled');
+  SETTINGS.slaL2Enabled=slaL2En?slaL2En.checked:false;
+  SETTINGS.slaCtoEnabled=slaCtoEn?slaCtoEn.checked:false;
+  SETTINGS.slaAmEnabled=slaAmEn?slaAmEn.checked:false;
+  SETTINGS.slaEnabled=SETTINGS.slaL2Enabled||SETTINGS.slaCtoEnabled||SETTINGS.slaAmEnabled;
   SETTINGS.slaL2Hours=slaHoursValue('sla-l2-hours',3);
   SETTINGS.slaCtoHours=slaHoursValue('sla-cto-hours',6);
   SETTINGS.slaAmHours=slaHoursValue('sla-am-hours',8);
@@ -1876,16 +1934,19 @@ function entryAgeHours(r){
   if(isNaN(start))return null;
   return Math.max(0,(Date.now()-start)/3600000);
 }
+function slaAnyEnabled(){
+  return SETTINGS.slaL2Enabled===true||SETTINGS.slaCtoEnabled===true||SETTINGS.slaAmEnabled===true;
+}
 function slaTier(r){
-  if(SETTINGS.slaEnabled!==true||!r||r._type==='rr')return null;
+  if(!slaAnyEnabled()||!r||r._type==='rr')return null;
   if(isRecordCompleted(r)||r.status==='Advised Client')return null;
   var h=entryAgeHours(r);
   if(h===null)return null;
   var tiers=[
-    {key:'l2',label:'L2',hours:parseFloat(SETTINGS.slaL2Hours)||3,effect:SETTINGS.slaL2Effect,color:SETTINGS.slaL2Color,fallback:FX_COLOR_DEFAULTS.slaL2Color},
-    {key:'cto',label:'CTO',hours:parseFloat(SETTINGS.slaCtoHours)||6,effect:SETTINGS.slaCtoEffect,color:SETTINGS.slaCtoColor,fallback:FX_COLOR_DEFAULTS.slaCtoColor},
-    {key:'am',label:'AM',hours:parseFloat(SETTINGS.slaAmHours)||8,effect:SETTINGS.slaAmEffect,color:SETTINGS.slaAmColor,fallback:FX_COLOR_DEFAULTS.slaAmColor}
-  ];
+    {enabled:SETTINGS.slaL2Enabled===true,key:'l2',label:'L2',hours:parseFloat(SETTINGS.slaL2Hours)||3,effect:SETTINGS.slaL2Effect,color:SETTINGS.slaL2Color,fallback:FX_COLOR_DEFAULTS.slaL2Color},
+    {enabled:SETTINGS.slaCtoEnabled===true,key:'cto',label:'CTO',hours:parseFloat(SETTINGS.slaCtoHours)||6,effect:SETTINGS.slaCtoEffect,color:SETTINGS.slaCtoColor,fallback:FX_COLOR_DEFAULTS.slaCtoColor},
+    {enabled:SETTINGS.slaAmEnabled===true,key:'am',label:'AM',hours:parseFloat(SETTINGS.slaAmHours)||8,effect:SETTINGS.slaAmEffect,color:SETTINGS.slaAmColor,fallback:FX_COLOR_DEFAULTS.slaAmColor}
+  ].filter(function(t){return t.enabled;});
   tiers.sort(function(a,b){return b.hours-a.hours;});
   for(var i=0;i<tiers.length;i++){
     if(h>=tiers[i].hours)return tiers[i];
@@ -1894,11 +1955,18 @@ function slaTier(r){
 }
 function slaRowClass(r){
   var t=slaTier(r);
-  return t?' fx-row fx-'+fxEffectOrDefault(t.effect,'soft'):'';
+  if(!t||t.effect==='text')return '';
+  return ' fx-row fx-'+fxEffectOrDefault(t.effect,'soft');
 }
 function slaRowStyle(r){
   var t=slaTier(r);
-  return t?effectColorVars(t.color,t.fallback):'';
+  return t&&t.effect!=='text'?effectColorVars(t.color,t.fallback):'';
+}
+// "Text in Concern" effect: show the due escalation level in the Concern cell
+function slaTextBadge(r){
+  var t=slaTier(r);
+  if(!t||t.effect!=='text')return '';
+  return '<span class="sla-text-badge" style="'+effectColorVars(t.color,t.fallback)+'" title="Past the '+t.hours+'h SLA — escalate to '+t.label+'">'+t.label+'</span>';
 }
 function slaBadge(r){
   var t=slaTier(r);
@@ -2372,7 +2440,7 @@ setInterval(function(){
     if(currentTab==='mine')renderRRRows();
   }
   // Re-render when any record crosses an SLA escalation threshold
-  if(SETTINGS.slaEnabled===true){
+  if(slaAnyEnabled()){
     var slaSig=DATA.map(function(r){var t=slaTier(r);return t?r.id+':'+t.key:'';}).filter(Boolean).join(',');
     if(_slaTickSig!==null&&slaSig!==_slaTickSig){
       if(currentTab==='all')renderRows();
@@ -3047,7 +3115,7 @@ function renderRows(){
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
-        +'<td class="copyable-cell" title="'+(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
+        +'<td class="copyable-cell" title="'+(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+slaTextBadge(r)+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
         +'<td></td>'
         +'<td>'+didStBadge(r.status)+advisedAgingBadge(r)+slaBadge(r)+'</td>'
         +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
@@ -3067,7 +3135,7 @@ function renderRows(){
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
-      +'<td class="copyable-cell" title="'+(r.concern||'')+'" style="max-width:260px;color:var(--text2)">'+(r.concern||'')+copyCellButton(r.id,'concern')+'</td>'
+      +'<td class="copyable-cell" title="'+(r.concern||'')+'" style="max-width:260px;color:var(--text2)">'+slaTextBadge(r)+(r.concern||'')+copyCellButton(r.id,'concern')+'</td>'
       +'<td>'+pltBadge(r.platform)+'</td>'
       +'<td>'+stBadge(r.status)+advisedAgingBadge(r)+slaBadge(r)+'</td>'
       +(currentTab==='done'
@@ -3158,7 +3226,7 @@ function renderDIDRows(){
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
-      +'<td class="copyable-cell" title="'+(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
+      +'<td class="copyable-cell" title="'+(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+slaTextBadge(r)+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
       +'<td>'+didStBadge(r.status)+advisedAgingBadge(r)+slaBadge(r)+'</td>'
       +'<td>'+rrBadge(r.am||'','rrby')+'</td>'
       +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
@@ -3840,6 +3908,7 @@ function onPriorityChange(){
     document.getElementById('f-timer-custom-wrap').style.display='none';
   }else{
     setModalTimerFields(SETTINGS.defaultTimer||3600);
+    applyPaymentTimerRule();
   }
 }
 function migratePriority(r){
@@ -4050,11 +4119,29 @@ function addRRComment(){
 
 function onSvcChange(){
   if(editingId!==null) return; // only for new entries
-  var svc=document.getElementById('f-svc-f').value;
-  if(svc==='Payment'){
-    document.getElementById('f-timer-sel').value='86400';
-    document.getElementById('f-timer-custom-wrap').style.display='none';
+  applyPaymentTimerRule();
+}
+
+// Settings > Payment timer: Payment entries get their own timer, and one
+// specific Client / Vendor (e.g. SIR GENE EMAIL) can have its own on top.
+function paymentRuleTimerSecs(client){
+  var c=(client||'').trim().toUpperCase();
+  var special=(SETTINGS.paymentClientName||'').trim().toUpperCase();
+  if(special&&c===special){
+    var s=parseInt(SETTINGS.paymentClientTimer,10);
+    if(s>0) return s;
   }
+  var p=parseInt(SETTINGS.paymentTimer,10);
+  return p>0?p:86400;
+}
+
+function applyPaymentTimerRule(){
+  if(editingId!==null) return; // only for new entries
+  var svcEl=document.getElementById('f-svc-f');
+  if(!svcEl||svcEl.value!=='Payment') return;
+  var sel=document.getElementById('f-client-sel');
+  var client=sel&&sel.style.display!=='none'?sel.value:document.getElementById('f-client').value;
+  setModalTimerFields(paymentRuleTimerSecs(client));
 }
 
 function addComment(){
@@ -4157,8 +4244,22 @@ function matchesDateRange(r){
 }
 
 // Load settings from localStorage (fast, local)
-SETTINGS=Object.assign({defaultTimer:3600,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
+SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
 document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
+if(document.getElementById('default-timer').value==='custom'){
+  document.getElementById('custom-mins').value=Math.max(1,Math.round((SETTINGS.defaultTimer||3600)/60));
+  document.getElementById('custom-mins').style.display='';
+}
+SETTINGS.paymentTimer=parseInt(SETTINGS.paymentTimer,10)>0?parseInt(SETTINGS.paymentTimer,10):86400;
+SETTINGS.paymentClientTimer=parseInt(SETTINGS.paymentClientTimer,10)>0?parseInt(SETTINGS.paymentClientTimer,10):86400;
+if(typeof SETTINGS.paymentClientName!=='string')SETTINGS.paymentClientName='SIR GENE EMAIL';
+[['payment-timer','payment-timer-hours',SETTINGS.paymentTimer],['payment-client-timer','payment-client-timer-hours',SETTINGS.paymentClientTimer]].forEach(function(cfg){
+  var sel=document.getElementById(cfg[0]),hrs=document.getElementById(cfg[1]);
+  if(!sel||!hrs)return;
+  if([1800,3600,7200,86400,259200,604800].indexOf(cfg[2])>-1){sel.value=String(cfg[2]);}
+  else{sel.value='custom';hrs.value=Math.max(1,Math.round(cfg[2]/3600));hrs.style.display='';}
+});
+populatePaymentClientSetting();
 document.getElementById('auto-alert').checked=SETTINGS.autoAlert||false;
 document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
 document.getElementById('reminder-alarm-tone').value=SETTINGS.reminderTone||'bell';
@@ -4172,7 +4273,13 @@ document.getElementById('advised-aging-effect').value=SETTINGS.advisedAgingEffec
 document.getElementById('rr-ro-alert-enabled').checked=SETTINGS.rrRoAlertEnabled!==false;
 document.getElementById('rr-ro-alert-time').value=SETTINGS.rrRoAlertTime||'18:00';
 document.getElementById('rr-ro-alert-effect').value=SETTINGS.rrRoAlertEffect||'pulse';
-document.getElementById('sla-enabled').checked=SETTINGS.slaEnabled===true;
+// Migrate the old single SLA on/off switch to per-level switches
+if(SETTINGS.slaL2Enabled===undefined)SETTINGS.slaL2Enabled=SETTINGS.slaEnabled===true;
+if(SETTINGS.slaCtoEnabled===undefined)SETTINGS.slaCtoEnabled=SETTINGS.slaEnabled===true;
+if(SETTINGS.slaAmEnabled===undefined)SETTINGS.slaAmEnabled=SETTINGS.slaEnabled===true;
+document.getElementById('sla-l2-enabled').checked=SETTINGS.slaL2Enabled===true;
+document.getElementById('sla-cto-enabled').checked=SETTINGS.slaCtoEnabled===true;
+document.getElementById('sla-am-enabled').checked=SETTINGS.slaAmEnabled===true;
 document.getElementById('sla-l2-hours').value=SETTINGS.slaL2Hours||3;
 document.getElementById('sla-l2-effect').value=SETTINGS.slaL2Effect||'soft';
 document.getElementById('sla-cto-hours').value=SETTINGS.slaCtoHours||6;
@@ -4802,6 +4909,18 @@ function populateClientDropdowns(){
       +CLIENTS.map(function(c){return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>';}).join('');
     if(cur) el.value=cur;
   });
+  populatePaymentClientSetting();
+}
+
+function populatePaymentClientSetting(){
+  var el=document.getElementById('payment-client');
+  if(!el)return;
+  var saved=typeof SETTINGS.paymentClientName==='string'?SETTINGS.paymentClientName:'SIR GENE EMAIL';
+  var names=CLIENTS.slice();
+  if(saved&&names.indexOf(saved)===-1)names.unshift(saved);
+  el.innerHTML='<option value="">— None (off) —</option>'
+    +names.map(function(c){return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>';}).join('');
+  el.value=saved;
 }
 
 function addClientName(){
@@ -6037,6 +6156,7 @@ window.changeRRPageSize=changeRRPageSize;
 window.addRRComment=addRRComment;
 window.renderRRModalComments=renderRRModalComments;
 window.onSvcChange=onSvcChange;
+window.applyPaymentTimerRule=applyPaymentTimerRule;
 window._doSwitchTab=_doSwitchTab;
 window.openDailyReport=openDailyReport;
 window.closeDailyReport=closeDailyReport;
