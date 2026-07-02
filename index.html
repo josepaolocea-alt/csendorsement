@@ -92,22 +92,27 @@ tr.row-done td{opacity:.5;}
 .st-green{background:rgba(34,197,94,.12);color:#4ade80;}
 .st-yellow{background:rgba(234,179,8,.12);color:#facc15;}
 .st-gray{background:var(--bg4);color:var(--text3);}
-.age-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--age-badge,rgba(244,63,94,.16));color:var(--age-color,#fb7185);border:1px solid var(--age-border,rgba(244,63,94,.30));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
-tr.advised-age-row>td{background:var(--age-soft,rgba(244,63,94,.08))!important;}
-tr.advised-age-row>td:first-child{box-shadow:inset 3px 0 0 var(--age-color,#fb7185);}
-tr.advised-age-stripe>td{background:repeating-linear-gradient(135deg,var(--age-stripe,rgba(244,63,94,.11)) 0,var(--age-stripe,rgba(244,63,94,.11)) 8px,var(--age-stripe-soft,rgba(244,63,94,.04)) 8px,var(--age-stripe-soft,rgba(244,63,94,.04)) 16px)!important;}
-tr.advised-age-pulse>td{animation:advisedAgePulse 1.8s ease-in-out infinite;}
-tr.advised-age-pulse>td:first-child{animation:advisedAgePulseBar 1.8s ease-in-out infinite;}
-@keyframes advisedAgePulse{0%,100%{background:var(--age-pulse-low,rgba(244,63,94,.07))}50%{background:var(--age-pulse-high,rgba(244,63,94,.16))}}
-@keyframes advisedAgePulseBar{0%,100%{box-shadow:inset 3px 0 0 var(--age-color,#fb7185)}50%{box-shadow:inset 7px 0 0 var(--age-strong,#e11d48)}}
-.rr-ro-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--rr-ro-badge,rgba(14,165,233,.16));color:var(--rr-ro-color,#38bdf8);border:1px solid var(--rr-ro-border,rgba(14,165,233,.32));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
-tr.rr-ro-alert-row>td{background:var(--rr-ro-soft,rgba(14,165,233,.08))!important;}
-tr.rr-ro-alert-row>td:first-child{box-shadow:inset 3px 0 0 var(--rr-ro-color,#38bdf8);}
-tr.rr-ro-alert-stripe>td{background:repeating-linear-gradient(135deg,var(--rr-ro-stripe,rgba(14,165,233,.12)) 0,var(--rr-ro-stripe,rgba(14,165,233,.12)) 8px,var(--rr-ro-stripe-soft,rgba(14,165,233,.04)) 8px,var(--rr-ro-stripe-soft,rgba(14,165,233,.04)) 16px)!important;}
-tr.rr-ro-alert-pulse>td{animation:rrRoAlertPulse 1.8s ease-in-out infinite;}
-tr.rr-ro-alert-pulse>td:first-child{animation:rrRoAlertPulseBar 1.8s ease-in-out infinite;}
-@keyframes rrRoAlertPulse{0%,100%{background:var(--rr-ro-pulse-low,rgba(14,165,233,.07))}50%{background:var(--rr-ro-pulse-high,rgba(14,165,233,.17))}}
-@keyframes rrRoAlertPulseBar{0%,100%{box-shadow:inset 3px 0 0 var(--rr-ro-color,#38bdf8)}50%{box-shadow:inset 7px 0 0 var(--rr-ro-strong,#0284c7)}}
+.age-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(244,63,94,.16));color:var(--fx-color,#fb7185);border:1px solid var(--fx-border,rgba(244,63,94,.30));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
+.rr-ro-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(14,165,233,.16));color:var(--fx-color,#38bdf8);border:1px solid var(--fx-border,rgba(14,165,233,.32));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
+/* Shared row alert effects (Advised Client aging + RR/RO missing RO by). Colors come from --fx-* vars set inline per row. Animated variants use non-!important backgrounds so keyframes can win. */
+tr.fx-row>td:first-child{box-shadow:inset 3px 0 0 var(--fx-color,#fb7185);}
+tr.fx-soft>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
+tr.fx-stripe>td{background:repeating-linear-gradient(135deg,var(--fx-stripe,rgba(244,63,94,.11)) 0,var(--fx-stripe,rgba(244,63,94,.11)) 8px,var(--fx-stripe-soft,rgba(244,63,94,.04)) 8px,var(--fx-stripe-soft,rgba(244,63,94,.04)) 16px)!important;}
+tr.fx-outline>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;border-top:1px solid var(--fx-outline,rgba(244,63,94,.55))!important;border-bottom:1px solid var(--fx-outline,rgba(244,63,94,.55))!important;}
+tr.fx-outline>td:first-child{border-left:1px solid var(--fx-outline,rgba(244,63,94,.55))!important;}
+tr.fx-outline>td:last-child{border-right:1px solid var(--fx-outline,rgba(244,63,94,.55))!important;}
+tr.fx-pulse>td{animation:fxPulse 1.8s ease-in-out infinite;}
+tr.fx-pulse>td:first-child{animation:fxPulse 1.8s ease-in-out infinite,fxPulseBar 1.8s ease-in-out infinite;}
+tr.fx-blink>td{animation:fxBlink 1.2s linear infinite;}
+tr.fx-glow>td{box-shadow:inset 0 7px 10px -7px var(--fx-glow,rgba(244,63,94,.45)),inset 0 -7px 10px -7px var(--fx-glow,rgba(244,63,94,.45));animation:fxGlowBg 2.2s ease-in-out infinite;}
+tr.fx-glow>td:first-child{box-shadow:inset 3px 0 0 var(--fx-color,#fb7185),inset 0 7px 10px -7px var(--fx-glow,rgba(244,63,94,.45)),inset 0 -7px 10px -7px var(--fx-glow,rgba(244,63,94,.45));}
+tr.fx-shimmer{background-image:linear-gradient(105deg,transparent 0%,transparent 38%,var(--fx-sheen,rgba(244,63,94,.25)) 50%,transparent 62%,transparent 100%);background-size:220% 100%;background-repeat:no-repeat;animation:fxShimmer 2.4s linear infinite;}
+tr.fx-shimmer>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
+@keyframes fxPulse{0%,100%{background:var(--fx-pulse-low,rgba(244,63,94,.07))}50%{background:var(--fx-pulse-high,rgba(244,63,94,.17))}}
+@keyframes fxPulseBar{0%,100%{box-shadow:inset 3px 0 0 var(--fx-color,#fb7185)}50%{box-shadow:inset 7px 0 0 var(--fx-strong,#e11d48)}}
+@keyframes fxBlink{0%,45%{background:var(--fx-blink,rgba(244,63,94,.30))}55%,100%{background:var(--fx-soft,rgba(244,63,94,.08))}}
+@keyframes fxGlowBg{0%,100%{background:var(--fx-pulse-low,rgba(244,63,94,.07))}50%{background:var(--fx-pulse-high,rgba(244,63,94,.17))}}
+@keyframes fxShimmer{0%{background-position-x:100%}100%{background-position-x:0%}}
 .pri-high{background:rgba(239,68,68,.15);color:#f87171;}
 .pri-med{background:rgba(156,163,175,.15);color:#9ca3af;}
 .pri-low{background:rgba(156,163,175,.15);color:#9ca3af;}
@@ -420,6 +425,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="soft">Soft highlight</option>
         <option value="pulse">Pulse</option>
         <option value="stripe">Stripe</option>
+        <option value="blink">Blink</option>
+        <option value="glow">Glow</option>
+        <option value="shimmer">Shimmer</option>
+        <option value="outline">Outline</option>
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="advised-aging-color-picker"></div>
@@ -435,6 +444,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="soft">Soft highlight</option>
         <option value="pulse">Pulse</option>
         <option value="stripe">Stripe</option>
+        <option value="blink">Blink</option>
+        <option value="glow">Glow</option>
+        <option value="shimmer">Shimmer</option>
+        <option value="outline">Outline</option>
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="rr-ro-alert-color-picker"></div>
@@ -1390,18 +1403,22 @@ function isLightColor(color,fallback){
   var c=hexToRgb(color,fallback);
   return (c.r*299+c.g*587+c.b*114)/1000>180;
 }
-function effectColorVars(prefix,color,fallback){
+function effectColorVars(color,fallback){
   var hex=normalizeColorHex(color,fallback);
   var strong=rgbHex(mixRgb(hexToRgb(hex,fallback),{r:0,g:0,b:0},.18));
-  return ';--'+prefix+'-color:'+hex
-    +';--'+prefix+'-strong:'+strong
-    +';--'+prefix+'-soft:'+rgba(hex,.08,fallback)
-    +';--'+prefix+'-stripe:'+rgba(hex,.12,fallback)
-    +';--'+prefix+'-stripe-soft:'+rgba(hex,.04,fallback)
-    +';--'+prefix+'-pulse-low:'+rgba(hex,.07,fallback)
-    +';--'+prefix+'-pulse-high:'+rgba(hex,.17,fallback)
-    +';--'+prefix+'-badge:'+rgba(hex,.16,fallback)
-    +';--'+prefix+'-border:'+rgba(hex,.32,fallback);
+  return ';--fx-color:'+hex
+    +';--fx-strong:'+strong
+    +';--fx-soft:'+rgba(hex,.08,fallback)
+    +';--fx-stripe:'+rgba(hex,.12,fallback)
+    +';--fx-stripe-soft:'+rgba(hex,.04,fallback)
+    +';--fx-pulse-low:'+rgba(hex,.07,fallback)
+    +';--fx-pulse-high:'+rgba(hex,.17,fallback)
+    +';--fx-blink:'+rgba(hex,.30,fallback)
+    +';--fx-glow:'+rgba(hex,.45,fallback)
+    +';--fx-sheen:'+rgba(hex,.25,fallback)
+    +';--fx-outline:'+rgba(hex,.55,fallback)
+    +';--fx-badge:'+rgba(hex,.16,fallback)
+    +';--fx-border:'+rgba(hex,.32,fallback);
 }
 function renderEffectColorPicker(id,settingKey,fallback){
   var el=document.getElementById(id);
@@ -1578,13 +1595,16 @@ function isAdvisedAgingDue(r){
   var age=entryAgeDays(r);
   return age!==null&&age>=advisedAgingThreshold();
 }
+var FX_EFFECTS=['soft','pulse','stripe','blink','glow','shimmer','outline'];
+function fxEffectOrDefault(effect,def){
+  return FX_EFFECTS.indexOf(effect)>=0?effect:def;
+}
 function advisedAgingRowClass(r){
   if(!isAdvisedAgingDue(r))return '';
-  var effect=SETTINGS.advisedAgingEffect==='pulse'||SETTINGS.advisedAgingEffect==='stripe'?SETTINGS.advisedAgingEffect:'soft';
-  return ' advised-age-row advised-age-'+effect;
+  return ' fx-row fx-'+fxEffectOrDefault(SETTINGS.advisedAgingEffect,'soft');
 }
 function advisedAgingRowStyle(r){
-  return isAdvisedAgingDue(r)?effectColorVars('age',SETTINGS.advisedAgingColor,'#fb7185'):'';
+  return isAdvisedAgingDue(r)?effectColorVars(SETTINGS.advisedAgingColor,'#fb7185'):'';
 }
 function advisedAgingBadge(r){
   if(!isAdvisedAgingDue(r))return '';
@@ -1610,11 +1630,10 @@ function isRRRoMissingDue(r){
 }
 function rrRoAlertRowClass(r){
   if(!isRRRoMissingDue(r))return '';
-  var effect=SETTINGS.rrRoAlertEffect==='soft'||SETTINGS.rrRoAlertEffect==='stripe'?SETTINGS.rrRoAlertEffect:'pulse';
-  return ' rr-ro-alert-row rr-ro-alert-'+effect;
+  return ' fx-row fx-'+fxEffectOrDefault(SETTINGS.rrRoAlertEffect,'pulse');
 }
 function rrRoAlertRowStyle(r){
-  return isRRRoMissingDue(r)?effectColorVars('rr-ro',SETTINGS.rrRoAlertColor,'#38bdf8'):'';
+  return isRRRoMissingDue(r)?effectColorVars(SETTINGS.rrRoAlertColor,'#38bdf8'):'';
 }
 function rrRoAlertBadge(r){
   if(!isRRRoMissingDue(r))return '';
