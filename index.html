@@ -289,6 +289,7 @@ textarea.fc{resize:vertical;min-height:70px;}
 .client-tag button.tag-edit:hover{color:var(--accent);}
 .client-tag button.tag-del:hover{color:#f87171;}
 .client-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.client-link-info{font-size:10px;color:#fbbf24;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.25);border-radius:4px;padding:1px 5px;white-space:nowrap;}
 
 .rr-bm{background:rgba(156,163,175,.15);color:#9ca3af;}
 .rr-am{background:rgba(234,179,8,.15);color:#fbbf24;}
@@ -717,6 +718,33 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   </div>
 </div>
 
+<!-- CLIENT LINK MODAL (AM / RR by + Priority per client) -->
+<div class="modal-ov hidden" id="client-link-modal" style="z-index:550">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr"><h3 id="client-link-title">Link Client</h3><button class="modal-cls" onclick="closeClientLinkModal()">x</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgrp full"><label>AM / RR by</label>
+          <select class="fc" id="cl-rrby"><option value="">— None —</option></select>
+        </div>
+        <div class="fgrp full"><label>Priority</label>
+          <select class="fc" id="cl-priority">
+            <option value="">— None —</option>
+            <option value="High">High</option>
+            <option value="Critical">⚡ Critical</option>
+            <option value="Urgent">⚠️ Urgent</option>
+          </select>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:12px">New entries for this client will start with this AM / RR by and Priority already filled in — you can still change them on each entry.<br><br><strong>High</strong> → All Tasks &amp; DID tabs. <strong>Critical / Urgent</strong> → Pending RR / RO tab (counts as High in the other tabs). In Pending RR / RO, the auto-fill kicks in when the client name appears in the Subject.</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeClientLinkModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClientLink()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT USER MODAL -->
 <div class="modal-ov hidden" id="edit-user-modal" style="z-index:550">
   <div class="modal" style="max-width:420px">
@@ -814,7 +842,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
-          <select class="fc" id="f-client-sel" onchange="syncClientInput('f-client-sel','f-client')">
+          <select class="fc" id="f-client-sel" onchange="syncClientInput('f-client-sel','f-client');applyClientLink('f')">
             <option value="">— Select Client —</option>
           </select>
           <input class="fc" id="f-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase()" style="margin-top:5px;display:none">
@@ -918,7 +946,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-hdr"><h3 id="rr-modal-title">New RR / RO Entry</h3><button class="modal-cls" onclick="closeRRModal()">x</button></div>
     <div class="modal-body entry-details">
       <div class="fg">
-        <div class="fgrp full"><label>Subject *</label><input class="fc" id="rr-subject" placeholder="e.g. ROUTE REQUEST - CID CYN DIDLOGIC - THREE (3) PLDT FCS"></div>
+        <div class="fgrp full"><label>Subject *</label><input class="fc" id="rr-subject" placeholder="e.g. ROUTE REQUEST - CID CYN DIDLOGIC - THREE (3) PLDT FCS" oninput="onRRSubjectInput()"></div>
         <div class="fgrp"><label>Priority</label>
           <select class="fc" id="rr-priority" onchange="onRRPriorityChange()">
             <option value="">— None —</option>
@@ -1038,7 +1066,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
-          <select class="fc" id="d-client-sel" onchange="syncClientInput('d-client-sel','d-client')">
+          <select class="fc" id="d-client-sel" onchange="syncClientInput('d-client-sel','d-client');applyClientLink('d')">
             <option value="">— Select Client —</option>
           </select>
           <input class="fc" id="d-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase()" style="margin-top:5px;display:none">
@@ -1261,6 +1289,7 @@ var DEFAULT_SEMI_ADMIN_EMAILS = ['customersupport@cynsolutions.ph'];
 window._canEdit=false;
 window._canAdd=false;
 var CLIENTS = []; // loaded from Firestore
+var CLIENT_LINKS = {}; // client name → {rrBy, priority} (linked in Admin tab)
 var _editingUserId = null;
 var _donePage=0, _donePageSize=10;
 var _rrPage=0, _rrPageSize=50;
@@ -2671,6 +2700,7 @@ var editingRRId=null;
 function openNewRRModal(){
   editingRRId=null;
   _rrTimerDirty=false;
+  _rrAutoClient=null;
   var today=new Date().toISOString().split('T')[0];
   document.getElementById('rr-modal-title').textContent='New RR / RO Entry';
   document.getElementById('rr-subject').value='';
@@ -2702,6 +2732,7 @@ function openNewRRModal(){
 function openEditRR(id){
   editingRRId=id;
   _rrTimerDirty=false;
+  _rrAutoClient=null;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   document.getElementById('rr-modal-title').textContent='Edit RR / RO Entry';
   document.getElementById('rr-subject').value=r.rrSubject||'';
@@ -4526,8 +4557,8 @@ function saveEditUser(){
 // ─── ADMIN: CLIENT LIST ──────────────────────────────────────
 function loadClientsAdmin(){
   getDocs(collection(db,'clients')).then(function(snap){
-    CLIENTS=[];
-    snap.forEach(function(d){CLIENTS.push(d.data().name);});
+    CLIENTS=[];CLIENT_LINKS={};
+    snap.forEach(function(d){var c=d.data();CLIENTS.push(c.name);if(c.rrBy||c.priority)CLIENT_LINKS[c.name]={rrBy:c.rrBy||'',priority:c.priority||''};});
     CLIENTS.sort();
     renderClientGrid();
     populateClientDropdowns();
@@ -4542,8 +4573,17 @@ function renderClientGrid(){
   if(count) count.textContent=_clientGridExpanded?'':' ('+CLIENTS.length+' clients — click to expand)';
   if(!CLIENTS.length){grid.innerHTML='<span style="color:var(--text3);font-size:12px">No clients yet. Add one below.</span>';return;}
   grid.innerHTML=CLIENTS.map(function(c){
-    return '<div class="client-tag">'+escHtml(c)
-      +'<button onclick="removeClient(\''+escHtml(c)+'\')" title="Remove">×</button>'
+    var link=CLIENT_LINKS[c];
+    var badge='';
+    if(link&&(link.rrBy||link.priority)){
+      badge='<span class="client-link-info" title="Auto-fills on new entries for this client">→ '
+        +escHtml(link.rrBy||'')
+        +(link.priority?((link.rrBy?' · ':'')+escHtml(link.priority)):'')
+        +'</span>';
+    }
+    return '<div class="client-tag">'+escHtml(c)+badge
+      +'<button class="tag-edit" data-name="'+escAttr(c)+'" onclick="openClientLink(this)" title="Link AM / RR by + Priority to this client">Link</button>'
+      +'<button data-name="'+escAttr(c)+'" onclick="removeClient(this.dataset.name)" title="Remove">×</button>'
       +'</div>';
   }).join('');
 }
@@ -4604,7 +4644,7 @@ function addClientName(){
   if(!name){toast('Enter a client name','error');return;}
   if(CLIENTS.indexOf(name)>-1){toast('Client already exists','info');inp.value='';return;}
   var id=name.replace(/[^A-Z0-9]/g,'_');
-  setDoc(doc(db,'clients',id),{name:name}).then(function(){
+  setDoc(doc(db,'clients',id),{name:name},{merge:true}).then(function(){
     inp.value='';
     toast('Client added: '+name,'success');
     // onSnapshot will automatically update CLIENTS, renderClientGrid, and populateClientDropdowns
@@ -4637,7 +4677,7 @@ function uploadClientCSV(e){
     if(!toAdd.length){toast('No new clients to import'+(skipped?' ('+skipped+' skipped)':''),'info');return;}
     var promises=toAdd.map(function(name){
       var id=name.replace(/[^A-Z0-9]/g,'_');
-      return setDoc(doc(db,'clients',id),{name:name});
+      return setDoc(doc(db,'clients',id),{name:name},{merge:true});
     });
     Promise.all(promises).then(function(){
       toast('Imported '+toAdd.length+' clients'+(skipped?' ('+skipped+' skipped)':''),'success');
@@ -4671,11 +4711,119 @@ function downloadSampleCSV(){
   toast('Sample CSV downloaded','info');
 }
 
+// ─── CLIENT LINKS: per-client AM / RR by + Priority auto-fill ─────
+function escAttr(s){return escHtml(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+function getClientLink(name){
+  if(!name)return null;
+  var l=CLIENT_LINKS[String(name).trim().toUpperCase()];
+  return (l&&(l.rrBy||l.priority))?l:null;
+}
+
+// Set a <select> value; if the option no longer exists (e.g. person removed
+// from Dropdown Options later), add it temporarily so the value still shows
+function setSelectValueSafe(el,val){
+  if(!el)return;
+  el.value=val;
+  if(el.value!==val){
+    var opt=document.createElement('option');
+    opt.value=val;opt.textContent=val;
+    el.appendChild(opt);
+    el.value=val;
+  }
+}
+
+var _linkingClient=null;
+function openClientLink(btn){
+  var name=btn.dataset.name;
+  _linkingClient=name;
+  document.getElementById('client-link-title').textContent='Link Client: '+name;
+  var sel=document.getElementById('cl-rrby');
+  var items=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
+  sel.innerHTML='<option value="">— None —</option>'
+    +items.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
+  var link=CLIENT_LINKS[name]||{};
+  if(link.rrBy)setSelectValueSafe(sel,link.rrBy);
+  document.getElementById('cl-priority').value=link.priority||'';
+  document.getElementById('client-link-modal').classList.remove('hidden');
+}
+function closeClientLinkModal(){document.getElementById('client-link-modal').classList.add('hidden');_linkingClient=null;}
+function saveClientLink(){
+  if(!_linkingClient)return;
+  var name=_linkingClient;
+  var rrBy=document.getElementById('cl-rrby').value;
+  var priority=document.getElementById('cl-priority').value;
+  var id=name.replace(/[^A-Z0-9]/g,'_');
+  setDoc(doc(db,'clients',id),{name:name,rrBy:rrBy,priority:priority},{merge:true}).then(function(){
+    if(rrBy||priority){
+      toast('Linked '+name+(rrBy?' → '+rrBy:'')+(priority?' ('+priority+')':''),'success');
+      writeLog('updated','Client: '+name,'Linked AM/RR by: '+(rrBy||'—')+', Priority: '+(priority||'—'));
+    }else{
+      toast('Link removed for '+name,'info');
+      writeLog('updated','Client: '+name,'Removed client link');
+    }
+    closeClientLinkModal();
+    // onSnapshot will update CLIENT_LINKS + grid automatically
+  }).catch(function(e){toast('Error: '+e.message,'error');});
+}
+
+// Auto-fill AM + Priority when a linked client is picked (endorsement 'f' / DID 'd' modals)
+function applyClientLink(prefix){
+  var sel=document.getElementById(prefix==='d'?'d-client-sel':'f-client-sel');
+  if(!sel)return;
+  var link=getClientLink(sel.value);
+  if(!link)return;
+  var filled=[];
+  if(link.rrBy){
+    var amEl=document.getElementById(prefix==='d'?'d-am':'f-am');
+    if(amEl&&amEl.value!==link.rrBy){setSelectValueSafe(amEl,link.rrBy);filled.push('AM: '+link.rrBy);}
+  }
+  if(link.priority){ // High / Critical / Urgent all count as High here (only High/Normal exist)
+    var priEl=document.getElementById(prefix==='d'?'d-priority':'f-pri-f');
+    if(priEl&&priEl.value!=='High'){
+      priEl.value='High';
+      filled.push('Priority: High');
+      if(prefix==='d')onDIDPriorityChange();else onPriorityChange();
+    }
+  }
+  if(filled.length)toast('Auto-filled — '+filled.join(', '),'info');
+}
+
+// RR / RO modal has no client dropdown — detect a linked client name inside the Subject
+var _rrAutoClient=null;
+function onRRSubjectInput(){
+  var subjEl=document.getElementById('rr-subject');
+  if(!subjEl)return;
+  var subj=subjEl.value.toUpperCase();
+  if(!subj){_rrAutoClient=null;return;}
+  var best=null;
+  Object.keys(CLIENT_LINKS).forEach(function(name){
+    if(!name)return;
+    var esc=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    var re=new RegExp('(^|[^A-Z0-9])'+esc+'([^A-Z0-9]|$)');
+    if(re.test(subj)&&(!best||name.length>best.length))best=name;
+  });
+  if(!best){_rrAutoClient=null;return;}
+  if(best===_rrAutoClient)return; // already handled this client — don't refill if user cleared it
+  _rrAutoClient=best;
+  var link=CLIENT_LINKS[best];
+  var filled=[];
+  var rrByEl=document.getElementById('rr-by');
+  if(link.rrBy&&rrByEl&&!rrByEl.value){setSelectValueSafe(rrByEl,link.rrBy);filled.push('RR by: '+link.rrBy);}
+  var priEl=document.getElementById('rr-priority');
+  if((link.priority==='Critical'||link.priority==='Urgent')&&priEl&&!priEl.value){
+    priEl.value=link.priority;
+    onRRPriorityChange();
+    filled.push('Priority: '+link.priority);
+  }
+  if(filled.length)toast(best+' — auto-filled '+filled.join(', '),'info');
+}
+
 // Load clients on startup (for dropdowns in all tabs)
 function loadClientsGlobal(){
   onSnapshot(collection(db,'clients'),function(snap){
-    CLIENTS=[];
-    snap.forEach(function(d){CLIENTS.push(d.data().name);});
+    CLIENTS=[];CLIENT_LINKS={};
+    snap.forEach(function(d){var c=d.data();CLIENTS.push(c.name);if(c.rrBy||c.priority)CLIENT_LINKS[c.name]={rrBy:c.rrBy||'',priority:c.priority||''};});
     CLIENTS.sort();
     populateClientDropdowns();
     // Always re-render the admin grid if it's visible
@@ -5382,6 +5530,11 @@ window.openEditUser=openEditUser;
 window.removeClient=removeClient;
 window.saveEditUser=saveEditUser;
 window.saveUserRecord=saveUserRecord;
+window.openClientLink=openClientLink;
+window.closeClientLinkModal=closeClientLinkModal;
+window.saveClientLink=saveClientLink;
+window.applyClientLink=applyClientLink;
+window.onRRSubjectInput=onRRSubjectInput;
 window.syncClientInput=syncClientInput;
 window.setClientDropdown=setClientDropdown;
 window.uploadClientCSV=uploadClientCSV;
