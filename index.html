@@ -3231,6 +3231,15 @@ function toggleAutoPanel(){
   btn.textContent=open?'Settings ▴':'Settings ▾';
 }
 
+function setModalTimerFields(secs){
+  var knownVals=[1800,3600,7200,86400,259200,604800];
+  var known=knownVals.indexOf(secs)>-1;
+  document.getElementById('f-timer-sel').value=known?String(secs):'custom';
+  document.getElementById('f-timer-hh').value=known?'0':String(Math.floor(secs/3600));
+  document.getElementById('f-timer-mm').value=known?'0':String(Math.floor((secs%3600)/60));
+  document.getElementById('f-timer-custom-wrap').style.display=known?'none':'';
+}
+
 function openNewModal(){
   editingId=null;
   _endorsementTimerDirty=false;
@@ -3248,11 +3257,8 @@ function openNewModal(){
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('f-resolved-display').textContent='—';
   document.getElementById('f-resolved-display').style.color='var(--text3)';
-  // Set timer based on default priority (Normal → custom)
-  document.getElementById('f-timer-sel').value='custom';
-  document.getElementById('f-timer-hh').value='1';
-  document.getElementById('f-timer-mm').value='0';
-  document.getElementById('f-timer-custom-wrap').style.display='';
+  // Pre-fill timer from Settings > Default timer (priority starts as Normal)
+  setModalTimerFields(SETTINGS.defaultTimer||3600);
   setReminderFields('f',null);
   document.getElementById('f-comment-text').value='';
   _pendingAttachments['endorse-attach-pending']=[];
@@ -3281,19 +3287,8 @@ function openEdit(id){
   document.getElementById('f-date').value=r.startDate||'';
   document.getElementById('f-resolved-display').textContent=r.resolvedDate?fmtDate(r.resolvedDate):'—';
   document.getElementById('f-resolved-display').style.color=r.resolvedDate?'#4ade80':'var(--text3)';
-  var tov=r.timerOverride||0;
-  var knownVals=[1800,3600,7200,86400,259200,604800];
-  if(tov&&knownVals.indexOf(tov)===-1){
-    document.getElementById('f-timer-sel').value='custom';
-    document.getElementById('f-timer-hh').value=Math.floor(tov/3600)||0;
-    document.getElementById('f-timer-mm').value=Math.floor((tov%3600)/60)||0;
-    document.getElementById('f-timer-custom-wrap').style.display='';
-  }else{
-    document.getElementById('f-timer-sel').value=tov||3600;
-    document.getElementById('f-timer-hh').value='0';
-    document.getElementById('f-timer-mm').value='0';
-    document.getElementById('f-timer-custom-wrap').style.display='none';
-  }
+  // Show the entry's own timer, or the Settings default if it has none
+  setModalTimerFields(r.timerOverride||SETTINGS.defaultTimer||3600);
   setReminderFields('f',r.reminderAt||null);
   document.getElementById('f-comment-text').value='';
   _pendingAttachments['endorse-attach-pending']=[];
@@ -3504,20 +3499,11 @@ function onModalTimerChange(){
 function onPriorityChange(){
   if(editingId!==null) return;
   var pri=document.getElementById('f-pri-f').value;
-  var timerSel=document.getElementById('f-timer-sel');
-  var customWrap=document.getElementById('f-timer-custom-wrap');
   if(pri==='High'){
-    timerSel.value='1800'; // 30 minutes
-    customWrap.style.display='none';
+    document.getElementById('f-timer-sel').value='1800'; // 30 minutes
+    document.getElementById('f-timer-custom-wrap').style.display='none';
   }else{
-    timerSel.value='custom';
-    customWrap.style.display='';
-    // Default custom to 1:00 if fields are empty/zero
-    var hh=document.getElementById('f-timer-hh');
-    var mm=document.getElementById('f-timer-mm');
-    if((!hh.value||hh.value==='0')&&(!mm.value||mm.value==='0')){
-      hh.value='1';mm.value='0';
-    }
+    setModalTimerFields(SETTINGS.defaultTimer||3600);
   }
 }
 function migratePriority(r){
