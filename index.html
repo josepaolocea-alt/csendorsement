@@ -291,6 +291,19 @@ textarea.fc{resize:vertical;min-height:70px;}
 .client-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
 .client-link-info{font-size:10px;color:#fbbf24;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.25);border-radius:4px;padding:1px 5px;white-space:nowrap;}
 
+/* Dashboard */
+.dash-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.dash-card-num{font-size:22px;font-weight:700;color:var(--text);line-height:1.2;}
+.dash-card-label{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-top:3px;}
+.dash-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px;color:var(--text2);}
+.dash-bar-track{flex:1;background:var(--bg3);border-radius:4px;height:13px;overflow:hidden;}
+.dash-bar-fill{height:100%;border-radius:4px;background:var(--accent);}
+.dash-chart{display:flex;align-items:flex-end;gap:5px;}
+.dash-chart-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;min-width:0;}
+.dash-chart-bar{width:100%;max-width:44px;background:var(--accent);border-radius:4px 4px 0 0;}
+.dash-chart-lbl{font-size:9.5px;color:var(--text3);white-space:nowrap;}
+.dash-chart-val{font-size:10.5px;color:var(--text2);font-weight:600;min-height:14px;}
+
 .rr-bm{background:rgba(156,163,175,.15);color:#9ca3af;}
 .rr-am{background:rgba(234,179,8,.15);color:#fbbf24;}
 .rr-prod{background:rgba(180,120,40,.15);color:#c8924a;}
@@ -361,6 +374,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <button class="tab-btn" onclick="switchTab('done',this)">Done / Resolved</button>
   <button class="tab-btn" onclick="switchTab('mine',this)">Pending RR / RO</button>
   <button class="tab-btn" onclick="switchTab('trash',this)">Trash</button>
+  <button class="tab-btn" id="dashboard-tab-btn" style="display:none" onclick="switchTab('dashboard',this)">Dashboard</button>
   <button class="tab-btn" id="admin-tab-btn" style="display:none" onclick="switchTab('admin',this)">Admin</button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <div class="user-chip" id="user-chip" style="display:none">
@@ -600,6 +614,82 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </div>
   </div>
   <div id="main-pagination" style="padding:6px 16px 2px"></div>
+
+  <!-- DASHBOARD PANEL -->
+  <div id="dashboard-panel" style="display:none">
+
+    <!-- DASHBOARD HEADER -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <span class="admin-ctitle" style="font-size:13px">Dashboard</span>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <select class="fsel" id="dash-period" onchange="renderDashboard()">
+          <option value="today">Today</option>
+          <option value="7">Last 7 Days</option>
+          <option value="30" selected>Last 30 Days</option>
+          <option value="month">This Month</option>
+          <option value="all">All Time</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadDashboard(true)">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div id="dash-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px"></div>
+
+    <!-- USER ENGAGEMENT -->
+    <div class="admin-section">
+      <div class="admin-toolbar" style="margin-bottom:4px">
+        <span class="admin-ctitle">User Engagement — Interactions per User</span>
+        <span id="dash-eng-period" style="font-size:11px;color:var(--text3)"></span>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Created / Updated / Deleted / Exports / Sign-ins are counted from Activity Logs (clearing logs resets those counts). Comments are counted from the records themselves. Last Active is all-time.</p>
+      <div class="admin-tbl-wrap">
+        <div class="admin-tbl-scroll" style="max-height:420px">
+          <table class="admin-table">
+            <thead><tr>
+              <th style="width:30px">#</th>
+              <th>User</th>
+              <th>Role</th>
+              <th style="text-align:right">Created</th>
+              <th style="text-align:right">Updated</th>
+              <th style="text-align:right">Comments</th>
+              <th style="text-align:right">Deleted</th>
+              <th style="text-align:right">Exports</th>
+              <th style="text-align:right">Sign-ins</th>
+              <th style="text-align:right">Total Actions</th>
+              <th>Last Active</th>
+              <th>Engagement</th>
+            </tr></thead>
+            <tbody id="dash-users-tbody">
+              <tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAILY ACTIVITY CHART -->
+    <div class="admin-section">
+      <div class="admin-toolbar" style="margin-bottom:14px">
+        <span class="admin-ctitle">Daily Activity — Last 14 Days</span>
+        <span style="font-size:11px;color:var(--text3)">Entries created + updates + comments per day</span>
+      </div>
+      <div class="dash-chart" id="dash-chart"></div>
+    </div>
+
+    <!-- STATUS BREAKDOWN + TOP CLIENTS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+      <div class="admin-section" style="margin-bottom:0">
+        <div class="admin-toolbar"><span class="admin-ctitle">Open Tasks by Status</span></div>
+        <div id="dash-status"></div>
+      </div>
+      <div class="admin-section" style="margin-bottom:0">
+        <div class="admin-toolbar"><span class="admin-ctitle">Top Clients — Open Tasks</span></div>
+        <div id="dash-clients"></div>
+      </div>
+    </div>
+
+  </div>
 
   <!-- ADMIN PANEL -->
   <div id="admin-panel" style="display:none">
@@ -1634,15 +1724,19 @@ function _doSwitchTab(tab,el){
   el.classList.add('active');
   var isAdmin=tab==='admin';
   var isTrash=tab==='trash';
-  document.getElementById('stats-row').style.display=isAdmin?'none':'';
-  document.querySelector('.toolbar').style.display=isAdmin?'none':'';
-  document.getElementById('main-table-wrap').style.display=isAdmin?'none':'';
-  document.getElementById('main-pagination').style.display=isAdmin?'none':'';
+  var isDash=tab==='dashboard';
+  var hideMain=isAdmin||isDash;
+  document.getElementById('stats-row').style.display=hideMain?'none':'';
+  document.querySelector('.toolbar').style.display=hideMain?'none':'';
+  document.getElementById('main-table-wrap').style.display=hideMain?'none':'';
+  document.getElementById('main-pagination').style.display=hideMain?'none':'';
   document.getElementById('admin-panel').style.display=isAdmin?'':'none';
-  document.getElementById('new-btn').style.display=(isAdmin||isTrash)?'none':'';
+  document.getElementById('dashboard-panel').style.display=isDash?'':'none';
+  document.getElementById('new-btn').style.display=(hideMain||isTrash)?'none':'';
   document.getElementById('trash-info').style.display=isTrash?'':'none';
   document.getElementById('trash-empty-btn').style.display=(isTrash&&window._canEdit)?'':'none';
   if(isAdmin){loadAdminData();return;}
+  if(isDash){loadDashboard();return;}
   DATA.forEach(function(r){r._sel=false;});
   TRASH_DATA.forEach(function(r){r._sel=false;});
   window._lastCheckAll=false;
@@ -4141,6 +4235,7 @@ async function startFirestore(){
       toast('Connected ✓','success');
     }
     applyFilters();
+    if(currentTab==='dashboard'&&_dashLoaded){try{renderDashboard();}catch(e){}}
   }, function(err){
     hideLoader();
     console.error('Firestore error',err);
@@ -4155,6 +4250,10 @@ function applyRolePermissions(role){
 
   // Admin tab: Admin only
   document.getElementById('admin-tab-btn').style.display = isAdmin ? '' : 'none';
+
+  // Dashboard tab: Admin only
+  var dashTabBtn = document.getElementById('dashboard-tab-btn');
+  if(dashTabBtn) dashTabBtn.style.display = isAdmin ? '' : 'none';
 
   // Settings button: Admin only
   var settingsBtn = document.getElementById('auto-toggle-btn');
@@ -5552,7 +5651,256 @@ function generateAISummary(){
   });
 }
 
+// ─── DASHBOARD ───────────────────────────────────────────────
+var _dashLoaded=false;
+var _dashUsers=[];   // users collection snapshot
+var _dashTrash=[];   // trash records (so deleted entries still count toward engagement)
+
+function loadDashboard(force){
+  if(_dashLoaded&&!force){renderDashboard();return;}
+  var tbody=document.getElementById('dash-users-tbody');
+  if(tbody) tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Loading...</td></tr>';
+  var jobs=[];
+  jobs.push(getDocs(collection(db,'users')).then(function(snap){
+    _dashUsers=[];
+    snap.forEach(function(d){_dashUsers.push(d.data());});
+  }));
+  if(!LOGS.length||force){
+    jobs.push(getDocs(collection(db,'logs')).then(function(snap){
+      LOGS=[];
+      snap.forEach(function(d){LOGS.push(d.data());});
+      LOGS.sort(function(a,b){return b.ts-a.ts;});
+    }));
+  }
+  jobs.push(getDocs(collection(db,TRASH_COLL)).then(function(snap){
+    _dashTrash=[];
+    snap.forEach(function(d){_dashTrash.push(d.data());});
+  }).catch(function(){_dashTrash=[];}));
+  Promise.all(jobs).then(function(){
+    _dashLoaded=true;
+    renderDashboard();
+  }).catch(function(e){
+    if(tbody) tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:#f87171;padding:20px">Error loading dashboard: '+escHtml(e.message)+'</td></tr>';
+  });
+}
+
+function dashPeriodStart(){
+  var sel=document.getElementById('dash-period');
+  var v=sel?sel.value:'30';
+  var now=new Date();
+  if(v==='all') return 0;
+  if(v==='today') return new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  if(v==='month') return new Date(now.getFullYear(),now.getMonth(),1).getTime();
+  return Date.now()-parseInt(v,10)*86400000;
+}
+
+function dashRelTime(ts){
+  if(!ts) return '—';
+  var mins=Math.floor((Date.now()-ts)/60000);
+  if(mins<1) return 'just now';
+  if(mins<60) return mins+'m ago';
+  var hrs=Math.floor(mins/60);
+  if(hrs<24) return hrs+'h ago';
+  var days=Math.floor(hrs/24);
+  if(days<31) return days+'d ago';
+  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+function dashEscAttr(s){return escHtml(s).replace(/"/g,'&quot;');}
+
+function renderDashboard(){
+  var startTs=dashPeriodStart();
+  var sel=document.getElementById('dash-period');
+  var periodLabel=sel?sel.options[sel.selectedIndex].text:'';
+  var engLbl=document.getElementById('dash-eng-period');
+  if(engLbl) engLbl.textContent=periodLabel;
+
+  // ── collect all comments {ts,user} from live records + trash
+  var allRecs=DATA.concat(_dashTrash);
+  var comments=[];
+  allRecs.forEach(function(r){
+    (r.comments||[]).forEach(function(c){
+      if(c&&c.ts) comments.push({ts:c.ts,user:c.user||''});
+    });
+  });
+
+  // ── per-user interaction counts
+  var stats={};
+  function bump(email,key,ts){
+    if(!email||email==='system'||email==='Unknown') return;
+    var s=stats[email];
+    if(!s) s=stats[email]={created:0,updated:0,deleted:0,exports:0,logins:0,comments:0,lastActive:0};
+    if(key) s[key]++;
+    if(ts&&ts>s.lastActive) s.lastActive=ts;
+  }
+  LOGS.forEach(function(l){
+    bump(l.user,null,l.ts); // Last Active is all-time
+    if(l.ts<startTs) return;
+    if(l.action==='created') bump(l.user,'created');
+    else if(l.action==='updated') bump(l.user,'updated');
+    else if(l.action==='deleted') bump(l.user,'deleted');
+    else if(l.action==='login') bump(l.user,'logins');
+    else bump(l.user,'exports'); // exported + csv_import
+  });
+  comments.forEach(function(c){
+    bump(c.user,null,c.ts);
+    if(c.ts>=startTs) bump(c.user,'comments');
+  });
+
+  // ── roster: every registered user + anyone else seen in logs/comments
+  var roster={};
+  _dashUsers.forEach(function(u){
+    if(!u.email) return;
+    roster[u.email]={name:u.nickname||((u.name&&u.name!==u.email)?u.name:u.email.split('@')[0]),role:u.role||'Viewer'};
+  });
+  Object.keys(stats).forEach(function(e){
+    if(!roster[e]) roster[e]={name:getUserDisplay(e),role:''};
+  });
+
+  var emptyStats={created:0,updated:0,deleted:0,exports:0,logins:0,comments:0,lastActive:0};
+  var rows=Object.keys(roster).map(function(email){
+    var s=stats[email]||emptyStats;
+    return {
+      email:email,
+      name:roster[email].name,
+      role:roster[email].role,
+      s:s,
+      total:s.created+s.updated+s.comments+s.deleted+s.exports
+    };
+  });
+  rows.sort(function(a,b){return b.total-a.total||b.s.lastActive-a.s.lastActive||(a.name>b.name?1:-1);});
+
+  // ── engagement table
+  var tbody=document.getElementById('dash-users-tbody');
+  if(tbody){
+    if(!rows.length){
+      tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">No users found</td></tr>';
+    }else{
+      tbody.innerHTML=rows.map(function(r,i){
+        var roleCls=r.role==='Admin'?'role-admin':r.role==='Semi-Admin'?'role-semi':'role-viewer';
+        var roleHtml=r.role?'<span class="role-badge '+roleCls+'">'+escHtml(r.role)+'</span>':'<span style="color:var(--text3)">—</span>';
+        var badge;
+        if(r.total>0) badge='<span class="badge st-green"><span class="bdot"></span>Active</span>';
+        else if(r.s.logins>0) badge='<span class="badge st-blue"><span class="bdot"></span>Signed in only</span>';
+        else badge='<span class="badge st-red"><span class="bdot"></span>No activity</span>';
+        function num(n){return n?'<strong>'+n+'</strong>':'<span style="color:var(--text3)">0</span>';}
+        return '<tr>'
+          +'<td style="color:var(--text3)">'+(i+1)+'</td>'
+          +'<td><div style="font-weight:600">'+escHtml(r.name)+'</div><div style="font-size:10.5px;color:var(--text3)">'+escHtml(r.email)+'</div></td>'
+          +'<td>'+roleHtml+'</td>'
+          +'<td style="text-align:right">'+num(r.s.created)+'</td>'
+          +'<td style="text-align:right">'+num(r.s.updated)+'</td>'
+          +'<td style="text-align:right">'+num(r.s.comments)+'</td>'
+          +'<td style="text-align:right">'+num(r.s.deleted)+'</td>'
+          +'<td style="text-align:right">'+num(r.s.exports)+'</td>'
+          +'<td style="text-align:right">'+num(r.s.logins)+'</td>'
+          +'<td style="text-align:right;font-weight:700;color:var(--accent)">'+r.total+'</td>'
+          +'<td style="color:var(--text2);white-space:nowrap">'+dashRelTime(r.s.lastActive)+'</td>'
+          +'<td>'+badge+'</td>'
+          +'</tr>';
+      }).join('');
+    }
+  }
+
+  // ── summary cards
+  var openEnd=0,openDid=0,openRR=0,doneAll=0,stale=0;
+  var now=Date.now(),WEEK=7*86400000;
+  DATA.forEach(function(r){
+    if(isRecordCompleted(r)){doneAll++;return;}
+    if(r._type==='did') openDid++;
+    else if(r._type==='rr') openRR++;
+    else openEnd++;
+    var lastTouch=Math.max(r.updatedAt||0,r.createdAt||0);
+    (r.comments||[]).forEach(function(c){if(c&&c.ts>lastTouch)lastTouch=c.ts;});
+    if(lastTouch&&(now-lastTouch)>WEEK) stale++;
+  });
+  var newInPeriod=0;
+  LOGS.forEach(function(l){
+    if(l.ts>=startTs&&l.action==='created') newInPeriod++;
+  });
+  var cmInPeriod=comments.filter(function(c){return c.ts>=startTs;}).length;
+  var activeUsers=rows.filter(function(r){return r.total>0;}).length;
+  var cards=[
+    {n:openEnd,l:'Open Tasks'},
+    {n:openDid,l:'DID In Progress'},
+    {n:openRR,l:'Pending RR / RO'},
+    {n:doneAll,l:'Completed (All Time)'},
+    {n:stale,l:'Open, No Update 7+ Days',warn:stale>0},
+    {n:newInPeriod,l:'New Entries — '+periodLabel},
+    {n:cmInPeriod,l:'Comments — '+periodLabel},
+    {n:activeUsers+' / '+rows.length,l:'Active Users — '+periodLabel}
+  ];
+  var cardsDiv=document.getElementById('dash-cards');
+  if(cardsDiv) cardsDiv.innerHTML=cards.map(function(c){
+    return '<div class="dash-card"><div class="dash-card-num"'+(c.warn?' style="color:#f87171"':'')+'>'+c.n+'</div><div class="dash-card-label">'+escHtml(c.l)+'</div></div>';
+  }).join('');
+
+  // ── daily activity chart (always last 14 days)
+  var days=[];
+  for(var i=13;i>=0;i--){
+    var d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);
+    days.push({start:d.getTime(),end:d.getTime()+86400000,label:d.toLocaleDateString('en-US',{month:'short',day:'numeric'}),count:0});
+  }
+  function bumpDay(ts){
+    if(!ts||ts<days[0].start) return;
+    for(var j=0;j<days.length;j++){
+      if(ts>=days[j].start&&ts<days[j].end){days[j].count++;return;}
+    }
+  }
+  LOGS.forEach(function(l){if(l.action!=='login')bumpDay(l.ts);});
+  comments.forEach(function(c){bumpDay(c.ts);});
+  var maxDay=1;
+  days.forEach(function(d){if(d.count>maxDay)maxDay=d.count;});
+  var chart=document.getElementById('dash-chart');
+  if(chart) chart.innerHTML=days.map(function(d){
+    var h=Math.max(3,Math.round(d.count/maxDay*110));
+    return '<div class="dash-chart-col" title="'+dashEscAttr(d.label+': '+d.count+' interaction'+(d.count!==1?'s':''))+'">'
+      +'<div class="dash-chart-val">'+(d.count||'')+'</div>'
+      +'<div class="dash-chart-bar" style="height:'+h+'px'+(d.count?'':';opacity:.25')+'"></div>'
+      +'<div class="dash-chart-lbl">'+d.label+'</div>'
+      +'</div>';
+  }).join('');
+
+  // ── open tasks by status
+  var stCounts={};
+  DATA.forEach(function(r){
+    if(isRecordCompleted(r)) return;
+    var st=r._type==='rr'?(r.rrStatus||'Pending RR/RO'):(r.status||'—');
+    stCounts[st]=(stCounts[st]||0)+1;
+  });
+  var stArr=Object.keys(stCounts).map(function(k){return {k:k,n:stCounts[k]};}).sort(function(a,b){return b.n-a.n;});
+  var maxSt=stArr.length?stArr[0].n:1;
+  function barRow(label,n,max){
+    return '<div class="dash-bar-row">'
+      +'<span style="width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+dashEscAttr(label)+'">'+escHtml(label)+'</span>'
+      +'<div class="dash-bar-track"><div class="dash-bar-fill" style="width:'+Math.max(3,Math.round(n/max*100))+'%"></div></div>'
+      +'<strong style="width:28px;text-align:right;color:var(--text)">'+n+'</strong>'
+      +'</div>';
+  }
+  var stDiv=document.getElementById('dash-status');
+  if(stDiv) stDiv.innerHTML=stArr.length
+    ?stArr.map(function(s){return barRow(s.k,s.n,maxSt);}).join('')
+    :'<div style="color:var(--text3);font-size:12px">No open tasks</div>';
+
+  // ── top clients by open tasks (endorsements + DID)
+  var clCounts={};
+  DATA.forEach(function(r){
+    if(isRecordCompleted(r)||r._type==='rr') return;
+    var c=(r.client||'').trim();
+    if(!c) return;
+    clCounts[c]=(clCounts[c]||0)+1;
+  });
+  var clArr=Object.keys(clCounts).map(function(k){return {k:k,n:clCounts[k]};}).sort(function(a,b){return b.n-a.n;}).slice(0,8);
+  var maxCl=clArr.length?clArr[0].n:1;
+  var clDiv=document.getElementById('dash-clients');
+  if(clDiv) clDiv.innerHTML=clArr.length
+    ?clArr.map(function(s){return barRow(s.k,s.n,maxCl);}).join('')
+    :'<div style="color:var(--text3);font-size:12px">No open client tasks</div>';
+}
+
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
+window.loadDashboard=loadDashboard;
+window.renderDashboard=renderDashboard;
 window.addClientName=addClientName;
 window.addComment=addComment;
 window.restoreRec=restoreRec;
