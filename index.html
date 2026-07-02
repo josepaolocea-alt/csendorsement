@@ -415,6 +415,26 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <button class="btn btn-secondary btn-sm" onclick="testReminderAlert()">Test</button>
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <span class="auto-label">Timer expired effect:</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="timer-fx-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
+      </label>
+      <select class="fsel" id="timer-fx-effect" onchange="onAgingSettingChange()">
+        <option value="soft">Soft highlight</option>
+        <option value="pulse">Pulse</option>
+        <option value="stripe">Stripe</option>
+        <option value="blink">Blink</option>
+        <option value="glow">Glow</option>
+        <option value="shimmer">Shimmer</option>
+        <option value="outline">Outline</option>
+      </select>
+      <span class="auto-label">color</span>
+      <div class="sheet-color-picker" id="timer-fx-color-picker"></div>
+      <span class="auto-label">play for</span>
+      <input class="fc" id="timer-fx-mins" type="number" min="1" max="1440" value="5" style="width:70px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
+      <span class="auto-label">minutes once the timer is reached</span>
+    </div>
+    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">Advised Client aging:</span>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="advised-aging-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
@@ -1273,7 +1293,7 @@ const SETTINGS_DOC = 'app_settings/main';
 var DATA = [];
 var TRASH_DATA = [];
 var idSeq = 1;
-var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep', reminderTone:'bell', advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
+var SETTINGS = {defaultTimer:3600, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
 var EFFECT_COLOR_PALETTE=['#000000','#434343','#666666','#999999','#cccccc','#ffffff','#f87171','#fb7185','#f97316','#facc15','#4ade80','#22c55e','#38bdf8','#60a5fa','#818cf8','#a78bfa','#c084fc','#f472b6','#14b8a6','#94a3b8'];
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
@@ -1513,8 +1533,9 @@ function renderEffectColorPicker(id,settingKey,fallback){
     return '<button type="button" class="sheet-color-swatch'+(hex===current?' active':'')+'" data-light="'+(isLightColor(hex,fallback)?'1':'0')+'" style="background:'+hex+'" title="'+hex+'" onclick="selectEffectColor(\''+settingKey+'\',\''+hex+'\')"></button>';
   }).join('');
 }
-var FX_COLOR_DEFAULTS={advisedAgingColor:'#fb7185',rrRoAlertColor:'#38bdf8',slaL2Color:'#facc15',slaCtoColor:'#f97316',slaAmColor:'#f87171'};
+var FX_COLOR_DEFAULTS={advisedAgingColor:'#fb7185',rrRoAlertColor:'#38bdf8',slaL2Color:'#facc15',slaCtoColor:'#f97316',slaAmColor:'#f87171',timerFxColor:'#f87171'};
 function renderEffectColorPickers(){
+  renderEffectColorPicker('timer-fx-color-picker','timerFxColor',FX_COLOR_DEFAULTS.timerFxColor);
   renderEffectColorPicker('advised-aging-color-picker','advisedAgingColor',FX_COLOR_DEFAULTS.advisedAgingColor);
   renderEffectColorPicker('rr-ro-alert-color-picker','rrRoAlertColor',FX_COLOR_DEFAULTS.rrRoAlertColor);
   renderEffectColorPicker('sla-l2-color-picker','slaL2Color',FX_COLOR_DEFAULTS.slaL2Color);
@@ -1545,6 +1566,13 @@ function saveSettings(){
   SETTINGS.autoAlert=document.getElementById('auto-alert').checked;
   SETTINGS.alarmTone=document.getElementById('alarm-tone').value;
   SETTINGS.reminderTone=document.getElementById('reminder-alarm-tone').value;
+  var timerFxEnabledEl=document.getElementById('timer-fx-enabled');
+  var timerFxEffectEl=document.getElementById('timer-fx-effect');
+  var timerFxMinsEl=document.getElementById('timer-fx-mins');
+  SETTINGS.timerFxEnabled=timerFxEnabledEl?timerFxEnabledEl.checked:true;
+  SETTINGS.timerFxEffect=timerFxEffectEl&&timerFxEffectEl.value?timerFxEffectEl.value:'blink';
+  SETTINGS.timerFxMins=timerFxMinsEl?Math.max(1,Math.min(1440,parseInt(timerFxMinsEl.value,10)||5)):5;
+  SETTINGS.timerFxColor=normalizeColorHex(SETTINGS.timerFxColor,'#f87171');
   var agingEnabled=document.getElementById('advised-aging-enabled');
   var agingDays=document.getElementById('advised-aging-days');
   var agingEffect=document.getElementById('advised-aging-effect');
@@ -1784,6 +1812,28 @@ function slaBadge(r){
   var h=entryAgeHours(r);
   var ageTxt=h>=48?Math.floor(h/24)+'d':Math.floor(h)+'h';
   return '<span class="age-alert-badge" title="Open for '+ageTxt+' — past the '+t.hours+'h SLA">Escalate to '+t.label+'</span>';
+}
+// ─── TIMER EXPIRED ROW EFFECT ────────────────────────────────
+// Plays a row effect when a record's timer hits 0, for timerFxMins minutes
+function timerFxPlayMins(){
+  var v=parseInt(SETTINGS.timerFxMins,10);
+  return isNaN(v)||v<1?5:Math.min(1440,v);
+}
+function isTimerFxActive(r){
+  if(SETTINGS.timerFxEnabled===false||!r||!r.timerStart)return false;
+  if(isRecordCompleted(r)||r.rrDisregard)return false;
+  var secs=getTimerSecs(r);
+  if(!secs)return false;
+  var expiredAt=r.timerStart+secs*1000;
+  var now=Date.now();
+  return now>=expiredAt&&now<expiredAt+timerFxPlayMins()*60000;
+}
+function timerFxRowClass(r){
+  if(!isTimerFxActive(r))return '';
+  return ' fx-row fx-'+fxEffectOrDefault(SETTINGS.timerFxEffect,'blink');
+}
+function timerFxRowStyle(r){
+  return isTimerFxActive(r)?effectColorVars(SETTINGS.timerFxColor,'#f87171'):'';
 }
 function copyCellButton(id,field){
   return '<button type="button" class="cell-copy-btn" onclick="copyRowField(event,'+id+',\''+field+'\')" title="Copy"><span class="copy-icon"></span></button>';
@@ -2142,6 +2192,7 @@ var _sessionAlerted={};
 var _autoRestartScheduled={};
 var _rrRoAlertWindowActive=null;
 var _slaTickSig=null;
+var _timerFxTickSig=null;
 var AUTO_RESTART_DELAY_MS=10000;
 var AUTO_RESTART_SKIP_SECS=259200;
 function currentAlertUserKey(){
@@ -2236,6 +2287,18 @@ setInterval(function(){
     _slaTickSig=slaSig;
   }else{
     _slaTickSig=null;
+  }
+  // Re-render when a timer expires or its expired-effect window ends
+  if(SETTINGS.timerFxEnabled!==false){
+    var fxSig=DATA.map(function(r){return isTimerFxActive(r)?r.id:'';}).filter(Boolean).join(',');
+    if(_timerFxTickSig!==null&&fxSig!==_timerFxTickSig){
+      if(currentTab==='all')renderRows();
+      else if(currentTab==='did')renderDIDRows();
+      else if(currentTab==='mine')renderRRRows();
+    }
+    _timerFxTickSig=fxSig;
+  }else{
+    _timerFxTickSig=null;
   }
   ['f','rr','d'].forEach(updateReminderIndicator);
 },1000);
@@ -2474,8 +2537,8 @@ function renderRRRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="15" class="empty">No RR/RO records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
-    rowCls+=rrRoAlertRowClass(r);
-    var rowStyle='cursor:pointer'+rrRoAlertRowStyle(r);
+    rowCls+=rrRoAlertRowClass(r)+timerFxRowClass(r);
+    var rowStyle='cursor:pointer'+rrRoAlertRowStyle(r)+timerFxRowStyle(r);
     if(r.pinned)rowCls=(rowCls?rowCls+' ':'')+'pinned-row';
     var unreadBadge=(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})();
     return '<tr class="'+rowCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'rr\')" style="'+rowStyle+'">'
@@ -2883,8 +2946,8 @@ function renderRows(){
   }
   if(!displayData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
-    var agingCls=advisedAgingRowClass(r)+slaRowClass(r);
-    var agingStyle=advisedAgingRowStyle(r)+slaRowStyle(r);
+    var agingCls=advisedAgingRowClass(r)+slaRowClass(r)+timerFxRowClass(r);
+    var agingStyle=advisedAgingRowStyle(r)+slaRowStyle(r)+timerFxRowStyle(r);
     if(r._type==='did'){
       return '<tr class="'+(r.pinned?'pinned-row':'')+agingCls+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer'+agingStyle+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
@@ -2995,8 +3058,8 @@ function renderDIDRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
-    var agingCls=advisedAgingRowClass(r)+slaRowClass(r);
-    var agingStyle=advisedAgingRowStyle(r)+slaRowStyle(r);
+    var agingCls=advisedAgingRowClass(r)+slaRowClass(r)+timerFxRowClass(r);
+    var agingStyle=advisedAgingRowStyle(r)+slaRowStyle(r)+timerFxRowStyle(r);
     return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer'+agingStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
@@ -4005,6 +4068,10 @@ document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(S
 document.getElementById('auto-alert').checked=SETTINGS.autoAlert||false;
 document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
 document.getElementById('reminder-alarm-tone').value=SETTINGS.reminderTone||'bell';
+document.getElementById('timer-fx-enabled').checked=SETTINGS.timerFxEnabled!==false;
+document.getElementById('timer-fx-effect').value=fxEffectOrDefault(SETTINGS.timerFxEffect,'blink');
+document.getElementById('timer-fx-mins').value=timerFxPlayMins();
+SETTINGS.timerFxColor=normalizeColorHex(SETTINGS.timerFxColor,'#f87171');
 document.getElementById('advised-aging-enabled').checked=SETTINGS.advisedAgingEnabled!==false;
 document.getElementById('advised-aging-days').value=SETTINGS.advisedAgingDays||7;
 document.getElementById('advised-aging-effect').value=SETTINGS.advisedAgingEffect||'soft';
