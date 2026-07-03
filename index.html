@@ -441,11 +441,14 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="custom">Custom...</option>
       </select>
       <input class="fc" id="payment-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
-      <span class="auto-label" style="margin-left:8px">but if Client / Vendor is</span>
+      <span class="auto-label" style="color:var(--text3)">entries with Service = Payment use this timer</span>
+    </div>
+    <div class="auto-row" style="margin-top:6px">
+      <span class="auto-label">Client timer:</span>
       <select class="fsel" id="payment-client" onchange="saveSettings()" style="max-width:230px">
         <option value="">— None (off) —</option>
       </select>
-      <span class="auto-label">use</span>
+      <span class="auto-label">uses</span>
       <select class="fsel" id="payment-client-timer" onchange="saveSettings()">
         <option value="1800">30 Minutes</option>
         <option value="3600">1 Hour</option>
@@ -456,7 +459,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="custom">Custom...</option>
       </select>
       <input class="fc" id="payment-client-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
-      <span class="auto-label" style="color:var(--text3)">applies when a new entry's Service is Payment</span>
+      <span class="auto-label" style="color:var(--text3)">picking this Client / Vendor sets this timer (any service) — wins over the Payment timer</span>
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">Timer expired effect:</span>
@@ -4118,30 +4121,56 @@ function addRRComment(){
 }
 
 function onSvcChange(){
-  if(editingId!==null) return; // only for new entries
   applyPaymentTimerRule();
 }
 
-// Settings > Payment timer: Payment entries get their own timer, and one
-// specific Client / Vendor (e.g. SIR GENE EMAIL) can have its own on top.
-function paymentRuleTimerSecs(client){
+// Settings > Payment timer / Client timer:
+// - the chosen Client / Vendor (e.g. SIR GENE EMAIL) always gets the Client timer, any service
+// - otherwise entries with Service = Payment get the Payment timer
+function ruleTimerSecs(client,svc){
   var c=(client||'').trim().toUpperCase();
-  var special=(SETTINGS.paymentClientName||'').trim().toUpperCase();
-  if(special&&c===special){
+  var target=(SETTINGS.paymentClientName||'').trim().toUpperCase();
+  if(target&&c===target){
     var s=parseInt(SETTINGS.paymentClientTimer,10);
     if(s>0) return s;
   }
-  var p=parseInt(SETTINGS.paymentTimer,10);
-  return p>0?p:86400;
+  if(svc==='Payment'){
+    var p=parseInt(SETTINGS.paymentTimer,10);
+    return p>0?p:86400;
+  }
+  return 0;
+}
+
+function readModalTimerSecs(){
+  var v=document.getElementById('f-timer-sel').value;
+  if(v==='custom'){
+    var hh=parseInt(document.getElementById('f-timer-hh').value)||0;
+    var mm=parseInt(document.getElementById('f-timer-mm').value)||0;
+    return hh*3600+mm*60;
+  }
+  return parseInt(v)||0;
+}
+
+function timerDurLabel(secs){
+  var known={1800:'30 minutes',3600:'1 hour',7200:'2 hours',86400:'1 day',259200:'3 days',604800:'7 days'};
+  if(known[secs])return known[secs];
+  var hh=Math.floor(secs/3600),mm=Math.floor((secs%3600)/60);
+  return (hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;
 }
 
 function applyPaymentTimerRule(){
-  if(editingId!==null) return; // only for new entries
   var svcEl=document.getElementById('f-svc-f');
-  if(!svcEl||svcEl.value!=='Payment') return;
   var sel=document.getElementById('f-client-sel');
   var client=sel&&sel.style.display!=='none'?sel.value:document.getElementById('f-client').value;
-  setModalTimerFields(paymentRuleTimerSecs(client));
+  var secs=ruleTimerSecs(client,svcEl?svcEl.value:'');
+  if(!secs)return;
+  if(readModalTimerSecs()===secs)return; // already showing this duration
+  setModalTimerFields(secs);
+  if(editingId!==null){
+    // editing an existing entry: mark dirty so the new duration applies on save
+    _endorsementTimerDirty=true;
+    toast('Timer set to '+timerDurLabel(secs)+' — restarts when you save','info');
+  }
 }
 
 function addComment(){
