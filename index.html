@@ -585,6 +585,21 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div class="sheet-color-picker" id="sla-am-color-picker"></div>
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <span class="auto-label">📌 Pinned entries:</span>
+      <select class="fsel" id="pin-fx-effect" onchange="onAgingSettingChange()">
+        <option value="soft">Soft highlight</option>
+        <option value="pulse">Pulse</option>
+        <option value="stripe">Stripe</option>
+        <option value="blink">Blink</option>
+        <option value="glow">Glow</option>
+        <option value="shimmer">Shimmer</option>
+        <option value="outline">Outline</option>
+      </select>
+      <span class="auto-label">color</span>
+      <div class="sheet-color-picker" id="pin-fx-color-picker"></div>
+      <span class="auto-label" style="color:var(--text3)">how pinned rows and the 📌 icon look</span>
+    </div>
+    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">📅 Filter by date range:</span>
       <input class="fc" id="export-from" type="date" style="width:145px" title="From date">
       <span class="auto-label">to</span>
@@ -1426,7 +1441,7 @@ var DATA = [];
 var TRASH_DATA = [];
 var idSeq = 1;
 var SETTINGS = {defaultTimer:3600, paymentTimer:86400, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
-var EFFECT_COLOR_PALETTE=['#000000','#434343','#666666','#999999','#cccccc','#ffffff','#f87171','#fb7185','#f97316','#facc15','#4ade80','#22c55e','#38bdf8','#60a5fa','#818cf8','#a78bfa','#c084fc','#f472b6','#14b8a6','#94a3b8'];
+var EFFECT_COLOR_PALETTE=['#000000','#666666','#999999','#cccccc','#ffffff','#f87171','#fb7185','#f97316','#fbbf24','#facc15','#4ade80','#22c55e','#38bdf8','#60a5fa','#818cf8','#a78bfa','#c084fc','#f472b6','#14b8a6','#94a3b8'];
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
 var _cellStart = null, _dragging = false, _selCells = new Set();
@@ -1665,8 +1680,9 @@ function renderEffectColorPicker(id,settingKey,fallback){
     return '<button type="button" class="sheet-color-swatch'+(hex===current?' active':'')+'" data-light="'+(isLightColor(hex,fallback)?'1':'0')+'" style="background:'+hex+'" title="'+hex+'" onclick="selectEffectColor(\''+settingKey+'\',\''+hex+'\')"></button>';
   }).join('');
 }
-var FX_COLOR_DEFAULTS={advisedAgingColor:'#fb7185',rrRoAlertColor:'#38bdf8',slaL2Color:'#facc15',slaCtoColor:'#f97316',slaAmColor:'#f87171',timerFxColor:'#f87171'};
+var FX_COLOR_DEFAULTS={advisedAgingColor:'#fb7185',rrRoAlertColor:'#38bdf8',slaL2Color:'#facc15',slaCtoColor:'#f97316',slaAmColor:'#f87171',timerFxColor:'#f87171',pinColor:'#fbbf24'};
 function renderEffectColorPickers(){
+  renderEffectColorPicker('pin-fx-color-picker','pinColor',FX_COLOR_DEFAULTS.pinColor);
   renderEffectColorPicker('timer-fx-color-picker','timerFxColor',FX_COLOR_DEFAULTS.timerFxColor);
   renderEffectColorPicker('advised-aging-color-picker','advisedAgingColor',FX_COLOR_DEFAULTS.advisedAgingColor);
   renderEffectColorPicker('rr-ro-alert-color-picker','rrRoAlertColor',FX_COLOR_DEFAULTS.rrRoAlertColor);
@@ -1679,6 +1695,45 @@ function selectEffectColor(settingKey,color){
   renderEffectColorPickers();
   saveSettings();
   applyFilters();
+}
+function pinColorHex(){return normalizeColorHex(SETTINGS.pinColor,'#fbbf24');}
+// Pin look is one global setting, so its CSS is generated here (baked colors,
+// no per-row --fx vars) and injected after the main stylesheet so it wins.
+// Backgrounds stay non-!important so alert effects (fx-*) still show through.
+function applyPinStyle(){
+  var el=document.getElementById('pin-style');
+  if(!el){el=document.createElement('style');el.id='pin-style';document.head.appendChild(el);}
+  var hex=pinColorHex();
+  var eff=fxEffectOrDefault(SETTINGS.pinEffect,'soft');
+  var strong=rgbHex(mixRgb(hexToRgb(hex),{r:0,g:0,b:0},.18));
+  var css='tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 '+hex+';}'
+    +'.modal-pin-toggle input{accent-color:'+hex+';}';
+  if(eff==='pulse'){
+    css+='tr.pinned-row>td{animation:pinPulse 1.8s ease-in-out infinite;}'
+      +'tr.pinned-row>td:first-child{animation:pinPulse 1.8s ease-in-out infinite,pinPulseBar 1.8s ease-in-out infinite;}'
+      +'@keyframes pinPulse{0%,100%{background:'+rgba(hex,.07)+'}50%{background:'+rgba(hex,.17)+'}}'
+      +'@keyframes pinPulseBar{0%,100%{box-shadow:inset 3px 0 0 '+hex+'}50%{box-shadow:inset 7px 0 0 '+strong+'}}';
+  }else if(eff==='stripe'){
+    css+='tr.pinned-row>td{background:repeating-linear-gradient(135deg,'+rgba(hex,.12)+' 0,'+rgba(hex,.12)+' 8px,'+rgba(hex,.04)+' 8px,'+rgba(hex,.04)+' 16px);}';
+  }else if(eff==='blink'){
+    css+='tr.pinned-row>td{animation:pinBlink 1.2s linear infinite;}'
+      +'@keyframes pinBlink{0%,45%{background:'+rgba(hex,.30)+'}55%,100%{background:'+rgba(hex,.08)+'}}';
+  }else if(eff==='glow'){
+    css+='tr.pinned-row>td{box-shadow:inset 0 7px 10px -7px '+rgba(hex,.45)+',inset 0 -7px 10px -7px '+rgba(hex,.45)+';animation:pinGlowBg 2.2s ease-in-out infinite;}'
+      +'tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 '+hex+',inset 0 7px 10px -7px '+rgba(hex,.45)+',inset 0 -7px 10px -7px '+rgba(hex,.45)+';}'
+      +'@keyframes pinGlowBg{0%,100%{background:'+rgba(hex,.07)+'}50%{background:'+rgba(hex,.17)+'}}';
+  }else if(eff==='shimmer'){
+    css+='tr.pinned-row{background-image:linear-gradient(105deg,transparent 0%,transparent 38%,'+rgba(hex,.25)+' 50%,transparent 62%,transparent 100%);background-size:220% 100%;background-repeat:no-repeat;animation:pinShimmer 2.4s linear infinite;}'
+      +'tr.pinned-row>td{background:'+rgba(hex,.08)+';}'
+      +'@keyframes pinShimmer{0%{background-position-x:100%}100%{background-position-x:0%}}';
+  }else if(eff==='outline'){
+    css+='tr.pinned-row>td{background:'+rgba(hex,.08)+';border-top:1px solid '+rgba(hex,.55)+';border-bottom:1px solid '+rgba(hex,.55)+';}'
+      +'tr.pinned-row>td:first-child{border-left:1px solid '+rgba(hex,.55)+';}'
+      +'tr.pinned-row>td:last-child{border-right:1px solid '+rgba(hex,.55)+';}';
+  }else{
+    css+='tr.pinned-row>td{background:'+rgba(hex,.07)+';}';
+  }
+  el.textContent=css;
 }
 function slaHoursValue(id,def){
   var el=document.getElementById(id);
@@ -1719,6 +1774,10 @@ function saveSettings(){
   SETTINGS.timerFxEffect=timerFxEffectEl&&timerFxEffectEl.value?timerFxEffectEl.value:'blink';
   SETTINGS.timerFxMins=timerFxMinsEl?Math.max(1,Math.min(1440,parseInt(timerFxMinsEl.value,10)||5)):5;
   SETTINGS.timerFxColor=normalizeColorHex(SETTINGS.timerFxColor,'#f87171');
+  var pinFxEffectEl=document.getElementById('pin-fx-effect');
+  SETTINGS.pinEffect=pinFxEffectEl&&pinFxEffectEl.value?pinFxEffectEl.value:'soft';
+  SETTINGS.pinColor=normalizeColorHex(SETTINGS.pinColor,'#fbbf24');
+  applyPinStyle();
   var agingEnabled=document.getElementById('advised-aging-enabled');
   var agingDays=document.getElementById('advised-aging-days');
   var agingEffect=document.getElementById('advised-aging-effect');
@@ -2723,7 +2782,7 @@ function renderRRRows(){
       +'<td>'+rrTimerHTML(r)+'</td>'
       +'<td><div class="row-acts">'
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+unreadBadge+'</button>'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:#fbbf24':'opacity:.55')+'">📌</button>':'')
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:'+pinColorHex():'opacity:.55')+'">📌</button>':'')
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
@@ -3127,7 +3186,7 @@ function renderRows(){
         +'<td></td>'
         +'<td><div class="row-acts">'
         +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()+'</button>'
-        +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:#fbbf24':'opacity:.55')+'">📌</button>':'')
+        +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:'+pinColorHex():'opacity:.55')+'">📌</button>':'')
         +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
         +'</div></td>'
         +'</tr>';
@@ -3152,7 +3211,7 @@ function renderRows(){
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
       +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()
       +'</button>'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:#fbbf24':'opacity:.55')+'">📌</button>':'')
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:'+pinColorHex():'opacity:.55')+'">📌</button>':'')
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
@@ -3240,7 +3299,7 @@ function renderDIDRows(){
       +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
       +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()
       +'</button>'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:#fbbf24':'opacity:.55')+'">📌</button>':'')
+      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:'+pinColorHex():'opacity:.55')+'">📌</button>':'')
       +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
       +'</div></td>'
       +'</tr>';
@@ -4273,7 +4332,7 @@ function matchesDateRange(r){
 }
 
 // Load settings from localStorage (fast, local)
-SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
+SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171',pinEffect:'soft',pinColor:'#fbbf24'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
 document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
 if(document.getElementById('default-timer').value==='custom'){
   document.getElementById('custom-mins').value=Math.max(1,Math.round((SETTINGS.defaultTimer||3600)/60));
@@ -4320,7 +4379,10 @@ SETTINGS.rrRoAlertColor=normalizeColorHex(SETTINGS.rrRoAlertColor,'#38bdf8');
 SETTINGS.slaL2Color=normalizeColorHex(SETTINGS.slaL2Color,'#facc15');
 SETTINGS.slaCtoColor=normalizeColorHex(SETTINGS.slaCtoColor,'#f97316');
 SETTINGS.slaAmColor=normalizeColorHex(SETTINGS.slaAmColor,'#f87171');
+document.getElementById('pin-fx-effect').value=fxEffectOrDefault(SETTINGS.pinEffect,'soft');
+SETTINGS.pinColor=normalizeColorHex(SETTINGS.pinColor,'#fbbf24');
 renderEffectColorPickers();
+applyPinStyle();
 
 // ─── FIRESTORE REAL-TIME LISTENER ────────────────────────────
 async function startFirestore(){
