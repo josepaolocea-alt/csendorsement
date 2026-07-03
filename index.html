@@ -642,7 +642,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option>Pending at CS</option><option>Pending at NOC</option><option>Pending at TSE</option><option>Pending at L2</option><option>Pending at CTO</option><option>Pending at AM</option><option>Pending at Product</option><option>Pending at Accounting</option><option>Pending at Vendor</option><option>Pending at Developer</option><option>Advised Client</option>
       </optgroup>
       <optgroup label="Completed">
-        <option>Done</option><option>Commercial Concern</option><option>Resolved</option><option>Posted</option>
+        <option>Done</option><option>Commercial Concern</option><option>Resolved</option><option>Posted</option><option>Lack of Update from Client</option><option>Lack of Update from our Team</option><option>Continue to Other Ticket</option>
       </optgroup>
     </select>
     <select class="fsel" id="f-pri" onchange="applyFilters()"><option value="">All Priorities</option><option>High</option><option>Normal</option></select>
@@ -1038,7 +1038,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
               <option>Pending at CS</option><option>Pending at NOC</option><option>Pending at TSE</option><option>Pending at L2</option><option>Pending at CTO</option><option>Pending at AM</option><option>Pending at Product</option><option>Pending at Accounting</option><option>Pending at Vendor</option><option>Pending at Developer</option><option>Advised Client</option>
             </optgroup>
             <optgroup label="Completed">
-              <option>Done</option><option>Commercial Concern</option><option>Resolved</option><option>Posted</option>
+              <option>Done</option><option>Commercial Concern</option><option>Resolved</option><option>Posted</option><option>Lack of Update from Client</option><option>Lack of Update from our Team</option><option>Continue to Other Ticket</option>
             </optgroup>
           </select>
         </div>
@@ -1926,8 +1926,8 @@ function openNewModalCurrent(){
   else openNewModal();
 }
 
-var DONE_ST=['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Continue to Other Ticket'];
-var NO_TIMER_ST=['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Continue to Other Ticket']; // completed statuses that stop/prevent timer
+var DONE_ST=['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Lack of Update from our Team','Continue to Other Ticket'];
+var NO_TIMER_ST=['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Lack of Update from our Team','Continue to Other Ticket']; // completed statuses that stop/prevent timer
 var DID_DONE_ST=['Done','Cancel by Client'];
 var DID_IN_PROGRESS_ST=['Pending AM','Pending CS','Pending Product','In Progress','Advised Client'];
 
@@ -1981,7 +1981,7 @@ function stBadge(s){
   if(hex)return '<span class="badge" style="'+customBadgeStyle(hex)+'"><span class="bdot"></span>'+escHtml(s||'')+'</span>';
   var redSt=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting'];
   var blueSt=['Pending at Vendor','Pending at Developer'];
-  var greenSt=['Done','Commercial Concern','Resolved','Posted','Advised Client','Lack of Update from Client'];
+  var greenSt=['Done','Commercial Concern','Resolved','Posted','Advised Client','Lack of Update from Client','Lack of Update from our Team'];
   var graySt=['Continue to Other Ticket'];
   var cls='st-yellow';
   if(redSt.indexOf(s)>-1)cls='st-red';
@@ -4696,7 +4696,7 @@ var DROPDOWN_OPTS = {
   service:    {label:'Service',              defaults:['VOIP','SMS','Payment']},
   platform:   {label:'Platform',             defaults:['MS Teams','Viber','WhatsApp','Telegram','Email']},
   status_ip:  {label:'Status — In Progress', defaults:['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client']},
-  status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Continue to Other Ticket']},
+  status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Lack of Update from our Team','Continue to Other Ticket']},
   rr_by:      {label:'RR by',                defaults:["Ma'am Kath","Sir Jason","Ma'am Shayne","Jem Santos","Robert Pinote","Raffy Ching","Mark Deviente","Vi Quibingco","Paul Fabella","Jessa Lubiano"]},
   ro_by:      {label:'RO by',                defaults:['Sir Rod','L2 Aries','L2 Efren','L2 Franz']}
 };
