@@ -289,6 +289,9 @@ textarea.fc{resize:vertical;min-height:70px;}
 .client-tag button:hover{color:#f87171;}
 .client-tag button.tag-edit:hover{color:var(--accent);}
 .client-tag button.tag-del:hover{color:#f87171;}
+.client-tag button.tag-color-dot{width:13px;height:13px;border-radius:50%;border:1px solid var(--border2);flex-shrink:0;background:var(--bg4);}
+.client-tag button.tag-color-dot.no-color{border-style:dashed;}
+.client-tag button.tag-color-dot:hover{transform:scale(1.2);border-color:var(--text2);}
 .client-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
 .client-link-info{font-size:10px;color:#fbbf24;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.25);border-radius:4px;padding:1px 5px;white-space:nowrap;}
 
@@ -522,7 +525,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </div>
     <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <span class="auto-label">SLA escalation:</span>
-      <span class="auto-label" style="color:var(--text3)">highlights open tasks that need escalation — turn each level on or off below</span>
+      <span class="auto-label" style="color:var(--text3)">highlights open All Tasks entries that need escalation (does not apply to DID Order / Cancel or Pending RR / RO) — turn each level on or off below</span>
     </div>
     <div class="auto-row" style="margin-top:6px">
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
@@ -1389,6 +1392,32 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   </div>
 </div>
 
+<!-- DROPDOWN OPTION BADGE COLOR MODAL -->
+<div class="modal-ov hidden" id="dropdown-color-modal" style="z-index:610">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr"><h3 id="dropdown-color-title">Badge Color</h3><button class="modal-cls" onclick="closeDropdownColorModal()">x</button></div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="font-size:12px;color:var(--text3)">Preview:</span>
+        <span id="dropdown-color-preview"></span>
+      </div>
+      <div class="fgrp">
+        <label>Pick a color — it applies right away</label>
+        <div class="sheet-color-picker" id="dropdown-color-palette" style="grid-template-columns:repeat(10,22px)"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+        <span style="font-size:12px;color:var(--text2)">Custom color:</span>
+        <input type="color" id="dropdown-color-custom" onchange="pickDropdownColorCustom(this)" style="width:46px;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);padding:2px;cursor:pointer">
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:12px;line-height:1.5">This changes the badge color for everyone, on every tab where this option is shown.</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="resetDropdownColor()">Reset to Default</button>
+      <button class="btn btn-primary" onclick="closeDropdownColorModal()">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM MODAL -->
 <div class="modal-ov hidden" id="confirm-modal" style="z-index:600">
   <div class="modal" style="max-width:360px">
@@ -1906,6 +1935,8 @@ function stopTimerForStatusIfNeeded(r){
 }
 
 function didStBadge(s){
+  var hex=dropdownColor('status_ip',s)||dropdownColor('status_done',s);
+  if(hex)return '<span class="badge" style="'+customBadgeStyle(hex)+'"><span class="bdot"></span>'+escHtml(s||'')+'</span>';
   var greenSt=['Done','Cancel by Client','Advised Client'];
   var blueSt=['In Progress'];
   var cls=greenSt.indexOf(s)>-1?'st-green':blueSt.indexOf(s)>-1?'st-blue':'st-red';
@@ -1916,9 +1947,20 @@ function didPriBadge(p){
   return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';
 }
 
-function svcBadge(s){var cls={VOIP:'svc-voip',SMS:'svc-sms',Payment:'svc-payment'}[s]||'svc-voip';return '<span class="badge '+cls+'">'+(s||'VOIP')+'</span>';}
-function pltBadge(p){if(!p)return '';var cls={'MS Teams':'plt-msteams','Viber':'plt-viber','WhatsApp':'plt-whatsapp','Telegram':'plt-telegram','Email':'plt-email'}[p]||'plt-def';return '<span class="badge '+cls+'">'+p+'</span>';}
+function svcBadge(s){
+  var hex=dropdownColor('service',s);
+  if(hex)return '<span class="badge" style="'+customBadgeStyle(hex)+'">'+escHtml(s||'VOIP')+'</span>';
+  var cls={VOIP:'svc-voip',SMS:'svc-sms',Payment:'svc-payment'}[s]||'svc-voip';return '<span class="badge '+cls+'">'+(s||'VOIP')+'</span>';
+}
+function pltBadge(p){
+  if(!p)return '';
+  var hex=dropdownColor('platform',p);
+  if(hex)return '<span class="badge" style="'+customBadgeStyle(hex)+'">'+escHtml(p)+'</span>';
+  var cls={'MS Teams':'plt-msteams','Viber':'plt-viber','WhatsApp':'plt-whatsapp','Telegram':'plt-telegram','Email':'plt-email'}[p]||'plt-def';return '<span class="badge '+cls+'">'+p+'</span>';
+}
 function stBadge(s){
+  var hex=dropdownColor('status_ip',s)||dropdownColor('status_done',s);
+  if(hex)return '<span class="badge" style="'+customBadgeStyle(hex)+'"><span class="bdot"></span>'+escHtml(s||'')+'</span>';
   var redSt=['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting'];
   var blueSt=['Pending at Vendor','Pending at Developer'];
   var greenSt=['Done','Commercial Concern','Resolved','Posted','Advised Client','Lack of Update from Client'];
@@ -2000,7 +2042,8 @@ function slaAnyEnabled(){
   return SETTINGS.slaL2Enabled===true||SETTINGS.slaCtoEnabled===true||SETTINGS.slaAmEnabled===true;
 }
 function slaTier(r){
-  if(!slaAnyEnabled()||!r||r._type==='rr')return null;
+  // SLA escalation applies to All Tasks entries only — not DID Order/Cancel, not Pending RR/RO
+  if(!slaAnyEnabled()||!r||r._type==='rr'||r._type==='did')return null;
   if(isRecordCompleted(r)||r.status==='Advised Client')return null;
   var h=entryAgeHours(r);
   if(h===null)return null;
@@ -2696,12 +2739,18 @@ function rrBadge(val,type){
     return '<span class="badge rr-gray">'+val+'</span>';
   }
   if(type==='rrby'){
+    var rrHex=dropdownColor('rr_by',val);
+    if(rrHex) return '<span class="badge" style="'+customBadgeStyle(rrHex)+'">'+escHtml(val)+'</span>';
     if(RR_BM.indexOf(val)>-1) return '<span class="badge rr-bm">'+val+'</span>';
     if(RR_AM.indexOf(val)>-1) return '<span class="badge rr-am">'+val+'</span>';
     if(RR_PROD.indexOf(val)>-1) return '<span class="badge rr-prod">'+val+'</span>';
     return '<span class="badge rr-gray">'+val+'</span>';
   }
-  if(type==='roby') return '<span class="badge rr-ro">'+val+'</span>';
+  if(type==='roby'){
+    var roHex=dropdownColor('ro_by',val);
+    if(roHex) return '<span class="badge" style="'+customBadgeStyle(roHex)+'">'+escHtml(val)+'</span>';
+    return '<span class="badge rr-ro">'+val+'</span>';
+  }
   if(val==='Critical') return '<span class="badge rr-notyet">⚡ Critical</span>';
   if(val==='Urgent') return '<span class="badge rr-yellow">⚠️ Urgent</span>';
   return '<span class="badge rr-gray">'+val+'</span>';
@@ -4552,19 +4601,33 @@ var DROPDOWN_OPTS = {
   ro_by:      {label:'RO by',                defaults:['Sir Rod','L2 Aries','L2 Efren','L2 Franz']}
 };
 var _dropdownData = {}; // loaded from Firestore
+var _dropdownColors = {}; // per-option custom badge colors, loaded from Firestore: {key:{optionValue:'#hex'}}
+
+// Custom badge color for a dropdown option (null = use the default badge look)
+function dropdownColor(key,val){
+  var m=_dropdownColors[key];
+  var hex=m&&val?m[val]:null;
+  if(!hex)return null;
+  return normalizeColorHex(hex,'#818cf8');
+}
+// Inline style matching the built-in badge look (soft tinted background + colored text)
+function customBadgeStyle(hex){
+  return 'background:'+rgba(hex,.15)+';color:'+hex+';';
+}
 
 function loadDropdownOptions(){
   onSnapshot(collection(db,'dropdown_options'), function(snap){
     var hasData=false;
     snap.forEach(function(d){
       _dropdownData[d.id]=d.data().items||[];
+      _dropdownColors[d.id]=d.data().colors||{};
       hasData=true;
     });
     if(!hasData){
       // First time — seed defaults to Firestore
       var batch=Object.keys(DROPDOWN_OPTS).map(function(key){
         _dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();
-        return setDoc(doc(db,'dropdown_options',key),{items:DROPDOWN_OPTS[key].defaults});
+        return setDoc(doc(db,'dropdown_options',key),{items:DROPDOWN_OPTS[key].defaults,colors:{}});
       });
       Promise.all(batch).catch(function(){});
     } else {
@@ -4575,13 +4638,15 @@ function loadDropdownOptions(){
         if(newItems.length){
           var merged=existing.concat(newItems);
           _dropdownData[key]=merged;
-          setDoc(doc(db,'dropdown_options',key),{items:merged}).catch(function(){});
+          setDoc(doc(db,'dropdown_options',key),{items:merged,colors:_dropdownColors[key]||{}}).catch(function(){});
         }
       });
     }
     applyDropdownsToForms();
+    applyFilters(); // repaint badges so color changes show up live for everyone
     // Always render panel if on admin tab
     if(currentTab==='admin') renderDropdownOptionsPanel();
+    if(_colorEditingOption) renderDropdownColorModal();
   });
 }
 
@@ -4690,7 +4755,10 @@ function renderDropdownOptionsPanel(){
       +'</div>'
       +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
       +items.map(function(v,optIdx){
-        return '<div class="client-tag">'+escHtml(v)
+        var hex=dropdownColor(key,v);
+        return '<div class="client-tag">'
+          +'<button class="tag-color-dot'+(hex?'':' no-color')+'" data-key="'+key+'" data-idx="'+optIdx+'"'+(hex?' style="background:'+hex+'"':'')+' onclick="openDropdownColorModal(this)" title="Change badge color"></button>'
+          +escHtml(v)
           +'<button class="tag-edit" data-key="'+key+'" data-idx="'+optIdx+'" onclick="renameDropdownOption(this)" title="Edit">Edit</button>'
           +'<button data-key="'+key+'" data-val="'+escHtml(v)+'" onclick="deleteDropdownOption(this)" title="Delete">×</button>'
           +'</div>';
@@ -4712,7 +4780,7 @@ function addDropdownOption(key){
   var items=(_dropdownData[key]||DROPDOWN_OPTS[key].defaults).slice();
   if(items.indexOf(val)>-1){toast('Already exists','info');inp.value='';return;}
   items.push(val);
-  setDoc(doc(db,'dropdown_options',key),{items:items}).then(function(){
+  setDoc(doc(db,'dropdown_options',key),{items:items,colors:_dropdownColors[key]||{}}).then(function(){
     inp.value='';
     toast('Added: '+val,'success');
   }).catch(function(e){toast('Error: '+e.message,'error');});
@@ -4767,10 +4835,15 @@ function saveDropdownEdit(){
   if(items[idx]!==oldVal)idx=items.indexOf(oldVal);
   if(idx<0){toast('Option not found','error');closeDropdownEditModal();return;}
   items[idx]=next;
+  // Carry the custom badge color over to the renamed option
+  var colors={};
+  Object.keys(_dropdownColors[key]||{}).forEach(function(k){colors[k]=_dropdownColors[key][k];});
+  if(colors[oldVal]!==undefined){colors[next]=colors[oldVal];delete colors[oldVal];}
   var saveBtn=document.getElementById('edit-dropdown-save');
   if(saveBtn)saveBtn.disabled=true;
-  setDoc(doc(db,'dropdown_options',key),{items:items}).then(function(){
+  setDoc(doc(db,'dropdown_options',key),{items:items,colors:colors}).then(function(){
     _dropdownData[key]=items;
+    _dropdownColors[key]=colors;
     var fields=dropdownRecordFields(key);
     var changed=[];
     DATA.forEach(function(r){
@@ -4799,10 +4872,83 @@ function deleteDropdownOption(btn){
   appConfirm('Remove "'+val+'" from '+DROPDOWN_OPTS[key].label+'?','Remove').then(function(ok){
     if(!ok)return;
     var items=(_dropdownData[key]||[]).filter(function(v){return v!==val;});
-    setDoc(doc(db,'dropdown_options',key),{items:items}).then(function(){
+    var colors={};
+    Object.keys(_dropdownColors[key]||{}).forEach(function(k){if(k!==val)colors[k]=_dropdownColors[key][k];});
+    setDoc(doc(db,'dropdown_options',key),{items:items,colors:colors}).then(function(){
       toast('Removed: '+val,'info');
     });
   });
+}
+
+// ─── DROPDOWN OPTION BADGE COLORS (Admin → Dropdown Options) ────────────────
+var _colorEditingOption=null; // {key,val} while the color modal is open
+function dropdownColorPreviewBadge(key,val){
+  if(key==='service')return svcBadge(val);
+  if(key==='platform')return pltBadge(val);
+  if(key==='status_ip'||key==='status_done')return stBadge(val);
+  if(key==='rr_by')return rrBadge(val,'rrby');
+  if(key==='ro_by')return rrBadge(val,'roby');
+  return escHtml(val);
+}
+function openDropdownColorModal(btn){
+  var key=btn.dataset.key;
+  var idx=parseInt(btn.dataset.idx,10);
+  var items=_dropdownData[key]||DROPDOWN_OPTS[key].defaults;
+  var val=items[idx];
+  if(!val){toast('Option not found','error');return;}
+  _colorEditingOption={key:key,val:val};
+  renderDropdownColorModal();
+  document.getElementById('dropdown-color-modal').classList.remove('hidden');
+}
+function renderDropdownColorModal(){
+  if(!_colorEditingOption)return;
+  var key=_colorEditingOption.key,val=_colorEditingOption.val;
+  var label=DROPDOWN_OPTS[key]?DROPDOWN_OPTS[key].label:key;
+  var title=document.getElementById('dropdown-color-title');
+  if(title)title.textContent=label+' — "'+val+'" Badge Color';
+  var prev=document.getElementById('dropdown-color-preview');
+  if(prev)prev.innerHTML=dropdownColorPreviewBadge(key,val);
+  var current=dropdownColor(key,val);
+  var pal=document.getElementById('dropdown-color-palette');
+  if(pal){
+    pal.innerHTML=EFFECT_COLOR_PALETTE.map(function(color){
+      var hex=normalizeColorHex(color,'#818cf8');
+      return '<button type="button" class="sheet-color-swatch'+(hex===current?' active':'')+'" data-light="'+(isLightColor(hex,'#818cf8')?'1':'0')+'" data-hex="'+hex+'" style="background:'+hex+'" title="'+hex+'" onclick="pickDropdownColor(this)"></button>';
+    }).join('');
+  }
+  var custom=document.getElementById('dropdown-color-custom');
+  if(custom)custom.value=current||'#818cf8';
+}
+function pickDropdownColor(btn){
+  applyDropdownColor(normalizeColorHex(btn.dataset.hex,'#818cf8'));
+}
+function pickDropdownColorCustom(inp){
+  applyDropdownColor(normalizeColorHex(inp.value,'#818cf8'));
+}
+function resetDropdownColor(){
+  applyDropdownColor(null);
+}
+function applyDropdownColor(hex){
+  if(!_colorEditingOption)return;
+  var key=_colorEditingOption.key,val=_colorEditingOption.val;
+  var colors={};
+  Object.keys(_dropdownColors[key]||{}).forEach(function(k){colors[k]=_dropdownColors[key][k];});
+  if(hex)colors[val]=hex;else delete colors[val];
+  _dropdownColors[key]=colors;
+  renderDropdownColorModal();
+  renderDropdownOptionsPanel();
+  applyFilters();
+  var items=(_dropdownData[key]||DROPDOWN_OPTS[key].defaults).slice();
+  var label=DROPDOWN_OPTS[key]?DROPDOWN_OPTS[key].label:key;
+  setDoc(doc(db,'dropdown_options',key),{items:items,colors:colors}).then(function(){
+    toast(hex?'Color updated':'Color reset to default','success');
+    try{writeLog('updated','Dropdown option',label+' "'+val+'" badge color '+(hex?'set to '+hex:'reset to default'));}catch(e){}
+  }).catch(function(e){toast('Error: '+e.message,'error');});
+}
+function closeDropdownColorModal(){
+  var modal=document.getElementById('dropdown-color-modal');
+  if(modal)modal.classList.add('hidden');
+  _colorEditingOption=null;
 }
 
 function loadAdminData(force){
@@ -6233,6 +6379,11 @@ window.autoResizeId=autoResizeId;
 window.addDropdownOption=addDropdownOption;
 window.deleteDropdownOption=deleteDropdownOption;
 window.renderDropdownOptionsPanel=renderDropdownOptionsPanel;
+window.openDropdownColorModal=openDropdownColorModal;
+window.closeDropdownColorModal=closeDropdownColorModal;
+window.pickDropdownColor=pickDropdownColor;
+window.pickDropdownColorCustom=pickDropdownColorCustom;
+window.resetDropdownColor=resetDropdownColor;
 window.toggleDropdownPanel=toggleDropdownPanel;
 window.goLogPage=goLogPage;
 window.changeLogPageSize=changeLogPageSize;
