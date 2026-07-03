@@ -1484,6 +1484,7 @@ var _cellStart = null, _dragging = false, _selCells = new Set();
 var _confirmResolve = null;
 var _fbReady = false;
 var _firestoreUnsub = null;
+var _settingsUnsub = null;
 var _adminLoaded = false;
 var _currentUser = null;
 var _currentUserRole = 'Viewer';
@@ -1537,6 +1538,7 @@ function doLogout(){
   appConfirm('Are you sure you want to sign out?','Sign Out').then(function(ok){
     if(!ok)return;
     if(_firestoreUnsub){_firestoreUnsub();_firestoreUnsub=null;}
+    if(_settingsUnsub){_settingsUnsub();_settingsUnsub=null;}
     _fbReady=false;DATA=[];filteredData=[];
     signOut(auth);
   });
@@ -1845,8 +1847,17 @@ function saveSettings(){
   SETTINGS.slaCtoColor=normalizeColorHex(SETTINGS.slaCtoColor,'#f97316');
   SETTINGS.slaAmColor=normalizeColorHex(SETTINGS.slaAmColor,'#f87171');
   localStorage.setItem('end_settings',JSON.stringify(SETTINGS));
-  // Also persist settings to Firestore
-  setDoc(doc(db, 'app_settings', 'main'), SETTINGS).catch(function(){});
+  // Persist to Firestore so all users (any role, any device) receive these settings.
+  // Only Admins publish — other roles never overwrite the shared doc.
+  if(_currentUserRole==='Admin'){
+    setDoc(doc(db, 'app_settings', 'main'), SETTINGS).catch(function(){
+      toast('Settings saved on this device but could not sync to other users — check connection','error');
+    });
+  }
+}
+// Order-independent snapshot of SETTINGS, used to skip no-op sync updates
+function _settingsFingerprint(s){
+  return JSON.stringify(Object.keys(s).sort().map(function(k){return [k,s[k]];}));
 }
 function onAgingSettingChange(){
   saveSettings();
@@ -4415,6 +4426,8 @@ function matchesDateRange(r){
 
 // Load settings from localStorage (fast, local)
 SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171',pinEffect:'soft',pinColor:'#fbbf24'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
+// Push SETTINGS values into the Settings panel fields (runs at load and whenever synced settings arrive)
+function applySettingsToUI(){
 document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
 if(document.getElementById('default-timer').value==='custom'){
   document.getElementById('custom-mins').value=Math.max(1,Math.round((SETTINGS.defaultTimer||3600)/60));
@@ -4465,6 +4478,8 @@ document.getElementById('pin-fx-effect').value=fxEffectOrDefault(SETTINGS.pinEff
 SETTINGS.pinColor=normalizeColorHex(SETTINGS.pinColor,'#fbbf24');
 renderEffectColorPickers();
 applyPinStyle();
+}
+applySettingsToUI();
 
 // ─── FIRESTORE REAL-TIME LISTENER ────────────────────────────
 async function startFirestore(){
@@ -4521,6 +4536,27 @@ async function startFirestore(){
     console.error('Firestore error',err);
     toast('Connection error — check your network','error');
   });
+  // Live-sync shared settings: whatever an Admin saves in Settings reaches
+  // every user (Admin, Semi-Admin, Viewer) on every device in real time
+  if(!_settingsUnsub){
+    _settingsUnsub = onSnapshot(doc(db,'app_settings','main'), function(snap){
+      if(!snap.exists()){
+        // Nothing published yet — Admin seeds the shared doc from local settings
+        if(_currentUserRole==='Admin') setDoc(doc(db,'app_settings','main'), SETTINGS).catch(function(){});
+        return;
+      }
+      if(snap.metadata.hasPendingWrites) return; // our own save echoing back
+      var merged=Object.assign({}, SETTINGS, snap.data());
+      if(_settingsFingerprint(merged)===_settingsFingerprint(SETTINGS)) return; // already up to date
+      SETTINGS=merged;
+      localStorage.setItem('end_settings',JSON.stringify(SETTINGS));
+      applySettingsToUI();
+      applyFilters();
+      if(currentTab==='dashboard'&&_dashLoaded){try{renderDashboard();}catch(e){}}
+    }, function(err){
+      console.error('Settings sync error',err);
+    });
+  }
 }
 
 function applyRolePermissions(role){
