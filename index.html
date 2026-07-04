@@ -1489,6 +1489,7 @@ var _adminLoaded = false;
 var _currentUser = null;
 var _currentUserRole = 'Viewer';
 var PRIMARY_ADMIN_EMAIL = 'jpgc06.2023@gmail.com';
+// Starting role only for first-time sign-in; Admin can change it later in the Admin tab
 var DEFAULT_SEMI_ADMIN_EMAILS = ['customersupport@cynsolutions.ph'];
 window._canEdit=false;
 window._canAdd=false;
@@ -1557,9 +1558,14 @@ function normalizeEmail(email){
 function enforcedRoleForEmail(email,storedRole){
   email=normalizeEmail(email);
   if(email===PRIMARY_ADMIN_EMAIL)return 'Admin';
-  if(DEFAULT_SEMI_ADMIN_EMAILS.indexOf(email)>-1)return 'Semi-Admin';
   if(storedRole==='Admin')return 'Semi-Admin';
   return storedRole||'Viewer';
+}
+function defaultRoleForEmail(email){
+  email=normalizeEmail(email);
+  if(email===PRIMARY_ADMIN_EMAIL)return 'Admin';
+  if(DEFAULT_SEMI_ADMIN_EMAILS.indexOf(email)>-1)return 'Semi-Admin';
+  return 'Viewer';
 }
 
 function setUserDisplay(user){
@@ -1577,7 +1583,7 @@ function setUserDisplay(user){
       if(normalizeEmail(d.data().email)===email) found=d.data();
     });
     if(!found){
-      var role=enforcedRoleForEmail(email,'Viewer');
+      var role=defaultRoleForEmail(email);
       setDoc(doc(db,'users',uid),{name:email,email:email,role:role,addedAt:Date.now()}).then(function(){
         _currentUserRole=role;
         applyRolePermissions(role);
