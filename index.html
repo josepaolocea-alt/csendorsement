@@ -17,6 +17,9 @@
 [data-theme="light"]{--bg:#f4f4f8;--bg2:#ffffff;--bg3:#f0f0f4;--bg4:#e8e8ee;--bg5:#dddde5;--border:#e0e0e8;--border2:#d0d0da;--text:#0d0d1a;--text2:#55556a;--text3:#9090a8;--accent:#4466ff;--accent2:#2244dd;--shadow:0 2px 16px rgba(0,0,0,0.08);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:var(--sf);background:var(--bg);color:var(--text);font-size:13.5px;min-height:100vh;transition:background .25s,color .25s;}
+/* Form controls and buttons don't inherit the body font by default — force DM Sans everywhere; pre/code always use DM Mono */
+button,input,select,textarea{font-family:var(--sf);}
+pre,code,kbd,samp{font-family:var(--mono);}
 .topbar{position:sticky;top:0;z-index:100;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;}
 .app-logo{display:flex;align-items:center;gap:9px;margin-right:6px;}
 .app-logo-icon{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;}
@@ -124,7 +127,7 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
 .tbadge.trestart{position:relative;background:rgba(34,197,94,.18);color:#4ade80;box-shadow:0 0 0 0 rgba(74,222,128,.22);animation:autoRestartPulse 1.5s ease-in-out infinite;}
-.tbadge.trestart::after{content:"Restarted";position:absolute;top:-14px;right:-8px;padding:1px 5px;border-radius:5px;background:rgba(34,197,94,.20);border:1px solid rgba(34,197,94,.35);color:#86efac;font-family:var(--sans);font-size:9px;font-weight:800;letter-spacing:0;white-space:nowrap;}
+.tbadge.trestart::after{content:"Restarted";position:absolute;top:-14px;right:-8px;padding:1px 5px;border-radius:5px;background:rgba(34,197,94,.20);border:1px solid rgba(34,197,94,.35);color:#86efac;font-family:var(--sf);font-size:9px;font-weight:800;letter-spacing:0;white-space:nowrap;}
 @keyframes timerPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.18)}50%{box-shadow:0 0 0 4px rgba(248,113,113,.08)}}
 @keyframes autoRestartPulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.20)}50%{box-shadow:0 0 0 5px rgba(74,222,128,.08)}}
 .row-acts{display:flex;gap:4px;}
@@ -952,16 +955,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="modal-hdr"><h3>Daily Report</h3><button class="modal-cls" onclick="closeDailyReport()">x</button></div>
     <div class="modal-body">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <label style="font-size:12px;color:var(--text2)">Range:</label>
-        <select class="fc" id="daily-report-range" style="width:150px" onchange="onDailyReportRangeChange()">
-          <option value="today">Today</option>
-          <option value="yesterday">Yesterday</option>
-          <option value="2days">Past 2 days</option>
-          <option value="7days">Past 7 days</option>
-          <option value="custom">Specific date</option>
-        </select>
-        <input class="fc" id="daily-report-date" type="date" style="width:160px;display:none" onchange="buildDailyReport()">
+        <span style="font-size:12px;color:var(--text3)">Snapshot of All Tasks &amp; Pending RR / RO</span>
         <button class="btn btn-primary btn-sm" id="ai-summary-btn" onclick="generateAISummary()" style="margin-left:auto;background:linear-gradient(135deg,#8b5cf6,#3b82f6);border:none">✨ AI Summary</button>
+        <button class="btn btn-primary btn-sm" id="report-sheet-btn" onclick="generateReportSheet()" style="background:#217346;border:none">📊 Generate Report Sheet</button>
         <button class="btn btn-secondary btn-sm" onclick="copyDailyReport()">Copy Report</button>
       </div>
       <div id="ai-summary-section" style="display:none;margin-bottom:14px;padding:14px;background:linear-gradient(135deg,rgba(139,92,246,0.08),rgba(59,130,246,0.08));border:1px solid rgba(139,92,246,0.35);border-radius:8px">
@@ -5735,38 +5731,16 @@ function clearModalMeta(pfx){
 }
 
 // ─── DAILY REPORT ───────────────────────────────────────────
-var _drLogs=null; // activity logs cache (null = could not load)
-
 function openDailyReport(){
   document.getElementById('daily-report-modal').classList.remove('hidden');
-  var now=new Date();
-  document.getElementById('daily-report-date').value=
-    now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  // Reset to default range and hide AI summary
-  document.getElementById('daily-report-range').value='today';
-  document.getElementById('daily-report-date').style.display='none';
+  // Hide AI summary from a previous open
   document.getElementById('ai-summary-section').style.display='none';
   document.getElementById('ai-summary-text').textContent='';
   var aiBtn=document.getElementById('ai-summary-btn');
   if(aiBtn){aiBtn.disabled=false;aiBtn.innerHTML='✨ AI Summary';}
-  document.getElementById('daily-report-text').textContent='Loading activity logs...';
-  getDocs(collection(db,'logs')).then(function(snap){
-    _drLogs=[];snap.forEach(function(d){_drLogs.push(d.data());});
-    buildDailyReport();
-  }).catch(function(e){
-    _drLogs=null;buildDailyReport();
-  });
-}
-function closeDailyReport(){document.getElementById('daily-report-modal').classList.add('hidden');}
-
-function onDailyReportRangeChange(){
-  var range=document.getElementById('daily-report-range').value;
-  var dateInput=document.getElementById('daily-report-date');
-  dateInput.style.display=(range==='custom')?'':'none';
-  // Hide previous AI summary when range changes
-  document.getElementById('ai-summary-section').style.display='none';
   buildDailyReport();
 }
+function closeDailyReport(){document.getElementById('daily-report-modal').classList.add('hidden');}
 
 function _drFmtShort(ts){
   return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
@@ -5774,157 +5748,91 @@ function _drFmtShort(ts){
 function _drFmtFull(ts){
   return new Date(ts).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 }
-
-function _drGetRange(){
-  var range=document.getElementById('daily-report-range').value;
-  var now=new Date();
-  var startOfToday=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
-  var endOfToday=startOfToday+86400000-1;
-  if(range==='today'){
-    return {start:startOfToday,end:endOfToday,label:'Today ('+_drFmtShort(startOfToday)+')'};
-  }
-  if(range==='yesterday'){
-    var ys=startOfToday-86400000;
-    return {start:ys,end:startOfToday-1,label:'Yesterday ('+_drFmtShort(ys)+')'};
-  }
-  if(range==='2days'){
-    var s2=startOfToday-86400000;
-    return {start:s2,end:endOfToday,label:'Past 2 days ('+_drFmtShort(s2)+' to '+_drFmtShort(startOfToday)+')'};
-  }
-  if(range==='7days'){
-    var s7=startOfToday-86400000*6;
-    return {start:s7,end:endOfToday,label:'Past 7 days ('+_drFmtShort(s7)+' to '+_drFmtShort(startOfToday)+')'};
-  }
-  // custom — single date
-  var dateStr=document.getElementById('daily-report-date').value;
-  if(!dateStr) return null;
-  var dp=dateStr.split('-');
-  var d=new Date(parseInt(dp[0]),parseInt(dp[1])-1,parseInt(dp[2]));
-  var s=d.getTime();
-  return {start:s,end:s+86400000-1,label:_drFmtFull(s)};
-}
-
-function _drInRange(ts,range){
-  if(!ts||!range) return false;
-  return ts>=range.start&&ts<=range.end;
-}
 function _drTime(ts){return new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});}
-function _drName(r){
-  if(r._type==='rr') return r.rrSubject||'(untitled RR)';
-  return r.client||r.desc||'(no client)';
+
+// Entries shown in the All Tasks tab: endorsements that are not completed
+function _drAllTasks(){
+  var rows=DATA.filter(function(r){
+    return r._type!=='rr'&&r._type!=='did'&&DONE_ST.indexOf(r.status)===-1;
+  });
+  rows.sort(function(a,b){
+    var d=String(a.client||'').toLowerCase().localeCompare(String(b.client||'').toLowerCase());
+    if(d!==0) return d;
+    return (b.createdAt||0)-(a.createdAt||0);
+  });
+  return rows;
 }
-function _drType(r){
-  if(r._type==='rr') return 'RR';
-  if(r._type==='did') return 'DID';
-  return 'Endorsement';
+// Entries shown in the Pending RR / RO tab that are still pending
+function _drPendingRR(){
+  var rows=DATA.filter(function(r){
+    return r._type==='rr'&&!r.rrCompleted&&!r.rrDisregard;
+  });
+  rows.sort(function(a,b){
+    var d=(b.rrDate||'').localeCompare(a.rrDate||'');
+    if(d!==0) return d;
+    return (b.createdAt||0)-(a.createdAt||0);
+  });
+  return rows;
 }
-function _drStatus(r){
-  if(r._type==='rr'){
-    if(r.rrCompleted) return 'Completed';
-    if(r.rrDisregard) return 'Disregarded';
-    return r.rrStatus||'—';
-  }
-  return r.status||'—';
+// Latest comment on a record → {text, by, when} or null when there is none
+function _drLastComment(r){
+  if(!r.comments||!r.comments.length) return null;
+  var last=r.comments[0];
+  r.comments.forEach(function(c){if((c.ts||0)>=(last.ts||0)) last=c;});
+  var txt=String(last.text||'').replace(/\s+/g,' ').trim();
+  if(!txt) return null;
+  return {text:txt,by:getUserDisplay(last.user),when:last.ts?(_drFmtShort(last.ts)+' '+_drTime(last.ts)):''};
 }
-function _drPriority(r){return (r._type==='rr'?r.rrPriority:r.priority)||'';}
-function _drIsOpen(r){
-  if(r._type==='rr') return !r.rrCompleted&&!r.rrDisregard;
-  return DONE_ST.indexOf(r.status)===-1;
+function _drCommentLine(r,maxLen){ // popup version: quoted + truncated
+  var c=_drLastComment(r);
+  if(!c) return '';
+  var t=c.text;
+  if(maxLen&&t.length>maxLen) t=t.slice(0,maxLen)+'…';
+  return '"'+t+'" — '+c.by+(c.when?', '+c.when:'');
 }
-function _drStartDate(r){
-  if(r._type==='rr') return r.rrDate||r.rrEffDate||'';
-  return r.startDate||'';
+function _drCommentCell(r){ // Excel version: full text
+  var c=_drLastComment(r);
+  if(!c) return '';
+  return c.text+' — '+c.by+(c.when?', '+c.when:'');
 }
 
 function buildDailyReport(){
-  var range=_drGetRange();
   var pre=document.getElementById('daily-report-text');
-  if(!range){pre.textContent='Please pick a date.';return;}
   var out=[];
-  out.push('DAILY REPORT — '+range.label);
+  out.push('DAILY REPORT — '+_drFmtFull(Date.now()));
   out.push('Generated '+new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}));
   out.push('');
 
-  // Section 1: Activity (logs + comments), grouped per entry
-  var groups={};
-  function addItem(name,ts,line){
-    if(!groups[name]) groups[name]=[];
-    groups[name].push({ts:ts,line:line});
-  }
-  var actionLbl={created:'Created',updated:'Updated',deleted:'Moved to Trash / Deleted',csv_import:'CSV Import'};
-  var otherCount={login:0,exported:0};
-  if(_drLogs){
-    _drLogs.forEach(function(l){
-      if(!_drInRange(l.ts,range)) return;
-      if(l.action==='login'){otherCount.login++;return;}
-      if(l.action==='exported'){otherCount.exported++;return;}
-      var lbl=actionLbl[l.action]||l.action;
-      var line='  • '+_drFmtShort(l.ts)+' '+_drTime(l.ts)+' — '+lbl+' (by '+getUserDisplay(l.user)+')';
-      if(l.details) line+='\n      '+l.details;
-      addItem(l.record||'(unnamed)',l.ts,line);
-    });
-  }
-  DATA.forEach(function(r){
-    if(!r.comments||!r.comments.length) return;
-    r.comments.forEach(function(c){
-      if(!_drInRange(c.ts,range)) return;
-      var txt=String(c.text||'').replace(/\s+/g,' ').trim();
-      if(txt.length>240) txt=txt.slice(0,240)+'…';
-      var att=(c.attachments&&c.attachments.length)?' ['+c.attachments.length+' attachment(s)]':'';
-      addItem(_drName(r),c.ts,'  • '+_drFmtShort(c.ts)+' '+_drTime(c.ts)+' — Comment by '+getUserDisplay(c.user)+': "'+txt+'"'+att);
-    });
-  });
-  var names=Object.keys(groups).sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:1;});
-  out.push('=== ACTIVITY ('+names.length+' entr'+(names.length===1?'y':'ies')+') ===');
-  if(_drLogs===null) out.push('(Activity logs could not be loaded — showing comment activity only.)');
-  if(!names.length){
-    out.push('No recorded activity for this range.');
+  // Section 1: All Tasks (open endorsements), grouped per client
+  var tasks=_drAllTasks();
+  out.push('=== ALL TASKS ('+tasks.length+') ===');
+  if(!tasks.length){
+    out.push('No open tasks.');
   }else{
-    names.forEach(function(n){
+    tasks.forEach(function(r,i){
       out.push('');
-      out.push('▸ '+n);
-      groups[n].sort(function(a,b){return a.ts-b.ts;}).forEach(function(it){out.push(it.line);});
-    });
-  }
-  if(otherCount.login||otherCount.exported){
-    var ex=[];
-    if(otherCount.login) ex.push(otherCount.login+' login'+(otherCount.login!==1?'s':''));
-    if(otherCount.exported) ex.push(otherCount.exported+' export'+(otherCount.exported!==1?'s':''));
-    out.push('');
-    out.push('Also: '+ex.join(', ')+'.');
-  }
-  out.push('');
-
-  // Section 2: New entries in range
-  var fresh=DATA.filter(function(r){return _drInRange(r.createdAt,range);});
-  fresh.sort(function(a,b){return (a.createdAt||0)-(b.createdAt||0);});
-  out.push('=== NEW ENTRIES ('+fresh.length+') ===');
-  if(!fresh.length){
-    out.push('No new entries created in this range.');
-  }else{
-    fresh.forEach(function(r){
-      var pri=_drPriority(r);
-      out.push('  • '+_drName(r)+' ('+_drType(r)+') — '+_drStatus(r)+(pri?' — '+pri+' priority':''));
+      out.push((i+1)+'. '+(r.client||'(no client)')+(r.priority?' — '+r.priority+' priority':''));
+      out.push('   Service: '+(r.service||'—')+' | Platform: '+(r.platform||'—')+' | Status: '+(r.status||'—')+' | AM: '+(r.am||'—')+' | Start Date: '+(fmtDate(r.startDate)||'—'));
+      if(r.concern) out.push('   Concern: '+String(r.concern).replace(/\s+/g,' ').trim());
+      var lc=_drCommentLine(r,300);
+      if(lc) out.push('   Last comment: '+lc);
     });
   }
   out.push('');
 
-  // Section 3: Open / ongoing tickets (current state, all dates)
-  var open=DATA.filter(_drIsOpen);
-  open.sort(function(a,b){
-    var pa=_drPriority(a)==='High'?0:1, pb=_drPriority(b)==='High'?0:1;
-    if(pa!==pb) return pa-pb;
-    return _drName(a).toLowerCase()<_drName(b).toLowerCase()?-1:1;
-  });
-  out.push('=== OPEN / ONGOING TICKETS ('+open.length+') ===');
-  if(!open.length){
-    out.push('No open tickets — all caught up.');
+  // Section 2: Pending RR / RO
+  var rrs=_drPendingRR();
+  out.push('=== PENDING RR / RO ('+rrs.length+') ===');
+  if(!rrs.length){
+    out.push('No pending RR / RO records.');
   }else{
-    open.forEach(function(r){
-      var pri=_drPriority(r), sd=_drStartDate(r);
-      out.push('  • '+_drName(r)+' ('+_drType(r)+') — '+_drStatus(r)
-        +(pri?' — '+pri+' priority':'')
-        +(sd?' — since '+sd:''));
+    rrs.forEach(function(r,i){
+      out.push('');
+      out.push((i+1)+'. '+(r.rrPriority?'['+r.rrPriority+'] ':'')+(r.rrSubject||'(untitled RR)'));
+      out.push('   RR Date: '+(fmtDate(r.rrDate)||'—')+' | RR by: '+(r.rrBy||'—')+' | RO by: '+(r.roBy||'—')+' | Status: '+(r.rrStatus||'Not Yet'));
+      if(r.rrRemarks) out.push('   Remarks: '+String(r.rrRemarks).replace(/\s+/g,' ').trim());
+      var lc=_drCommentLine(r,300);
+      if(lc) out.push('   Last comment: '+lc);
     });
   }
 
@@ -5945,6 +5853,101 @@ function _drFallbackCopy(txt){
   try{document.execCommand('copy');toast('Report copied to clipboard','success');}
   catch(e){toast('Could not copy — select the text manually','error');}
   document.body.removeChild(ta);
+}
+
+// ─── GENERATE REPORT SHEET (Excel download) ─────────────────
+// ExcelJS is loaded from the CDN only when the button is first clicked,
+// so the app stays fast for users who never generate a sheet.
+var _excelJSPromise=null;
+function loadExcelJS(){
+  if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  if(_excelJSPromise) return _excelJSPromise;
+  _excelJSPromise=new Promise(function(resolve,reject){
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+    s.onload=function(){resolve(window.ExcelJS);};
+    s.onerror=function(){_excelJSPromise=null;reject(new Error('Could not load the Excel tool — check your internet connection and try again'));};
+    document.head.appendChild(s);
+  });
+  return _excelJSPromise;
+}
+
+// One styled worksheet: black header row with white bold text, column widths
+// sized to their content, except wrapCols (1-based) which get a fixed width
+// and wrap text (for long fields like Concern / Remarks / Comment)
+function _drAddSheet(wb,name,headers,rows,wrapCols){
+  var ws=wb.addWorksheet(name,{views:[{state:'frozen',ySplit:1}]});
+  ws.addRow(headers);
+  var hdr=ws.getRow(1);
+  hdr.height=22;
+  headers.forEach(function(_,i){
+    var cell=hdr.getCell(i+1);
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF000000'}};
+    cell.font={color:{argb:'FFFFFFFF'},bold:true,size:11};
+    cell.alignment={vertical:'middle',horizontal:'left'};
+  });
+  rows.forEach(function(vals){
+    var row=ws.addRow(vals);
+    vals.forEach(function(_,i){
+      row.getCell(i+1).alignment=(wrapCols.indexOf(i+1)>-1)
+        ?{wrapText:true,vertical:'top'}
+        :{vertical:'top'};
+    });
+  });
+  headers.forEach(function(h,i){
+    var col=ws.getColumn(i+1);
+    if(wrapCols.indexOf(i+1)>-1){col.width=50;return;}
+    var maxLen=String(h).length;
+    rows.forEach(function(vals){
+      var len=String(vals[i]==null?'':vals[i]).length;
+      if(len>maxLen) maxLen=len;
+    });
+    col.width=Math.min(45,Math.max(10,maxLen+2));
+  });
+}
+
+function generateReportSheet(){
+  var btn=document.getElementById('report-sheet-btn');
+  if(btn){btn.disabled=true;btn.innerHTML='📊 Generating…';}
+  function done(){if(btn){btn.disabled=false;btn.innerHTML='📊 Generate Report Sheet';}}
+  loadExcelJS().then(function(ExcelJS){
+    var wb=new ExcelJS.Workbook();
+    wb.created=new Date();
+
+    var tasks=_drAllTasks();
+    _drAddSheet(wb,'All Tasks',
+      ['Client / Vendor','Service','Concern','Platform','Status','AM','Start Date','Priority','Last Comment'],
+      tasks.map(function(r){
+        return [r.client||'',r.service||'',r.concern||'',r.platform||'',r.status||'',r.am||'',fmtDate(r.startDate),r.priority||'',_drCommentCell(r)];
+      }),
+      [3,9]); // Concern + Last Comment wrap
+
+    var rrs=_drPendingRR();
+    _drAddSheet(wb,'Pending RR-RO',
+      ['Priority','Subject','Remarks','RR Date','RR by','RO by','Status','Comment'],
+      rrs.map(function(r){
+        return [r.rrPriority||'',r.rrSubject||'',r.rrRemarks||'',fmtDate(r.rrDate),r.rrBy||'',r.roBy||'',r.rrStatus||'Not Yet',_drCommentCell(r)];
+      }),
+      [3,8]); // Remarks + Comment wrap
+
+    return wb.xlsx.writeBuffer();
+  }).then(function(buf){
+    var d=new Date();
+    var fname='Daily Report '+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.xlsx';
+    var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=fname;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},4000);
+    toast('Report sheet downloaded: '+fname,'success');
+    try{writeLog('exported','Daily Report Sheet','Excel — All Tasks + Pending RR/RO');}catch(e){}
+    done();
+  }).catch(function(err){
+    console.error('Report sheet failed:',err);
+    toast(err&&err.message?err.message:'Could not generate the report sheet','error');
+    done();
+  });
 }
 
 // ─── AI SUMMARY (Gemini API) ─────────────────────────────────
@@ -6034,8 +6037,7 @@ function generateAISummary(){
     return;
   }
 
-  var range=_drGetRange();
-  var rangeLabel=range?range.label:'recent period';
+  var rangeLabel=_drFmtFull(Date.now());
 
   // Show section + loading state
   section.style.display='';
@@ -6044,14 +6046,14 @@ function generateAISummary(){
   btn.disabled=true;
   btn.innerHTML='✨ Generating...';
 
-  var prompt='You are an executive assistant summarizing customer support (CS) team activity for a manager.\n\n'+
-    'TIME PERIOD: '+rangeLabel+'\n\n'+
-    'Your task: Read the structured activity data below and write a concise, intelligent summary that gives the manager a clear picture of what happened. Do NOT just restate the data line-by-line — synthesize patterns and insights.\n\n'+
+  var prompt='You are an executive assistant summarizing the current workload of a customer support (CS) team for a manager.\n\n'+
+    'REPORT DATE: '+rangeLabel+'\n\n'+
+    'Your task: Read the report below — it lists every open task and every pending RR/RO record — and write a concise, intelligent summary that gives the manager a clear picture of the current workload. Do NOT just restate the data line-by-line — synthesize patterns and insights.\n\n'+
     'STRUCTURE your summary like this:\n'+
-    '1. Opening line — overall snapshot (e.g., "A steady day with X endorsements created and Y resolved...")\n'+
-    '2. Key activities — what got done, what was worked on (group similar items, name clients/teammates)\n'+
-    '3. Concerns / things to watch — stuck tickets, High priority items still open, anything overdue\n'+
-    '4. Highlights — positive notes if any (completions, fast resolutions, etc.)\n'+
+    '1. Opening line — overall snapshot (e.g., "The team currently has X open tasks and Y pending RR/RO records...")\n'+
+    '2. Key themes — what kinds of concerns are open, which clients, services, or statuses come up most\n'+
+    '3. Concerns / things to watch — High/Critical priority items, old start dates, items stuck at one status\n'+
+    '4. Highlights — positive notes if any (recent progress visible in the latest comments)\n'+
     '5. Suggested next steps — 1-2 brief action items if relevant\n\n'+
     'RULES:\n'+
     '- Use plain prose with short bullet points where helpful — NO markdown headers (no #, ##), NO bold/italic markdown\n'+
@@ -6059,7 +6061,7 @@ function generateAISummary(){
     '- Keep it under ~300 words\n'+
     '- If there is very little activity, say so honestly and keep it brief\n'+
     '- Friendly but professional tone\n\n'+
-    '--- ACTIVITY DATA ---\n'+reportText;
+    '--- REPORT DATA ---\n'+reportText;
 
   fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key,{
     method:'POST',
@@ -6515,7 +6517,7 @@ window.openDailyReport=openDailyReport;
 window.closeDailyReport=closeDailyReport;
 window.buildDailyReport=buildDailyReport;
 window.copyDailyReport=copyDailyReport;
-window.onDailyReportRangeChange=onDailyReportRangeChange;
+window.generateReportSheet=generateReportSheet;
 window.generateAISummary=generateAISummary;
 window.copyAISummary=copyAISummary;
 window.closeAISummary=closeAISummary;
@@ -6572,7 +6574,7 @@ window.rowDblClick = rowDblClick;
     indicator = document.createElement('div');
     indicator.textContent = 'Reading screenshot…';
     indicator.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);'
-      + 'background:#222;color:#fff;padding:10px 18px;border-radius:8px;font:14px sans-serif;'
+      + 'background:#222;color:#fff;padding:10px 18px;border-radius:8px;font:14px "DM Sans",sans-serif;'
       + 'box-shadow:0 4px 16px rgba(0,0,0,.35);z-index:99999;';
     document.body.appendChild(indicator);
   }
