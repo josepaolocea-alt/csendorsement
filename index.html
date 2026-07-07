@@ -40,8 +40,11 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .btn:hover,.btn-icon:hover,.tab-btn:hover{transform:translateY(-1px);}
 .btn:active,.btn-icon:active,.tab-btn:active{transform:translateY(0);}
 .main{padding:14px 20px;}
-.auto-panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;}
-.auto-panel h3{font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text2);}
+.settings-sec{padding:12px 0;border-top:1px solid var(--border);}
+.settings-sec:first-child{border-top:none;padding-top:0;}
+.settings-sec:last-child{padding-bottom:0;}
+.settings-sec-title{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:9px;}
+.settings-sec .auto-row+.auto-row{margin-top:8px;}
 .auto-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .auto-label{font-size:12px;color:var(--text2);}
 .sheet-color-picker{display:grid;grid-template-columns:repeat(10,18px);gap:4px;align-items:center;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);}
@@ -397,8 +400,12 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 </div>
 
 <div class="main">
-  <div class="auto-panel reveal-panel hidden" id="auto-panel">
-    <h3>⚙️ Settings</h3>
+  <div class="modal-ov hidden" id="settings-modal" style="z-index:540">
+  <div class="modal" style="max-width:940px">
+    <div class="modal-hdr"><h3>⚙️ Settings</h3><button class="modal-cls" onclick="toggleAutoPanel()">x</button></div>
+    <div class="modal-body">
+    <div class="settings-sec">
+    <div class="settings-sec-title">⏱️ Timers &amp; Alarms</div>
     <div class="auto-row">
       <span class="auto-label">Default timer:</span>
       <select class="fsel" id="default-timer" onchange="onTimerChange()">
@@ -414,7 +421,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="auto-alert" onchange="saveSettings()" style="accent-color:var(--accent)"> Enable
       </label>
-      <span class="auto-label" style="margin-left:8px">Timer alarm:</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">Timer alarm:</span>
       <select class="fsel" id="alarm-tone" onchange="saveSettings()">
         <option value="beep">🔔 Classic Beep</option>
         <option value="siren">🚨 Siren</option>
@@ -435,14 +444,19 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </select>
       <button class="btn btn-secondary btn-sm" onclick="testReminderAlert()">Test</button>
     </div>
-    <div class="auto-row" style="margin-top:8px">
-      <span class="auto-label">Alerts on this device:</span>
+    </div>
+    <div class="settings-sec">
+    <div class="settings-sec-title">🔔 Alerts on This Device</div>
+    <div class="auto-row">
       <span id="notif-status" style="font-size:12px;font-weight:600"></span>
       <button class="btn btn-secondary btn-sm" id="notif-enable-btn" style="display:none" onclick="enableNotifs()">🔔 Turn on notifications</button>
       <span id="sound-status" style="font-size:12px;font-weight:600;margin-left:8px"></span>
       <span id="alert-status-hint" style="font-size:11px;color:var(--text3)"></span>
     </div>
-    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    </div>
+    <div class="settings-sec">
+    <div class="settings-sec-title">💳 Payment &amp; Client Timer Rules</div>
+    <div class="auto-row">
       <span class="auto-label">Payment timer:</span>
       <select class="fsel" id="payment-timer" onchange="saveSettings()">
         <option value="1800">30 Minutes</option>
@@ -456,7 +470,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <input class="fc" id="payment-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
       <span class="auto-label" style="color:var(--text3)">entries with Service = Payment use this timer</span>
     </div>
-    <div class="auto-row" style="margin-top:6px">
+    <div class="auto-row">
       <span class="auto-label">Client timer:</span>
       <select class="fsel" id="payment-client" onchange="saveSettings()" style="max-width:230px">
         <option value="">— None (off) —</option>
@@ -474,7 +488,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <input class="fc" id="payment-client-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
       <span class="auto-label" style="color:var(--text3)">picking this Client / Vendor sets this timer (any service) — wins over the Payment timer</span>
     </div>
-    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    </div>
+    <div class="settings-sec">
+    <div class="settings-sec-title">✨ Row Highlight Effects</div>
+    <div class="auto-row">
       <span class="auto-label">Timer expired effect:</span>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="timer-fx-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
@@ -494,7 +511,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <input class="fc" id="timer-fx-mins" type="number" min="1" max="1440" value="5" style="width:70px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
       <span class="auto-label">minutes once the timer is reached</span>
     </div>
-    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    <div class="auto-row">
       <span class="auto-label">Advised Client aging:</span>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="advised-aging-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
@@ -514,7 +531,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="advised-aging-color-picker"></div>
     </div>
-    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    <div class="auto-row">
       <span class="auto-label">RR/RO missing RO by:</span>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="rr-ro-alert-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
@@ -533,11 +550,13 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="rr-ro-alert-color-picker"></div>
     </div>
-    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-      <span class="auto-label">SLA escalation:</span>
+    </div>
+    <div class="settings-sec">
+    <div class="settings-sec-title">🚨 SLA Escalation</div>
+    <div class="auto-row">
       <span class="auto-label" style="color:var(--text3)">highlights open All Tasks entries that need escalation (does not apply to DID Order / Cancel or Pending RR / RO) — turn each level on or off below</span>
     </div>
-    <div class="auto-row" style="margin-top:6px">
+    <div class="auto-row">
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="sla-l2-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
       </label>
@@ -557,7 +576,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="sla-l2-color-picker"></div>
     </div>
-    <div class="auto-row" style="margin-top:6px">
+    <div class="auto-row">
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="sla-cto-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
       </label>
@@ -577,7 +596,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="sla-cto-color-picker"></div>
     </div>
-    <div class="auto-row" style="margin-top:6px">
+    <div class="auto-row">
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="sla-am-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
       </label>
@@ -597,8 +616,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="sla-am-color-picker"></div>
     </div>
-    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-      <span class="auto-label">📌 Pinned entries:</span>
+    </div>
+    <div class="settings-sec">
+    <div class="settings-sec-title">📌 Pinned Entries</div>
+    <div class="auto-row">
+      <span class="auto-label">Effect:</span>
       <select class="fsel" id="pin-fx-effect" onchange="onAgingSettingChange()">
         <option value="soft">Soft highlight</option>
         <option value="pulse">Pulse</option>
@@ -612,8 +634,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div class="sheet-color-picker" id="pin-fx-color-picker"></div>
       <span class="auto-label" style="color:var(--text3)">how pinned rows and the 📌 icon look</span>
     </div>
-    <div class="auto-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-      <span class="auto-label">📅 Filter by date range:</span>
+    </div>
+    <div class="settings-sec">
+    <div class="settings-sec-title">📅 Filter by Date Range</div>
+    <div class="auto-row">
       <input class="fc" id="export-from" type="date" style="width:145px" title="From date">
       <span class="auto-label">to</span>
       <input class="fc" id="export-to" type="date" style="width:145px" title="To date">
@@ -622,9 +646,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <option value="resolvedDate">Resolved Date</option>
       </select>
       <button class="btn btn-primary btn-sm" onclick="applyDateRangeFilter()">Apply Filter</button>
-      <button class="btn btn-secondary btn-sm" id="date-range-clear-btn" onclick="clearDateRangeFilter()" style="display:none">Clear</button>
-      <span id="date-range-badge" style="display:none;font-size:12px;color:var(--accent);font-weight:600;margin-left:6px"></span>
+      <span class="auto-label" style="color:var(--text3)">shows only entries in this range — a badge appears in the toolbar while the filter is on</span>
     </div>
+    </div>
+    </div>
+    <div class="modal-ftr">
+      <span class="auto-label" style="margin-right:auto;color:var(--text3)">Changes save automatically and sync to all users.</span>
+      <button class="btn btn-primary" onclick="toggleAutoPanel()">Done</button>
+    </div>
+  </div>
   </div>
 
   <div class="stats-row" id="stats-row"></div>
@@ -651,7 +681,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <select class="fsel" id="f-pri" onchange="applyFilters()"><option value="">All Priorities</option><option>High</option><option>Normal</option></select>
     <select class="fsel" id="f-plt" onchange="applyFilters()"><option value="">All Platforms</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
     <select class="fsel" id="f-am-filter" onchange="applyFilters()"><option value="">All AM</option></select>
-    <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">Settings ▾</button>
+    <span id="date-range-badge" style="display:none;font-size:12px;color:var(--accent);font-weight:600"></span>
+    <button class="btn btn-secondary btn-sm" id="date-range-clear-btn" onclick="clearDateRangeFilter()" style="display:none">✕ Clear dates</button>
+    <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">⚙️ Settings</button>
     <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export</button>
     <button class="btn btn-secondary btn-sm" id="daily-report-btn" onclick="openDailyReport()">Daily Report</button>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
@@ -2606,8 +2638,8 @@ setInterval(function(){
     _timerFxTickSig=null;
   }
   ['f','rr','d'].forEach(updateReminderIndicator);
-  var ap=document.getElementById('auto-panel');
-  if(ap&&!ap.classList.contains('hidden'))updateAlertStatusUI();
+  var sm=document.getElementById('settings-modal');
+  if(sm&&!sm.classList.contains('hidden'))updateAlertStatusUI();
 },1000);
 
 // Auto-dismiss after 10s — but only while the tab is visible, so alerts that
@@ -3778,18 +3810,19 @@ function setRevealPanel(el,open,displayMode){
   el.classList.add('is-closing');
   setTimeout(function(){
     if(!el.classList.contains('is-closing'))return;
-    if(el.id==='auto-panel')el.classList.add('hidden');
-    else el.style.display='none';
+    el.style.display='none';
     el.classList.remove('is-closing');
   },180);
 }
 
 function toggleAutoPanel(){
-  var panel=document.getElementById('auto-panel');
-  var btn=document.getElementById('auto-toggle-btn');
-  var open=panel.classList.contains('hidden')||panel.classList.contains('is-closing');
-  setRevealPanel(panel,open,'block');
-  btn.textContent=open?'Settings ▴':'Settings ▾';
+  var ov=document.getElementById('settings-modal');
+  if(ov.classList.contains('hidden')){
+    ov.classList.remove('hidden');
+    updateAlertStatusUI();
+  }else{
+    ov.classList.add('hidden');
+  }
 }
 
 function setModalTimerFields(secs){
@@ -4411,6 +4444,10 @@ function applyDateRangeFilter(){
   badge.style.display='';
   document.getElementById('date-range-clear-btn').style.display='';
   applyFilters();
+  // Close the Settings pop-up so the filtered table is visible right away
+  var sm=document.getElementById('settings-modal');
+  if(sm)sm.classList.add('hidden');
+  toast('Date filter applied: '+label,'success');
 }
 function clearDateRangeFilter(){
   _dateRangeFilter=null;
