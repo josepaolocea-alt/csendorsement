@@ -2293,7 +2293,7 @@ function timerBlockedToast(r){
   toast(r&&r.status==='Advised Client'?'Timer is disabled while status is Advised Client':'Timer is disabled for this status','info');
 }
 function startTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;if(recordStatusStopsTimer(r)){timerBlockedToast(r);return;}r.timerStart=Date.now();r.timerAlerted=false;r.autoRestartedAt=null;saveOne(r);applyFilters();}
-function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;if(recordStatusStopsTimer(r)){timerBlockedToast(r);return;}r.timerStart=Date.now();r.timerAlerted=false;r.autoRestartedAt=null;saveOne(r);}
+function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;if(recordStatusStopsTimer(r)){timerBlockedToast(r);return;}r.timerStart=Date.now();r.timerAlerted=false;r.autoRestartedAt=Date.now();saveOne(r);}
 function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;r.autoRestartedAt=null;saveOne(r);applyFilters();}
 
 function markEndorsementTimerDirty(){if(editingId!==null)_endorsementTimerDirty=true;}
@@ -2598,7 +2598,7 @@ setInterval(function(){
         var isHHMM=r._type==='did'||r._type==='rr';
         badge.textContent=fmtTime(rem);
         badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'')+autoRestartBadgeClass(r,rem);
-        badge.title=isAutoRestartRecent(r)?'Auto restarted recently':'';
+        badge.title=isAutoRestartRecent(r)?'Timer restarted recently':'';
       }
     }
     if(r.reminderAt&&Date.now()>=r.reminderAt&&!hasLocalAlerted('reminder',r)&&!isRecordCompleted(r)){
@@ -3230,7 +3230,7 @@ function saveRRRecord(){
       var timerUpdate;
       if(timerChanged&&rrTimerSecs){
         rec.timerOverride=rrTimerSecs;
-        timerUpdate={timerStart:Date.now(),timerAlerted:false,autoRestartedAt:null};
+        timerUpdate={timerStart:Date.now(),timerAlerted:false,autoRestartedAt:Date.now()};
       }else if(timerChanged&&!rrTimerSecs){
         rec.timerOverride=null;
         timerUpdate={timerStart:null,timerAlerted:false,autoRestartedAt:null};
@@ -3573,7 +3573,7 @@ function saveDIDRecord(){
         timerUpd={timerStart:null,timerAlerted:false,autoRestartedAt:null};
       }else if(timerChanged&&dTimerSecs>0){
         rec.timerOverride=dTimerSecs;
-        timerUpd={timerStart:Date.now(),timerAlerted:false,autoRestartedAt:null};
+        timerUpd={timerStart:Date.now(),timerAlerted:false,autoRestartedAt:Date.now()};
       }else if(timerChanged&&dTimerSecs<=0){
         rec.timerOverride=null;
         timerUpd={timerStart:null,timerAlerted:false,autoRestartedAt:null};
@@ -3948,7 +3948,7 @@ function saveRecord(){
           timerUpdate={timerStart:null,timerAlerted:false,autoRestartedAt:null};
         }else if(timerChanged&&timerSecs){
           rec.timerOverride=timerSecs;
-          timerUpdate={timerStart:Date.now(),timerAlerted:false,autoRestartedAt:null};
+          timerUpdate={timerStart:Date.now(),timerAlerted:false,autoRestartedAt:Date.now()};
         }else if(timerChanged&&!timerSecs){
           rec.timerOverride=null;
           timerUpdate={timerStart:null,timerAlerted:false,autoRestartedAt:null};
