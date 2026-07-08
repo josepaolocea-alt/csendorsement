@@ -1061,7 +1061,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
           <select class="fc" id="f-plt-f"><option value="">-- Select --</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
         </div>
         <div class="fgrp"><label>Status</label>
-          <select class="fc" id="f-st-f">
+          <select class="fc" id="f-st-f" onchange="onEndorsementStatusChange()">
             <optgroup label="In Progress">
               <option>Pending at CS</option><option>Pending at NOC</option><option>Pending at TSE</option><option>Pending at L2</option><option>Pending at CTO</option><option>Pending at AM</option><option>Pending at Product</option><option>Pending at Accounting</option><option>Pending at Vendor</option><option>Pending at Developer</option><option>Advised Client</option>
             </optgroup>
@@ -1282,7 +1282,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <div class="fgrp full"><label>Concern</label><textarea class="fc" id="d-desc" placeholder="e.g. #9954130700: DID Disconnection Notice — AM" style="min-height:55px"></textarea></div>
         <div class="fgrp full"><label>Description</label><textarea class="fc" id="d-remarks" placeholder="Additional description / notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
         <div class="fgrp"><label>Status</label>
-          <select class="fc" id="d-status">
+          <select class="fc" id="d-status" onchange="onDIDStatusChange()">
             <optgroup label="In Progress">
               <option>Pending AM</option><option>Pending CS</option><option>Pending Product</option><option>In Progress</option><option>Advised Client</option>
             </optgroup>
@@ -1977,6 +1977,11 @@ function recordStatusStopsTimer(r){
   if(r._type==='did')return DID_DONE_ST.indexOf(r.status)>-1||r.status==='Advised Client';
   return NO_TIMER_ST.indexOf(r.status)>-1||r.status==='Advised Client';
 }
+// Does a given status string stop the timer? (form helper — mirrors recordStatusStopsTimer for a status not yet saved)
+function statusStopsTimerFor(status,type){
+  if(type==='did')return DID_DONE_ST.indexOf(status)>-1||status==='Advised Client';
+  return NO_TIMER_ST.indexOf(status)>-1||status==='Advised Client';
+}
 
 function stopTimerForStatusIfNeeded(r){
   if(!r||!r.timerStart||!recordStatusStopsTimer(r))return false;
@@ -2299,6 +2304,20 @@ function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){retu
 function markEndorsementTimerDirty(){if(editingId!==null)_endorsementTimerDirty=true;}
 function markDIDTimerDirty(){if(editingDIDId!==null)_didTimerDirty=true;}
 function markRRTimerDirty(){if(editingRRId!==null)_rrTimerDirty=true;}
+// Keep the "repeat timer" checkbox in step with the selected status.
+// Stop-status (Advised Client / completed) -> uncheck + disable it.
+// Moving OFF a stop-status back onto a working status -> default it back ON (user can still uncheck).
+function syncRepeatToggle(cbId,stops){
+  var cb=document.getElementById(cbId);if(!cb)return;
+  if(stops){cb.checked=false;cb.disabled=true;}
+  else{if(cb.disabled)cb.checked=true;cb.disabled=false;}
+}
+function onEndorsementStatusChange(){
+  syncRepeatToggle('f-auto-restart',statusStopsTimerFor(document.getElementById('f-st-f').value,'main'));
+}
+function onDIDStatusChange(){
+  syncRepeatToggle('d-auto-restart',statusStopsTimerFor(document.getElementById('d-status').value,'did'));
+}
 
 function clampTimerHH(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>23)el.value=23;}
 function clampTimerMM(el){var v=parseInt(el.value);if(isNaN(v)||v<0)el.value=0;if(v>59)el.value=59;}
@@ -3457,6 +3476,7 @@ function openNewDIDModal(){
   document.getElementById('d-status').value='Pending AM';
   document.getElementById('d-pin').checked=false;
   document.getElementById('d-auto-restart').checked=true;
+  document.getElementById('d-auto-restart').disabled=false;
   document.getElementById('d-am').value='';
   document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('d-priority').value='Normal';
@@ -3487,7 +3507,9 @@ function openEditDID(id){
   document.getElementById('d-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('d-remarks');},0);
   document.getElementById('d-status').value=r.status||'Pending AM';
   document.getElementById('d-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
-  document.getElementById('d-auto-restart').checked=!!r.autoRestartTimer;
+  var _dStops=statusStopsTimerFor(r.status||'Pending AM','did');
+  document.getElementById('d-auto-restart').checked=_dStops?false:!!r.autoRestartTimer;
+  document.getElementById('d-auto-restart').disabled=_dStops;
   document.getElementById('d-am').value=r.am||'';
   document.getElementById('d-date').value=r.startDate||'';
   document.getElementById('d-priority').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
@@ -3577,6 +3599,10 @@ function saveDIDRecord(){
       }else if(timerChanged&&dTimerSecs<=0){
         rec.timerOverride=null;
         timerUpd={timerStart:null,timerAlerted:false,autoRestartedAt:null};
+      }else if(recordStatusStopsTimer(prev)&&!prev.timerStart){
+        // Reactivated: status moved from a stop-status (e.g. Advised Client) back to a working status -> auto-start the timer fresh (only if a duration is set)
+        rec.timerOverride=dTimerSecs>0?dTimerSecs:(prev.timerOverride||null);
+        timerUpd=rec.timerOverride?{timerStart:Date.now(),timerAlerted:false,autoRestartedAt:Date.now()}:{timerStart:null,timerAlerted:false,autoRestartedAt:null};
       }else{
         rec.timerOverride=prev.timerOverride||null;
         timerUpd={timerStart:prev.timerStart||null,timerAlerted:prev.timerAlerted||false};
@@ -3846,6 +3872,7 @@ function openNewModal(){
   document.getElementById('f-st-f').value='Pending at CS';
   document.getElementById('f-pin').checked=false;
   document.getElementById('f-auto-restart').checked=true;
+  document.getElementById('f-auto-restart').disabled=false;
   document.getElementById('f-am').value='';
   document.getElementById('f-pri-f').value='Normal';
   document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
@@ -3875,7 +3902,9 @@ function openEdit(id){
   document.getElementById('f-plt-f').value=r.platform||'';
   document.getElementById('f-st-f').value=r.status||'Pending at CS';
   document.getElementById('f-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
-  document.getElementById('f-auto-restart').checked=!!r.autoRestartTimer;
+  var _fStops=statusStopsTimerFor(r.status||'Pending at CS','main');
+  document.getElementById('f-auto-restart').checked=_fStops?false:!!r.autoRestartTimer;
+  document.getElementById('f-auto-restart').disabled=_fStops;
   document.getElementById('f-am').value=r.am||'';
   document.getElementById('f-pri-f').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
   document.getElementById('f-date').value=r.startDate||'';
@@ -3952,6 +3981,10 @@ function saveRecord(){
         }else if(timerChanged&&!timerSecs){
           rec.timerOverride=null;
           timerUpdate={timerStart:null,timerAlerted:false,autoRestartedAt:null};
+        }else if(recordStatusStopsTimer(prev)&&!prev.timerStart){
+          // Reactivated: status moved from a stop-status (e.g. Advised Client) back to a working status -> auto-start the timer fresh
+          rec.timerOverride=timerSecs||prev.timerOverride||null;
+          timerUpdate=rec.timerOverride?{timerStart:Date.now(),timerAlerted:false,autoRestartedAt:Date.now()}:{timerStart:null,timerAlerted:false,autoRestartedAt:null};
         }else{
           rec.timerOverride=prev.timerOverride||null;
           timerUpdate={timerStart:prev.timerStart||null,timerAlerted:prev.timerAlerted||false};
@@ -6467,7 +6500,9 @@ window.markDIDTimerDirty=markDIDTimerDirty;
 window.markEndorsementTimerDirty=markEndorsementTimerDirty;
 window.markRRTimerDirty=markRRTimerDirty;
 window.onDIDPriorityChange=onDIDPriorityChange;
+window.onDIDStatusChange=onDIDStatusChange;
 window.onDIDTimerChange=onDIDTimerChange;
+window.onEndorsementStatusChange=onEndorsementStatusChange;
 window.onAgingSettingChange=onAgingSettingChange;
 window.onRRPriorityChange=onRRPriorityChange;
 window.onRRTimerChange=onRRTimerChange;
