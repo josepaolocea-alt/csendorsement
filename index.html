@@ -25,9 +25,12 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .app-logo-icon{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;}
 .app-title{font-size:14px;font-weight:700;letter-spacing:-.3px;}
 .divider{width:1px;height:20px;background:var(--border);margin:0 2px;}
-.tab-btn{padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--text2);font-family:var(--sf);font-size:13px;font-weight:500;cursor:pointer;transition:.15s;}
+.tab-btn{position:relative;width:38px;height:34px;padding:0;border-radius:7px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s;flex:0 0 auto;}
+.tab-btn svg{width:18px;height:18px;display:block;pointer-events:none;}
 .tab-btn:hover{background:var(--bg3);color:var(--text);}
 .tab-btn.active{background:var(--bg4);color:var(--text);}
+.tab-btn::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-3px);background:var(--bg5);color:var(--text);font-size:11px;font-weight:500;padding:4px 9px;border-radius:6px;white-space:nowrap;border:1px solid var(--border2);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .13s,transform .13s;z-index:300;}
+.tab-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0);}
 .ml-auto{margin-left:auto;}
 .btn{padding:7px 14px;border-radius:8px;border:none;font-family:var(--sf);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap;}
 .btn-primary{background:var(--accent);color:#fff;}
@@ -143,6 +146,34 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .copy-icon:before{left:1px;top:1px;opacity:.7;}
 .copy-icon:after{left:3px;top:3px;background:var(--bg3);}
 .cell-copy-btn:hover .copy-icon:after{background:var(--bg4);}
+.cal-wrap{max-width:1120px;margin:0 auto;}
+.cal-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.cal-title{font-size:16px;font-weight:700;min-width:160px;letter-spacing:-.2px;}
+.cal-nav{display:flex;gap:6px;align-items:center;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px;padding:2px 0;}
+.cal-cell{min-height:98px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:6px 7px;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:.13s;overflow:hidden;}
+.cal-cell:hover{border-color:var(--accent);background:var(--bg3);}
+.cal-cell.cal-oth{opacity:.4;}
+.cal-cell.cal-today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);}
+.cal-daynum{font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;min-height:20px;}
+.cal-dot-today{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.cal-ev{font-size:11px;line-height:1.3;background:var(--accent);color:#fff;border-radius:5px;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;border:none;text-align:left;width:100%;font-family:var(--sf);display:block;}
+.cal-ev:hover{filter:brightness(1.1);}
+.cal-ev.cal-ev-past{background:var(--bg4);color:var(--text2);}
+.cal-ev-time{font-weight:700;margin-right:3px;opacity:.9;}
+.cal-more{font-size:10px;color:var(--text3);padding-left:3px;}
+.cal-up{margin-top:24px;max-width:640px;}
+.cal-up-title{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text2);}
+.cal-up-item{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:.13s;}
+.cal-up-item:hover{border-color:var(--accent);}
+.cal-up-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:0 0 auto;}
+.cal-up-name{font-size:13px;font-weight:500;flex:1;}
+.cal-up-when{font-size:11px;color:var(--text3);white-space:nowrap;}
+.cal-empty{text-align:center;color:var(--text3);font-size:13px;padding:26px;border:1px dashed var(--border);border-radius:10px;}
+.cal-field{margin-bottom:14px;}
+.cal-field-row{display:flex;gap:12px;flex-wrap:wrap;}
+.cal-field>label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.5);}
 .modal-ov:not(.hidden){animation:ovFadeIn .16s ease-out;}
@@ -379,13 +410,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <span class="app-title">CYN Endorsement</span>
   </div>
   <div class="divider"></div>
-  <button class="tab-btn active" onclick="switchTab('all',this)">All Tasks</button>
-  <button class="tab-btn" onclick="switchTab('did',this)">DID Order / Cancel</button>
-  <button class="tab-btn" onclick="switchTab('done',this)">Done / Resolved</button>
-  <button class="tab-btn" onclick="switchTab('mine',this)">Pending RR / RO</button>
-  <button class="tab-btn" onclick="switchTab('trash',this)">Trash</button>
-  <button class="tab-btn" id="dashboard-tab-btn" style="display:none" onclick="switchTab('dashboard',this)">Dashboard</button>
-  <button class="tab-btn" id="admin-tab-btn" style="display:none" onclick="switchTab('admin',this)">Admin</button>
+  <button class="tab-btn active" data-tip="All Tasks" aria-label="All Tasks" onclick="switchTab('all',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></button>
+  <button class="tab-btn" data-tip="DID Order / Cancel" aria-label="DID Order / Cancel" onclick="switchTab('did',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></button>
+  <button class="tab-btn" data-tip="Done / Resolved" aria-label="Done / Resolved" onclick="switchTab('done',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></button>
+  <button class="tab-btn" data-tip="Pending RR / RO" aria-label="Pending RR / RO" onclick="switchTab('mine',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+  <button class="tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+  <button class="tab-btn" id="dashboard-tab-btn" style="display:none" data-tip="Dashboard" aria-label="Dashboard" onclick="switchTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></button>
+  <button class="tab-btn" id="admin-tab-btn" style="display:none" data-tip="Admin" aria-label="Admin" onclick="switchTab('admin',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
+  <div class="divider"></div>
+  <button class="tab-btn" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar">?</div>
@@ -716,6 +749,31 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </div>
   </div>
   <div id="main-pagination" style="padding:6px 16px 2px"></div>
+
+  <!-- CALENDAR PANEL -->
+  <div id="calendar-panel" style="display:none">
+    <div class="cal-wrap">
+      <div class="cal-head">
+        <div class="cal-title" id="cal-title">Calendar</div>
+        <div class="cal-nav">
+          <button class="btn-icon" onclick="calPrevMonth()" aria-label="Previous month">&lsaquo;</button>
+          <button class="btn btn-secondary btn-sm" onclick="calToday()">Today</button>
+          <button class="btn-icon" onclick="calNextMonth()" aria-label="Next month">&rsaquo;</button>
+        </div>
+        <button class="btn btn-primary" style="margin-left:auto" onclick="openCalEventModal()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New event
+        </button>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-dow">Sun</div><div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div><div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div>
+      </div>
+      <div class="cal-grid" id="cal-grid" style="margin-top:6px"></div>
+      <div class="cal-up">
+        <div class="cal-up-title">Upcoming</div>
+        <div id="cal-upcoming"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- DASHBOARD PANEL -->
   <div id="dashboard-panel" style="display:none">
@@ -1409,6 +1467,70 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   </div>
 </div>
 
+<!-- CALENDAR EVENT MODAL -->
+<div class="modal-ov hidden" id="cal-event-modal" style="z-index:560">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hdr"><h3 id="cal-event-title">New event</h3><button class="modal-cls" onclick="closeCalEventModal()">x</button></div>
+    <div class="modal-body">
+      <div class="cal-field">
+        <label>Event title</label>
+        <input class="fc" id="cal-ev-title" type="text" placeholder="e.g. Team sync, Client follow-up" maxlength="120" onkeydown="if(event.key==='Enter')saveCalEventFromModal()">
+      </div>
+      <div class="cal-field-row">
+        <div class="cal-field" style="flex:1;min-width:150px">
+          <label>Date</label>
+          <input class="fc" id="cal-ev-date" type="date">
+        </div>
+        <div class="cal-field" style="flex:1;min-width:120px">
+          <label>Time <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+          <input class="fc" id="cal-ev-time" type="time">
+        </div>
+      </div>
+      <div class="cal-field">
+        <label>Remind me before</label>
+        <select class="fc" id="cal-ev-remind">
+          <option value="0">At the event time</option>
+          <option value="5">5 minutes before</option>
+          <option value="10">10 minutes before</option>
+          <option value="15">15 minutes before</option>
+          <option value="30">30 minutes before</option>
+          <option value="60">1 hour before</option>
+          <option value="1440">1 day before</option>
+        </select>
+      </div>
+      <div class="cal-field">
+        <label>Note <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+        <textarea class="fc" id="cal-ev-note" placeholder="Any details..." maxlength="500"></textarea>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:2px 0 0;line-height:1.5">When the time comes this rings on this device and pops a notification on your PC. Add a time to get the alarm &mdash; leave it blank and the event just shows on the calendar.</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" id="cal-ev-delete" style="margin-right:auto;display:none;color:#f87171" onclick="deleteCalEventFromModal()">Delete</button>
+      <button class="btn btn-secondary" onclick="closeCalEventModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCalEventFromModal()">Save event</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR ALERT MODAL -->
+<div class="modal-ov hidden" id="cal-alert-modal" style="z-index:9500;background:rgba(0,0,0,.7)">
+  <div class="modal timer-alert-box">
+    <div class="modal-hdr" style="background:rgba(91,124,255,.15)">
+      <h3 id="cal-alert-title" style="color:var(--accent)">🔔 Calendar Reminder</h3>
+      <button class="modal-cls" onclick="closeCalAlert()">x</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:24px">
+      <div style="font-size:40px;margin-bottom:12px">📅</div>
+      <p id="cal-alert-msg" style="font-size:15px;color:var(--text);margin-bottom:4px"></p>
+      <p style="font-size:12px;color:var(--text3);margin-top:8px">This alert will auto-dismiss in 10 seconds</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="calSnoozeAlert()">Snooze 10 min</button>
+      <button class="btn btn-primary" style="justify-content:center" onclick="closeCalAlert()">Dismiss</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT DROPDOWN OPTION MODAL -->
 <div class="modal-ov hidden" id="edit-dropdown-modal" style="z-index:610">
   <div class="modal" style="max-width:420px">
@@ -1926,18 +2048,21 @@ function _doSwitchTab(tab,el){
   var isAdmin=tab==='admin';
   var isTrash=tab==='trash';
   var isDash=tab==='dashboard';
-  var hideMain=isAdmin||isDash;
+  var isCal=tab==='calendar';
+  var hideMain=isAdmin||isDash||isCal;
   document.getElementById('stats-row').style.display=hideMain?'none':'';
   document.querySelector('.toolbar').style.display=hideMain?'none':'';
   document.getElementById('main-table-wrap').style.display=hideMain?'none':'';
   document.getElementById('main-pagination').style.display=hideMain?'none':'';
   document.getElementById('admin-panel').style.display=isAdmin?'':'none';
   document.getElementById('dashboard-panel').style.display=isDash?'':'none';
+  document.getElementById('calendar-panel').style.display=isCal?'':'none';
   document.getElementById('new-btn').style.display=(hideMain||isTrash)?'none':'';
   document.getElementById('trash-info').style.display=isTrash?'':'none';
   document.getElementById('trash-empty-btn').style.display=(isTrash&&window._canEdit)?'':'none';
   if(isAdmin){loadAdminData();return;}
   if(isDash){loadDashboard();return;}
+  if(isCal){renderCalendar();return;}
   DATA.forEach(function(r){r._sel=false;});
   TRASH_DATA.forEach(function(r){r._sel=false;});
   window._lastCheckAll=false;
@@ -2678,6 +2803,7 @@ setInterval(function(){
     }
     maybeAlertReminder(r);
   });
+  try{checkCalendarEvents();}catch(e){}
   var rrRoActive=SETTINGS.rrRoAlertEnabled!==false&&isRRRoAlertWindowActive();
   if(rrRoActive!==_rrRoAlertWindowActive){
     _rrRoAlertWindowActive=rrRoActive;
@@ -2756,6 +2882,212 @@ function closeTimerAlert(){
   clearTimeout(window._timerAlertTimeout);
 }
 window.closeTimerAlert=closeTimerAlert;
+
+// ─── CALENDAR (personal events + alarms) ─────────────────────
+// Events live in Firestore 'calendar_events' and sync to every device the
+// same way endorsements do. Each event is tagged with its owner's email, so
+// each person only sees and gets alarmed for their own events. When an event
+// comes due, it reuses the app's existing alarm stack: sound (playAlert),
+// PC/laptop notification (sendBrowserNotif) and an in-app popup.
+var CAL_EVENTS=[];            // current user's events only
+var _calUnsub=null;
+var _calReady=false;
+var _calAlertSince=0;         // don't alarm for events already due before the app loaded
+var CAL_CATCHUP_MS=180000;    // only ring for fires within the last 3 minutes (matches timers)
+var _calViewY, _calViewM;     // month currently shown
+var _calEditId=null;
+var _calAlertCurrent=null;
+var CAL_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function calOwner(){return currentAlertUserKey();}
+function calNewId(){return 'ev_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);}
+function pad2(n){return (n<10?'0':'')+n;}
+function calTodayStr(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+function calAtFrom(date,time){
+  if(!date||!time)return null;
+  var d=date.split('-'),t=time.split(':');
+  if(d.length<3||t.length<2)return null;
+  return new Date(+d[0],+d[1]-1,+d[2],+t[0],+t[1],0,0).getTime();
+}
+function calTimeLabel(time){
+  if(!time)return '';
+  var t=time.split(':'),h=+t[0],m=t[1],ap=h<12?'a':'p',h12=h%12;if(h12===0)h12=12;
+  return h12+':'+m+ap;
+}
+function calWhenLabel(ev){
+  if(!ev.date)return '';
+  var d=ev.date.split('-');
+  var label=CAL_MONTHS[(+d[1]-1)]+' '+(+d[2])+', '+d[0];
+  if(ev.time){
+    var t=ev.time.split(':'),h=+t[0],m=t[1],ap=h<12?'AM':'PM',h12=h%12;if(h12===0)h12=12;
+    label+=' · '+h12+':'+m+' '+ap;
+  }else{label+=' · all day';}
+  return label;
+}
+function calRemindLabel(mins){if(mins>=1440)return (mins/1440)+' day';if(mins>=60)return (mins/60)+' hr';return mins+' min';}
+
+function calSaveEvent(ev){
+  return setDoc(doc(db,'calendar_events',ev.id),ev).catch(function(){toast('Could not save event — check your connection','error');});
+}
+function calRemoveEvent(id){
+  return deleteDoc(doc(db,'calendar_events',id)).catch(function(){toast('Could not delete event','error');});
+}
+
+// ── Event modal ──
+function openCalEventModal(dateStr,editId){
+  var m=document.getElementById('cal-event-modal');if(!m)return;
+  _calEditId=editId||null;
+  var ev=editId?CAL_EVENTS.find(function(e){return e.id===editId;}):null;
+  document.getElementById('cal-event-title').textContent=ev?'Edit event':'New event';
+  document.getElementById('cal-ev-title').value=ev?ev.title:'';
+  document.getElementById('cal-ev-date').value=ev?ev.date:(dateStr||calTodayStr());
+  document.getElementById('cal-ev-time').value=ev?(ev.time||''):'';
+  document.getElementById('cal-ev-remind').value=ev?String(ev.remindBefore||0):'0';
+  document.getElementById('cal-ev-note').value=ev?(ev.note||''):'';
+  document.getElementById('cal-ev-delete').style.display=ev?'':'none';
+  m.classList.remove('hidden');
+  setTimeout(function(){try{document.getElementById('cal-ev-title').focus();}catch(e){}},60);
+}
+function closeCalEventModal(){var m=document.getElementById('cal-event-modal');if(m)m.classList.add('hidden');_calEditId=null;}
+function saveCalEventFromModal(){
+  var editing=!!_calEditId;
+  var title=document.getElementById('cal-ev-title').value.trim();
+  var date=document.getElementById('cal-ev-date').value;
+  var time=document.getElementById('cal-ev-time').value;
+  var remind=parseInt(document.getElementById('cal-ev-remind').value,10)||0;
+  var note=document.getElementById('cal-ev-note').value.trim();
+  if(!title){toast('Please enter an event title','error');return;}
+  if(!date){toast('Please pick a date','error');return;}
+  var existing=editing?CAL_EVENTS.find(function(e){return e.id===_calEditId;}):null;
+  var ev=existing?Object.assign({},existing):{id:calNewId(),owner:calOwner(),createdAt:Date.now()};
+  ev.title=title;ev.date=date;ev.time=time||'';ev.remindBefore=remind;ev.note=note;
+  ev.at=calAtFrom(date,time);
+  if(!ev.owner)ev.owner=calOwner();
+  var idx=CAL_EVENTS.findIndex(function(e){return e.id===ev.id;});
+  if(idx>-1)CAL_EVENTS[idx]=ev;else CAL_EVENTS.push(ev);
+  calSaveEvent(ev);
+  closeCalEventModal();
+  renderCalendar();
+  toast(editing?'Event updated ✓':'Event added ✓','success');
+}
+function deleteCalEventFromModal(){
+  if(!_calEditId)return;
+  var id=_calEditId;
+  appConfirm('Delete this event?','Delete').then(function(ok){
+    if(!ok)return;
+    CAL_EVENTS=CAL_EVENTS.filter(function(e){return e.id!==id;});
+    calRemoveEvent(id);
+    closeCalEventModal();
+    renderCalendar();
+    toast('Event deleted','info');
+  });
+}
+
+// ── Month grid ──
+function calGotoToday(){var d=new Date();_calViewY=d.getFullYear();_calViewM=d.getMonth();}
+function calPrevMonth(){if(_calViewM===undefined)calGotoToday();_calViewM--;if(_calViewM<0){_calViewM=11;_calViewY--;}renderCalendar();}
+function calNextMonth(){if(_calViewM===undefined)calGotoToday();_calViewM++;if(_calViewM>11){_calViewM=0;_calViewY++;}renderCalendar();}
+function calToday(){calGotoToday();renderCalendar();}
+function renderCalendar(){
+  if(_calViewY===undefined)calGotoToday();
+  var grid=document.getElementById('cal-grid');if(!grid)return;
+  document.getElementById('cal-title').textContent=CAL_MONTHS[_calViewM]+' '+_calViewY;
+  var startDow=new Date(_calViewY,_calViewM,1).getDay();
+  var daysInMonth=new Date(_calViewY,_calViewM+1,0).getDate();
+  var prevDays=new Date(_calViewY,_calViewM,0).getDate();
+  var todayStr=calTodayStr();
+  var now=Date.now();
+  var byDate={};
+  CAL_EVENTS.forEach(function(ev){if(!ev.date)return;(byDate[ev.date]=byDate[ev.date]||[]).push(ev);});
+  Object.keys(byDate).forEach(function(k){byDate[k].sort(function(a,b){return (a.time||'99:99').localeCompare(b.time||'99:99');});});
+  var totalCells=Math.ceil((startDow+daysInMonth)/7)*7;
+  var cells=[];
+  for(var i=0;i<totalCells;i++){
+    var dayNum,y=_calViewY,mo=_calViewM,other=false;
+    if(i<startDow){dayNum=prevDays-startDow+1+i;other=true;mo=_calViewM-1;if(mo<0){mo=11;y=_calViewY-1;}}
+    else if(i>=startDow+daysInMonth){dayNum=i-(startDow+daysInMonth)+1;other=true;mo=_calViewM+1;if(mo>11){mo=0;y=_calViewY+1;}}
+    else{dayNum=i-startDow+1;}
+    var dateStr=y+'-'+pad2(mo+1)+'-'+pad2(dayNum);
+    var isToday=dateStr===todayStr;
+    var evs=byDate[dateStr]||[];
+    var chips='';
+    evs.slice(0,3).forEach(function(ev){
+      var past=ev.at&&ev.at<now;
+      chips+='<button class="cal-ev'+(past?' cal-ev-past':'')+'" onclick="event.stopPropagation();openCalEventModal(null,\''+ev.id+'\')" title="'+escHtml(ev.title)+'">'+(ev.time?'<span class="cal-ev-time">'+calTimeLabel(ev.time)+'</span>':'')+escHtml(ev.title)+'</button>';
+    });
+    if(evs.length>3)chips+='<div class="cal-more">+'+(evs.length-3)+' more</div>';
+    var daynumHtml=isToday?'<span class="cal-dot-today">'+dayNum+'</span>':String(dayNum);
+    cells.push('<div class="cal-cell'+(other?' cal-oth':'')+(isToday?' cal-today':'')+'" onclick="openCalEventModal(\''+dateStr+'\')"><div class="cal-daynum">'+daynumHtml+'</div>'+chips+'</div>');
+  }
+  grid.innerHTML=cells.join('');
+  renderCalUpcoming();
+}
+function renderCalUpcoming(){
+  var box=document.getElementById('cal-upcoming');if(!box)return;
+  var now=Date.now();
+  var up=CAL_EVENTS.filter(function(ev){return ev.at&&ev.at>=now;}).sort(function(a,b){return a.at-b.at;}).slice(0,6);
+  if(!up.length){box.innerHTML='<div class="cal-empty">No upcoming events. Click any day to add one.</div>';return;}
+  box.innerHTML=up.map(function(ev){
+    return '<div class="cal-up-item" onclick="openCalEventModal(null,\''+ev.id+'\')"><div class="cal-up-dot"></div><div class="cal-up-name">'+escHtml(ev.title)+(ev.remindBefore>0?' <span style="font-size:11px;color:var(--text3)">· reminds '+calRemindLabel(ev.remindBefore)+' before</span>':'')+'</div><div class="cal-up-when">'+escHtml(calWhenLabel(ev))+'</div></div>';
+  }).join('');
+}
+
+// ── Alarm engine ──
+// Runs from the 1-second loop (so it fires on any tab), from the calendar
+// onSnapshot (fires even when this tab is throttled in the background), and on
+// visibilitychange (catches anything the throttled loop missed while away).
+function checkCalendarEvents(){
+  if(!_calReady||!Array.isArray(CAL_EVENTS)||!CAL_EVENTS.length)return;
+  CAL_EVENTS.forEach(function(ev){
+    if(!ev.at)return;
+    calMaybeFire(ev,ev.at,'due');
+    if(ev.remindBefore>0)calMaybeFire(ev,ev.at-ev.remindBefore*60000,'pre');
+  });
+}
+function calMaybeFire(ev,fireAt,kind){
+  var now=Date.now();
+  if(now<fireAt)return;                  // not due yet
+  if(fireAt<_calAlertSince)return;       // was due before the app opened this session
+  if(now-fireAt>CAL_CATCHUP_MS)return;   // missed by more than 3 minutes
+  var key='cyn_cal_'+kind+'_'+calOwner()+'_'+ev.id+'_'+fireAt;
+  if(_sessionAlerted[key])return;
+  try{if(localStorage.getItem(key)==='1'){_sessionAlerted[key]=true;return;}}catch(e){}
+  _sessionAlerted[key]=true;
+  try{localStorage.setItem(key,'1');}catch(e){}
+  try{playAlert(SETTINGS.reminderTone||'bell');}catch(e){}
+  var soon=kind==='pre';
+  toast('🔔 '+ev.title+(soon?' — starting soon':' — now'),'info');
+  sendBrowserNotif('🔔 '+ev.title,calWhenLabel(ev)+(soon?' (starting soon)':''),'cal_'+ev.id+'_'+kind,true);
+  showCalendarAlert(ev,kind);
+}
+function showCalendarAlert(ev,kind){
+  var modal=document.getElementById('cal-alert-modal');
+  var title=document.getElementById('cal-alert-title');
+  var msg=document.getElementById('cal-alert-msg');
+  if(!modal||!msg)return;
+  _calAlertCurrent=ev;
+  if(title)title.textContent=kind==='pre'?'🔔 Starting soon':'🔔 Calendar Reminder';
+  msg.innerHTML='<strong>'+escHtml(ev.title)+'</strong><br><span style="font-size:12px;color:var(--text3)">'+escHtml(calWhenLabel(ev))+'</span>'+(ev.note?'<br><span style="font-size:12px;color:var(--text3)">'+escHtml(ev.note)+'</span>':'');
+  modal.classList.remove('hidden');
+  clearTimeout(window._calAlertTimeout);
+  window._calAlertTimeout=setTimeout(function tick(){
+    if(document.hidden){window._calAlertTimeout=setTimeout(tick,10000);return;}
+    modal.classList.add('hidden');
+  },10000);
+}
+function closeCalAlert(){var m=document.getElementById('cal-alert-modal');if(m)m.classList.add('hidden');clearTimeout(window._calAlertTimeout);}
+function calSnoozeAlert(){
+  var ev=_calAlertCurrent;
+  closeCalAlert();
+  if(!ev)return;
+  toast('Snoozed 10 minutes','info');
+  setTimeout(function(){
+    try{playAlert(SETTINGS.reminderTone||'bell');}catch(e){}
+    sendBrowserNotif('🔔 '+ev.title,calWhenLabel(ev)+' (snoozed)','cal_'+ev.id+'_snooze_'+Date.now(),true);
+    showCalendarAlert(ev,'due');
+  },600000);
+}
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){try{checkCalendarEvents();}catch(e){}}});
 
 function applyFilters(){
   if(currentTab==='did'){applyDIDFilters();return;}
@@ -4683,6 +5015,17 @@ async function startFirestore(){
     }, function(err){
       console.error('Settings sync error',err);
     });
+  }
+  // Live-sync personal calendar events across this user's devices
+  if(!_calUnsub){
+    _calUnsub = onSnapshot(collection(db,'calendar_events'), function(snap){
+      var mine=[];
+      snap.forEach(function(d){var e=d.data();if(e&&e.owner===calOwner())mine.push(e);});
+      CAL_EVENTS=mine;
+      if(!_calReady){_calReady=true;_calAlertSince=Date.now();}
+      if(currentTab==='calendar'){try{renderCalendar();}catch(e){}}
+      try{checkCalendarEvents();}catch(e){}
+    }, function(err){console.error('Calendar sync error',err);});
   }
 }
 
@@ -6652,6 +6995,15 @@ window.openGeminiKeyModal=openGeminiKeyModal;
 window.closeGeminiKeyModal=closeGeminiKeyModal;
 window.saveGeminiKeyFromModal=saveGeminiKeyFromModal;
 window.clearGeminiKeyFromModal=clearGeminiKeyFromModal;
+window.openCalEventModal=openCalEventModal;
+window.closeCalEventModal=closeCalEventModal;
+window.saveCalEventFromModal=saveCalEventFromModal;
+window.deleteCalEventFromModal=deleteCalEventFromModal;
+window.calPrevMonth=calPrevMonth;
+window.calNextMonth=calNextMonth;
+window.calToday=calToday;
+window.closeCalAlert=closeCalAlert;
+window.calSnoozeAlert=calSnoozeAlert;
 
 // Double-click row to open edit modal
 function rowDblClick(e, id, type) {
