@@ -2412,6 +2412,13 @@ function flushPendingAlertTones(){
     if(!_audioCtx) getAudioCtx();
   },{once:false,passive:true});
 });
+// Coming back to the tab (e.g. after a Google Meet): the background timer loop was
+// throttled, so re-check immediately for any timer that expired while we were away.
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState!=='visible')return;
+  if(_audioCtx&&_audioCtx.state==='suspended')_audioCtx.resume().catch(function(){});
+  try{checkTimerExpiries();}catch(e){}
+});
 
 function testAlert(){playAlert(SETTINGS.alarmTone||'beep');toast('Timer alarm sound test!','info');}
 function testReminderAlert(){playAlert(SETTINGS.reminderTone||'bell');toast('Reminder alarm sound test!','info');}
@@ -2554,17 +2561,17 @@ var AUTO_RESTART_SKIP_SECS=259200;
 function currentAlertUserKey(){
   return _currentUser&&_currentUser.email?_currentUser.email:'anon';
 }
-function localAlertKey(kind,r){
-  var basis=kind==='timer'?r.timerStart:r.reminderAt;
+function localAlertKey(kind,r,basisOverride){
+  var basis=(basisOverride!==undefined&&basisOverride!==null)?basisOverride:(kind==='timer'?r.timerStart:r.reminderAt);
   return 'cyn_alert_'+kind+'_'+currentAlertUserKey()+'_'+(r._type||'endorsement')+'_'+r.id+'_'+basis;
 }
-function hasLocalAlerted(kind,r){
-  var key=localAlertKey(kind,r);
+function hasLocalAlerted(kind,r,basisOverride){
+  var key=localAlertKey(kind,r,basisOverride);
   if(_sessionAlerted[key])return true;
   try{return localStorage.getItem(key)==='1';}catch(e){return false;}
 }
-function markLocalAlerted(kind,r){
-  var key=localAlertKey(kind,r);
+function markLocalAlerted(kind,r,basisOverride){
+  var key=localAlertKey(kind,r,basisOverride);
   _sessionAlerted[key]=true;
   try{localStorage.setItem(key,'1');}catch(e){}
 }
@@ -2585,6 +2592,13 @@ function scheduleAutoRestartTimer(r){
     delete _autoRestartScheduled[key];
     var cur=DATA.find(function(d){return d.id===r.id;});
     if(!cur||cur.timerStart!==start||!canAutoRestartTimer(cur)||calcRem(cur)!==0)return;
+    // Remember the cycle that just expired BEFORE we reset timerStart. A device whose tab
+    // was in the background (its 1-second loop throttled by the browser, e.g. behind a
+    // Google Meet) may not have alerted yet — the fresh timerStart below would otherwise
+    // erase every trace of the expiry, so that device would stay silent. These fields let
+    // it catch up and sound the alarm once the restart syncs over.
+    cur.timerLastExpiredStart=cur.timerStart;
+    cur.timerLastExpiredAt=Date.now();
     cur.timerStart=Date.now();
     cur.timerAlerted=false;
     cur.autoRestartedAt=Date.now();
@@ -2594,23 +2608,65 @@ function scheduleAutoRestartTimer(r){
   },AUTO_RESTART_DELAY_MS);
 }
 
+// ─── EXPIRY ALERTS (shared by the timer loop, the realtime sync, and tab focus) ──
+// A timer alarm must reach EVERY logged-in device — even one whose tab sits in the
+// background (its 1-second loop gets throttled by the browser) and even after the
+// 10-second auto-restart has already reset the countdown. maybeAlertTimerExpiry is
+// therefore driven from three places: the interval below, the Firestore onSnapshot
+// handler (WebSocket callbacks fire even in a throttled tab, so the alarm lands within
+// a second of the restart syncing over), and visibilitychange (when the user returns).
+var EXPIRY_CATCHUP_MS=180000; // only "catch up" on expiries from the last 3 minutes
+var _timerAlertSince=0;       // set when data first loads; ignore expiries older than this
+function timerExpiryBasis(r){
+  if(!r||!r.timerStart)return null;
+  if(calcRem(r)===0)return r.timerStart; // the timer is sitting at 0 right now
+  // A cycle that expired and was already auto-restarted (possibly by another device):
+  // alert once, but only if it happened recently AND during this session — so we never
+  // alarm at login for something that expired long before the user opened the app.
+  if(r.timerLastExpiredStart&&r.timerLastExpiredAt){
+    var when=Number(r.timerLastExpiredAt);
+    if(when>=_timerAlertSince&&Date.now()-when<EXPIRY_CATCHUP_MS)return r.timerLastExpiredStart;
+  }
+  return null;
+}
+function maybeAlertTimerExpiry(r){
+  var basis=timerExpiryBasis(r);
+  if(basis===null||hasLocalAlerted('timer',r,basis))return;
+  markLocalAlerted('timer',r,basis);
+  try{playAlert(SETTINGS.alarmTone||'beep');}catch(e){
+    try{
+      var a=new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2ozNWCfz+OxbDE0X5XK3ataLC9bkL/UrFcqMFqIssiqUycvWYOotaFQJTBYfqGtl0olMVh5mKOLQCQzWHSQmX87IjVXb4iRdTYkN1dmf4lsMinBXl16f2JeJzLGXlp5eVpkJzHJW1l4eFpgJi');
+      a.volume=0.8;
+      a.play().catch(function(){});
+    }catch(e2){}
+  }
+  toast('⏰ Timer expired: '+timerAlertSummary(r),'error');
+  sendBrowserNotif('⏰ Timer Expired!',timerAlertSummary(r)+' — timer has expired.',String(r.id)+'_'+currentAlertUserKey()+'_timer',true);
+  showTimerAlert(r);
+}
+function maybeAlertReminder(r){
+  if(!(r.reminderAt&&Date.now()>=r.reminderAt&&!hasLocalAlerted('reminder',r)&&!isRecordCompleted(r)))return;
+  markLocalAlerted('reminder',r);
+  try{playAlert(SETTINGS.reminderTone||'bell');}catch(re){}
+  toast('🔔 Reminder: '+timerAlertSummary(r),'info');
+  sendBrowserNotif('🔔 Reminder',timerAlertSummary(r)+' — reminder time reached.',String(r.id)+'_'+currentAlertUserKey()+'_reminder',true);
+  showReminderAlert(r);
+}
+// Scan every record for a due timer/reminder alert. Safe to call as often as we like —
+// each alarm is de-duplicated per device via localStorage, so repeats never double up.
+function checkTimerExpiries(){
+  if(!Array.isArray(DATA))return;
+  DATA.forEach(function(r){
+    if(r.timerStart)maybeAlertTimerExpiry(r);
+    maybeAlertReminder(r);
+  });
+}
+
 setInterval(function(){
   DATA.forEach(function(r){
     if(r.timerStart){
       var rem=calcRem(r);
-      if(rem===0&&!hasLocalAlerted('timer',r)){
-        markLocalAlerted('timer',r);
-        try{playAlert(SETTINGS.alarmTone||'beep');}catch(e){
-          try{
-            var a=new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2ozNWCfz+OxbDE0X5XK3ataLC9bkL/UrFcqMFqIssiqUycvWYOotaFQJTBYfqGtl0olMVh5mKOLQCQzWHSQmX87IjVXb4iRdTYkN1dmf4lsMinBXl16f2JeJzLGXlp5eVpkJzHJW1l4eFpgJi');
-            a.volume=0.8;
-            a.play().catch(function(){});
-          }catch(e2){}
-        }
-        toast('⏰ Timer expired: '+timerAlertSummary(r),'error');
-        sendBrowserNotif('⏰ Timer Expired!',timerAlertSummary(r)+' — timer has expired.',String(r.id)+'_'+currentAlertUserKey()+'_timer',true);
-        showTimerAlert(r);
-      }
+      maybeAlertTimerExpiry(r);
       if(rem===0)scheduleAutoRestartTimer(r);
       var badge=document.getElementById('tb-'+r.id);
       if(badge){
@@ -2620,13 +2676,7 @@ setInterval(function(){
         badge.title=isAutoRestartRecent(r)?'Timer restarted recently':'';
       }
     }
-    if(r.reminderAt&&Date.now()>=r.reminderAt&&!hasLocalAlerted('reminder',r)&&!isRecordCompleted(r)){
-      markLocalAlerted('reminder',r);
-      try{playAlert(SETTINGS.reminderTone||'bell');}catch(re){}
-      toast('🔔 Reminder: '+timerAlertSummary(r),'info');
-      sendBrowserNotif('🔔 Reminder',timerAlertSummary(r)+' — reminder time reached.',String(r.id)+'_'+currentAlertUserKey()+'_reminder',true);
-      showReminderAlert(r);
-    }
+    maybeAlertReminder(r);
   });
   var rrRoActive=SETTINGS.rrRoAlertEnabled!==false&&isRRRoAlertWindowActive();
   if(rrRoActive!==_rrRoAlertWindowActive){
@@ -4583,6 +4633,7 @@ async function startFirestore(){
     statusStoppedTimers.forEach(function(r){saveOne(r);});
     if(!_fbReady){
       _fbReady=true;
+      _timerAlertSince=Date.now(); // catch-up alarms only fire for expiries after this point
       hideLoader();
       loadClientsGlobal();
       loadNicknames();
@@ -4602,6 +4653,10 @@ async function startFirestore(){
       toast('Connected ✓','success');
     }
     applyFilters();
+    // Runs even when this tab is throttled in the background — this is what lets a
+    // laptop behind a Google Meet still sound the alarm the instant a timer expires
+    // (or the instant another device's auto-restart syncs the expiry over).
+    if(_fbReady)checkTimerExpiries();
     if(currentTab==='dashboard'&&_dashLoaded){try{renderDashboard();}catch(e){}}
   }, function(err){
     hideLoader();
