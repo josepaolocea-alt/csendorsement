@@ -174,6 +174,11 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .cal-field{margin-bottom:14px;}
 .cal-field-row{display:flex;gap:12px;flex-wrap:wrap;}
 .cal-field>label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;}
+.cal-note-copy{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--text2);background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;cursor:pointer;transition:.13s;}
+.cal-note-copy:hover{background:var(--bg4);color:var(--text);border-color:var(--border2);}
+.cal-note-copy .copy-icon:after{background:var(--bg3);}
+.cal-note-copy:hover .copy-icon:after{background:var(--bg4);}
+.cal-note-copy.copied{color:#4ade80;border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.12);}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.5);}
 .modal-ov:not(.hidden){animation:ovFadeIn .16s ease-out;}
@@ -424,11 +429,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div class="user-avatar" id="user-avatar">?</div>
       <span id="user-email-display"></span>
     </div>
-    <button class="btn btn-secondary btn-sm" id="logout-btn" onclick="doLogout()" style="display:none">Sign Out</button>
+    <button class="tab-btn" id="logout-btn" data-tip="Sign Out" aria-label="Sign Out" onclick="doLogout()" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
     <button class="btn btn-primary" id="new-btn" onclick="openNewModalCurrent()">
       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New
     </button>
-    <button class="btn-icon" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="tab-btn" onclick="toggleTheme()" id="theme-btn" data-tip="Light mode" aria-label="Switch to light mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></button>
   </div>
 </div>
 
@@ -716,9 +721,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <select class="fsel" id="f-am-filter" onchange="applyFilters()"><option value="">All AM</option></select>
     <span id="date-range-badge" style="display:none;font-size:12px;color:var(--accent);font-weight:600"></span>
     <button class="btn btn-secondary btn-sm" id="date-range-clear-btn" onclick="clearDateRangeFilter()" style="display:none">✕ Clear dates</button>
-    <button class="btn btn-secondary btn-sm" id="auto-toggle-btn" onclick="toggleAutoPanel()" style="display:none">⚙️ Settings</button>
-    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export</button>
-    <button class="btn btn-secondary btn-sm" id="daily-report-btn" onclick="openDailyReport()">Daily Report</button>
+    <button class="tab-btn" id="auto-toggle-btn" data-tip="Settings" aria-label="Settings" onclick="toggleAutoPanel()" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button class="tab-btn" data-tip="Export" aria-label="Export" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
+    <button class="tab-btn" id="daily-report-btn" data-tip="Daily Report" aria-label="Daily Report" onclick="openDailyReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></button>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
     <button class="btn btn-sm" id="trash-restore-sel-btn" onclick="restoreSelected()" style="display:none;background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)">Restore Selected</button>
     <button class="btn btn-sm" id="trash-purge-sel-btn" onclick="purgeSelected()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected Now</button>
@@ -1487,22 +1492,48 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         </div>
       </div>
       <div class="cal-field">
-        <label>Remind me before</label>
-        <select class="fc" id="cal-ev-remind">
-          <option value="0">At the event time</option>
-          <option value="5">5 minutes before</option>
-          <option value="10">10 minutes before</option>
-          <option value="15">15 minutes before</option>
-          <option value="30">30 minutes before</option>
-          <option value="60">1 hour before</option>
-          <option value="1440">1 day before</option>
+        <label>Repeat</label>
+        <select class="fc" id="cal-ev-repeat">
+          <option value="none">Does not repeat</option>
+          <option value="daily">Every day</option>
+          <option value="weekly">Every week</option>
+          <option value="monthly">Every month</option>
+          <option value="yearly">Every year</option>
         </select>
       </div>
+      <div class="cal-field-row">
+        <div class="cal-field" style="flex:1;min-width:150px">
+          <label>Remind me before</label>
+          <select class="fc" id="cal-ev-remind">
+            <option value="0">At the event time</option>
+            <option value="5">5 minutes before</option>
+            <option value="10">10 minutes before</option>
+            <option value="15">15 minutes before</option>
+            <option value="30">30 minutes before</option>
+            <option value="60">1 hour before</option>
+            <option value="1440">1 day before</option>
+          </select>
+        </div>
+        <div class="cal-field" style="flex:1;min-width:150px">
+          <label>Early reminder <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+          <select class="fc" id="cal-ev-remind2">
+            <option value="0">None</option>
+            <option value="60">1 hour before</option>
+            <option value="180">3 hours before</option>
+            <option value="1440">1 day before</option>
+            <option value="2880">2 days before</option>
+            <option value="10080">1 week before</option>
+          </select>
+        </div>
+      </div>
       <div class="cal-field">
-        <label>Note <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span>Note <span style="color:var(--text3);font-weight:400">(optional)</span></span>
+          <button type="button" class="cal-note-copy" id="cal-ev-note-copy" onclick="copyCalNote()" title="Copy note to clipboard"><span class="copy-icon"></span>Copy</button>
+        </label>
         <textarea class="fc" id="cal-ev-note" placeholder="Any details..." maxlength="500"></textarea>
       </div>
-      <p style="font-size:11px;color:var(--text3);margin:2px 0 0;line-height:1.5">When the time comes this rings on this device and pops a notification on your PC. Add a time to get the alarm &mdash; leave it blank and the event just shows on the calendar.</p>
+      <p style="font-size:11px;color:var(--text3);margin:2px 0 0;line-height:1.5">When the time comes this rings on this device and pops a notification on your PC. Add a time to get the alarm &mdash; leave it blank and the event just shows on the calendar. A repeating event and its reminders apply to the whole series.</p>
     </div>
     <div class="modal-ftr">
       <button class="btn btn-secondary" id="cal-ev-delete" style="margin-right:auto;display:none;color:#f87171" onclick="deleteCalEventFromModal()">Delete</button>
@@ -2028,7 +2059,12 @@ function onTimerChange(){
 function toggleTheme(){
   var h=document.documentElement,isDark=h.getAttribute('data-theme')==='dark';
   h.setAttribute('data-theme',isDark?'light':'dark');
-  document.getElementById('theme-btn').textContent=isDark?'🌙':'☀️';
+  var sun='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+  var moon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+  var btn=document.getElementById('theme-btn');
+  btn.innerHTML=isDark?moon:sun;
+  btn.setAttribute('data-tip',isDark?'Dark mode':'Light mode');
+  btn.setAttribute('aria-label',isDark?'Switch to dark mode':'Switch to light mode');
 }
 
 function switchTab(tab,el){
@@ -2925,6 +2961,85 @@ function calWhenLabel(ev){
   return label;
 }
 function calRemindLabel(mins){if(mins>=1440)return (mins/1440)+' day';if(mins>=60)return (mins/60)+' hr';return mins+' min';}
+var CAL_REPEAT_LABELS={none:'',daily:'Daily',weekly:'Weekly',monthly:'Monthly',yearly:'Yearly'};
+function calIsRepeating(ev){return ev&&ev.repeat&&ev.repeat!=='none';}
+
+// Copy the note field to the clipboard (client-side, no network).
+function copyCalNote(){
+  var t=(document.getElementById('cal-ev-note').value||'').trim();
+  if(!t){toast('Note is empty — nothing to copy','info');return;}
+  writeClipboardText(t).then(function(){
+    toast('Note copied','success');
+    var b=document.getElementById('cal-ev-note-copy');
+    if(b){b.classList.add('copied');if(b.lastChild)b.lastChild.textContent='Copied';
+      setTimeout(function(){b.classList.remove('copied');if(b.lastChild)b.lastChild.textContent='Copy';},1600);}
+  }).catch(function(){toast('Copy failed','error');});
+}
+
+// ── Repeat occurrence engine ──
+// Events store their FIRST occurrence (date/time) plus a repeat rule. Every
+// occurrence is derived on the fly so the same event shows on all its dates and
+// alarms on each one, without storing thousands of rows.
+function calDateStrFromTs(ts){var d=new Date(ts);return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+// The n-th occurrence's calendar date after the base (n=0 is the base itself).
+// Returns {y,m,d} (m is 0-based) or null when that period has no such day
+// (e.g. the 31st in a 30-day month, or Feb 29 in a common year) — those are skipped.
+function calAddPeriod(by,bm,bd,repeat,n){
+  if(repeat==='daily'){var dt=new Date(by,bm,bd+n);return {y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate()};}
+  if(repeat==='weekly'){var dt=new Date(by,bm,bd+n*7);return {y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate()};}
+  if(repeat==='monthly'){var mm=bm+n,yy=by+Math.floor(mm/12);mm=((mm%12)+12)%12;var dim=new Date(yy,mm+1,0).getDate();if(bd>dim)return null;return {y:yy,m:mm,d:bd};}
+  if(repeat==='yearly'){var yy=by+n,dim=new Date(yy,bm+1,0).getDate();if(bd>dim)return null;return {y:yy,m:bm,d:bd};}
+  return null;
+}
+// A safe lower bound for n so we never skip an occurrence at/after startStr.
+function calStartIndex(by,bm,bd,repeat,startStr){
+  var s=startStr.split('-'),sy=+s[0],sm=+s[1]-1,sd=+s[2],n=0;
+  if(repeat==='daily')n=Math.floor((Date.UTC(sy,sm,sd)-Date.UTC(by,bm,bd))/86400000)-1;
+  else if(repeat==='weekly')n=Math.floor((Date.UTC(sy,sm,sd)-Date.UTC(by,bm,bd))/604800000)-1;
+  else if(repeat==='monthly')n=((sy-by)*12+(sm-bm))-1;
+  else if(repeat==='yearly')n=(sy-by)-1;
+  return n>0?n:0;
+}
+// All occurrence date-strings within [startStr,endStr] inclusive (for the grid).
+function calOccurrenceDatesInRange(ev,startStr,endStr){
+  var out=[];if(!ev.date)return out;
+  var rep=ev.repeat||'none';
+  if(rep==='none'){if(ev.date>=startStr&&ev.date<=endStr)out.push(ev.date);return out;}
+  var b=ev.date.split('-'),by=+b[0],bm=+b[1]-1,bd=+b[2];
+  if(ev.date>endStr)return out;
+  var n=calStartIndex(by,bm,bd,rep,startStr),guard=0;
+  while(guard++<3000){
+    var o=calAddPeriod(by,bm,bd,rep,n);n++;
+    if(!o)continue;
+    var s=o.y+'-'+pad2(o.m+1)+'-'+pad2(o.d);
+    if(s<startStr||s<ev.date)continue;
+    if(s>endStr)break;
+    out.push(s);
+  }
+  return out;
+}
+// All occurrence timestamps within [fromTs,toTs] (for alarms). Needs a time.
+function calOccurrenceTimesInRange(ev,fromTs,toTs){
+  var out=[];if(!ev.date||!ev.time)return out;
+  var dates=calOccurrenceDatesInRange(ev,calDateStrFromTs(fromTs-86400000),calDateStrFromTs(toTs+86400000));
+  for(var i=0;i<dates.length;i++){var at=calAtFrom(dates[i],ev.time);if(at!=null&&at>=fromTs&&at<=toTs)out.push(at);}
+  return out;
+}
+// The next occurrence timestamp at/after fromTs, or null (for the upcoming list).
+function calNextOccurrenceAt(ev,fromTs){
+  if(!ev.at)return null;
+  var rep=ev.repeat||'none';
+  if(rep==='none')return ev.at>=fromTs?ev.at:null;
+  var b=ev.date.split('-'),by=+b[0],bm=+b[1]-1,bd=+b[2];
+  var n=calStartIndex(by,bm,bd,rep,calDateStrFromTs(fromTs-86400000)),guard=0;
+  while(guard++<3000){
+    var o=calAddPeriod(by,bm,bd,rep,n);n++;
+    if(!o)continue;
+    var at=calAtFrom(o.y+'-'+pad2(o.m+1)+'-'+pad2(o.d),ev.time);
+    if(at!=null&&at>=fromTs)return at;
+  }
+  return null;
+}
 
 function calSaveEvent(ev){
   return setDoc(doc(db,'calendar_events',ev.id),ev).catch(function(){toast('Could not save event — check your connection','error');});
@@ -2943,7 +3058,10 @@ function openCalEventModal(dateStr,editId){
   document.getElementById('cal-ev-date').value=ev?ev.date:(dateStr||calTodayStr());
   document.getElementById('cal-ev-time').value=ev?(ev.time||''):'';
   document.getElementById('cal-ev-remind').value=ev?String(ev.remindBefore||0):'0';
+  document.getElementById('cal-ev-repeat').value=ev?(ev.repeat||'none'):'none';
+  document.getElementById('cal-ev-remind2').value=ev?String(ev.remindBefore2||0):'0';
   document.getElementById('cal-ev-note').value=ev?(ev.note||''):'';
+  var _ncBtn=document.getElementById('cal-ev-note-copy');if(_ncBtn){_ncBtn.classList.remove('copied');_ncBtn.lastChild&&(_ncBtn.lastChild.textContent='Copy');}
   document.getElementById('cal-ev-delete').style.display=ev?'':'none';
   m.classList.remove('hidden');
   setTimeout(function(){try{document.getElementById('cal-ev-title').focus();}catch(e){}},60);
@@ -2955,12 +3073,14 @@ function saveCalEventFromModal(){
   var date=document.getElementById('cal-ev-date').value;
   var time=document.getElementById('cal-ev-time').value;
   var remind=parseInt(document.getElementById('cal-ev-remind').value,10)||0;
+  var repeat=document.getElementById('cal-ev-repeat').value||'none';
+  var remind2=parseInt(document.getElementById('cal-ev-remind2').value,10)||0;
   var note=document.getElementById('cal-ev-note').value.trim();
   if(!title){toast('Please enter an event title','error');return;}
   if(!date){toast('Please pick a date','error');return;}
   var existing=editing?CAL_EVENTS.find(function(e){return e.id===_calEditId;}):null;
   var ev=existing?Object.assign({},existing):{id:calNewId(),owner:calOwner(),createdAt:Date.now()};
-  ev.title=title;ev.date=date;ev.time=time||'';ev.remindBefore=remind;ev.note=note;
+  ev.title=title;ev.date=date;ev.time=time||'';ev.remindBefore=remind;ev.remindBefore2=remind2;ev.repeat=repeat;ev.note=note;
   ev.at=calAtFrom(date,time);
   if(!ev.owner)ev.owner=calOwner();
   var idx=CAL_EVENTS.findIndex(function(e){return e.id===ev.id;});
@@ -2997,10 +3117,14 @@ function renderCalendar(){
   var prevDays=new Date(_calViewY,_calViewM,0).getDate();
   var todayStr=calTodayStr();
   var now=Date.now();
-  var byDate={};
-  CAL_EVENTS.forEach(function(ev){if(!ev.date)return;(byDate[ev.date]=byDate[ev.date]||[]).push(ev);});
-  Object.keys(byDate).forEach(function(k){byDate[k].sort(function(a,b){return (a.time||'99:99').localeCompare(b.time||'99:99');});});
   var totalCells=Math.ceil((startDow+daysInMonth)/7)*7;
+  var firstStr=calDateStrFromTs(new Date(_calViewY,_calViewM,1-startDow).getTime());
+  var lastStr=calDateStrFromTs(new Date(_calViewY,_calViewM,1-startDow+totalCells-1).getTime());
+  var byDate={};
+  CAL_EVENTS.forEach(function(ev){
+    calOccurrenceDatesInRange(ev,firstStr,lastStr).forEach(function(ds){(byDate[ds]=byDate[ds]||[]).push(ev);});
+  });
+  Object.keys(byDate).forEach(function(k){byDate[k].sort(function(a,b){return (a.time||'99:99').localeCompare(b.time||'99:99');});});
   var cells=[];
   for(var i=0;i<totalCells;i++){
     var dayNum,y=_calViewY,mo=_calViewM,other=false;
@@ -3012,8 +3136,11 @@ function renderCalendar(){
     var evs=byDate[dateStr]||[];
     var chips='';
     evs.slice(0,3).forEach(function(ev){
-      var past=ev.at&&ev.at<now;
-      chips+='<button class="cal-ev'+(past?' cal-ev-past':'')+'" onclick="event.stopPropagation();openCalEventModal(null,\''+ev.id+'\')" title="'+escHtml(ev.title)+'">'+(ev.time?'<span class="cal-ev-time">'+calTimeLabel(ev.time)+'</span>':'')+escHtml(ev.title)+'</button>';
+      var occAt=ev.time?calAtFrom(dateStr,ev.time):null;
+      var past=occAt?occAt<now:(dateStr<todayStr);
+      var rep=calIsRepeating(ev)?'<span style="opacity:.85">↻</span> ':'';
+      var tip=escHtml(ev.title)+(calIsRepeating(ev)?' · repeats '+(CAL_REPEAT_LABELS[ev.repeat]||'').toLowerCase():'');
+      chips+='<button class="cal-ev'+(past?' cal-ev-past':'')+'" onclick="event.stopPropagation();openCalEventModal(null,\''+ev.id+'\')" title="'+tip+'">'+(ev.time?'<span class="cal-ev-time">'+calTimeLabel(ev.time)+'</span>':'')+rep+escHtml(ev.title)+'</button>';
     });
     if(evs.length>3)chips+='<div class="cal-more">+'+(evs.length-3)+' more</div>';
     var daynumHtml=isToday?'<span class="cal-dot-today">'+dayNum+'</span>':String(dayNum);
@@ -3025,10 +3152,15 @@ function renderCalendar(){
 function renderCalUpcoming(){
   var box=document.getElementById('cal-upcoming');if(!box)return;
   var now=Date.now();
-  var up=CAL_EVENTS.filter(function(ev){return ev.at&&ev.at>=now;}).sort(function(a,b){return a.at-b.at;}).slice(0,6);
+  var up=CAL_EVENTS.map(function(ev){var at=calNextOccurrenceAt(ev,now);return at?{ev:ev,at:at}:null;})
+    .filter(Boolean).sort(function(a,b){return a.at-b.at;}).slice(0,6);
   if(!up.length){box.innerHTML='<div class="cal-empty">No upcoming events. Click any day to add one.</div>';return;}
-  box.innerHTML=up.map(function(ev){
-    return '<div class="cal-up-item" onclick="openCalEventModal(null,\''+ev.id+'\')"><div class="cal-up-dot"></div><div class="cal-up-name">'+escHtml(ev.title)+(ev.remindBefore>0?' <span style="font-size:11px;color:var(--text3)">· reminds '+calRemindLabel(ev.remindBefore)+' before</span>':'')+'</div><div class="cal-up-when">'+escHtml(calWhenLabel(ev))+'</div></div>';
+  box.innerHTML=up.map(function(x){
+    var ev=x.ev,d=new Date(x.at),h=d.getHours(),m=pad2(d.getMinutes()),ap=h<12?'AM':'PM',h12=h%12;if(h12===0)h12=12;
+    var when=CAL_MONTHS[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+' · '+h12+':'+m+' '+ap;
+    var rep=calIsRepeating(ev)?' <span style="font-size:11px;color:var(--accent)">· ↻ '+(CAL_REPEAT_LABELS[ev.repeat]||'')+'</span>':'';
+    var rem=ev.remindBefore>0?' <span style="font-size:11px;color:var(--text3)">· reminds '+calRemindLabel(ev.remindBefore)+' before</span>':'';
+    return '<div class="cal-up-item" onclick="openCalEventModal(null,\''+ev.id+'\')"><div class="cal-up-dot"></div><div class="cal-up-name">'+escHtml(ev.title)+rep+rem+'</div><div class="cal-up-when">'+escHtml(when)+'</div></div>';
   }).join('');
 }
 
@@ -3036,15 +3168,39 @@ function renderCalUpcoming(){
 // Runs from the 1-second loop (so it fires on any tab), from the calendar
 // onSnapshot (fires even when this tab is throttled in the background), and on
 // visibilitychange (catches anything the throttled loop missed while away).
+function calWhenLabelTs(ts){
+  var d=new Date(ts),h=d.getHours(),m=pad2(d.getMinutes()),ap=h<12?'AM':'PM',h12=h%12;if(h12===0)h12=12;
+  return CAL_MONTHS[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+' · '+h12+':'+m+' '+ap;
+}
+// Drop fired-alarm markers older than 2 days so repeating events don't grow
+// localStorage without bound. Keys look like cyn_cal_<kind>_<owner>_<id>_<fireAt>.
+function calPruneAlertKeys(){
+  try{
+    var cutoff=Date.now()-172800000,rm=[];
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&k.indexOf('cyn_cal_')===0){var t=+k.slice(k.lastIndexOf('_')+1);if(t&&t<cutoff)rm.push(k);}
+    }
+    rm.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+  }catch(e){}
+}
 function checkCalendarEvents(){
   if(!_calReady||!Array.isArray(CAL_EVENTS)||!CAL_EVENTS.length)return;
+  var now=Date.now();
   CAL_EVENTS.forEach(function(ev){
-    if(!ev.at)return;
-    calMaybeFire(ev,ev.at,'due');
-    if(ev.remindBefore>0)calMaybeFire(ev,ev.at-ev.remindBefore*60000,'pre');
+    if(!ev.at)return;                                    // all-day events have no alarm
+    var lead1=(ev.remindBefore||0)*60000,lead2=(ev.remindBefore2||0)*60000;
+    var maxLead=Math.max(lead1,lead2);
+    // Look at every occurrence whose due time OR early-reminder time could be firing right now.
+    var occs=calOccurrenceTimesInRange(ev,now-CAL_CATCHUP_MS-60000,now+maxLead+CAL_CATCHUP_MS+60000);
+    occs.forEach(function(occAt){
+      calMaybeFire(ev,occAt,'due',occAt);
+      if(ev.remindBefore>0)calMaybeFire(ev,occAt-lead1,'pre',occAt);
+      if(ev.remindBefore2>0&&ev.remindBefore2!==ev.remindBefore)calMaybeFire(ev,occAt-lead2,'early',occAt);
+    });
   });
 }
-function calMaybeFire(ev,fireAt,kind){
+function calMaybeFire(ev,fireAt,kind,occAt){
   var now=Date.now();
   if(now<fireAt)return;                  // not due yet
   if(fireAt<_calAlertSince)return;       // was due before the app opened this session
@@ -3055,19 +3211,21 @@ function calMaybeFire(ev,fireAt,kind){
   _sessionAlerted[key]=true;
   try{localStorage.setItem(key,'1');}catch(e){}
   try{playAlert(SETTINGS.reminderTone||'bell');}catch(e){}
-  var soon=kind==='pre';
-  toast('🔔 '+ev.title+(soon?' — starting soon':' — now'),'info');
-  sendBrowserNotif('🔔 '+ev.title,calWhenLabel(ev)+(soon?' (starting soon)':''),'cal_'+ev.id+'_'+kind,true);
-  showCalendarAlert(ev,kind);
+  var soon=kind!=='due';
+  var whenLbl=occAt?calWhenLabelTs(occAt):calWhenLabel(ev);
+  toast('🔔 '+ev.title+(soon?' — coming up':' — now'),'info');
+  sendBrowserNotif('🔔 '+ev.title,whenLbl+(soon?' (coming up)':''),'cal_'+ev.id+'_'+kind+'_'+fireAt,true);
+  showCalendarAlert(ev,kind,occAt);
 }
-function showCalendarAlert(ev,kind){
+function showCalendarAlert(ev,kind,occAt){
   var modal=document.getElementById('cal-alert-modal');
   var title=document.getElementById('cal-alert-title');
   var msg=document.getElementById('cal-alert-msg');
   if(!modal||!msg)return;
   _calAlertCurrent=ev;
-  if(title)title.textContent=kind==='pre'?'🔔 Starting soon':'🔔 Calendar Reminder';
-  msg.innerHTML='<strong>'+escHtml(ev.title)+'</strong><br><span style="font-size:12px;color:var(--text3)">'+escHtml(calWhenLabel(ev))+'</span>'+(ev.note?'<br><span style="font-size:12px;color:var(--text3)">'+escHtml(ev.note)+'</span>':'');
+  if(title)title.textContent=kind==='due'?'🔔 Calendar Reminder':'🔔 Coming up';
+  var whenLbl=occAt?calWhenLabelTs(occAt):calWhenLabel(ev);
+  msg.innerHTML='<strong>'+escHtml(ev.title)+'</strong><br><span style="font-size:12px;color:var(--text3)">'+escHtml(whenLbl)+'</span>'+(ev.note?'<br><span style="font-size:12px;color:var(--text3)">'+escHtml(ev.note)+'</span>':'');
   modal.classList.remove('hidden');
   clearTimeout(window._calAlertTimeout);
   window._calAlertTimeout=setTimeout(function tick(){
@@ -5022,7 +5180,7 @@ async function startFirestore(){
       var mine=[];
       snap.forEach(function(d){var e=d.data();if(e&&e.owner===calOwner())mine.push(e);});
       CAL_EVENTS=mine;
-      if(!_calReady){_calReady=true;_calAlertSince=Date.now();}
+      if(!_calReady){_calReady=true;_calAlertSince=Date.now();calPruneAlertKeys();}
       if(currentTab==='calendar'){try{renderCalendar();}catch(e){}}
       try{checkCalendarEvents();}catch(e){}
     }, function(err){console.error('Calendar sync error',err);});
@@ -7004,6 +7162,7 @@ window.calNextMonth=calNextMonth;
 window.calToday=calToday;
 window.closeCalAlert=closeCalAlert;
 window.calSnoozeAlert=calSnoozeAlert;
+window.copyCalNote=copyCalNote;
 
 // Double-click row to open edit modal
 function rowDblClick(e, id, type) {
