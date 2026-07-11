@@ -33,6 +33,8 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .tab-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0);}
 .toolbar .tab-btn::after{top:auto;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(3px);}
 .toolbar .tab-btn:hover::after{transform:translateX(-50%) translateY(0);}
+/* Upcoming-event indicator on the Calendar tab — a single-color, semi-transparent dot */
+.tab-btn.has-upcoming::before{content:"";position:absolute;top:5px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:.55;pointer-events:none;z-index:1;}
 .ml-auto{margin-left:auto;}
 .btn{padding:7px 14px;border-radius:8px;border:none;font-family:var(--sf);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap;}
 .btn-primary{background:var(--accent);color:#fff;}
@@ -472,7 +474,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <button class="tab-btn" id="dashboard-tab-btn" style="display:none" data-tip="Dashboard" aria-label="Dashboard" onclick="switchTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></button>
   <button class="tab-btn" id="admin-tab-btn" style="display:none" data-tip="Admin" aria-label="Admin" onclick="switchTab('admin',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
   <div class="divider"></div>
-  <button class="tab-btn" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
+  <button class="tab-btn" id="cal-tab-btn" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar">?</div>
@@ -2356,6 +2358,10 @@ function slaTextBadge(r){
 function slaBadge(r){
   var t=slaTier(r);
   if(!t)return '';
+  // "Text in Concern" already shows the compact tier label (e.g. "CTO") in the
+  // Concern cell via slaTextBadge — skip the status "Escalate to …" pill so the
+  // same escalation isn't shown twice on one row.
+  if(t.effect==='text')return '';
   var h=entryAgeHours(r);
   var ageTxt=h>=48?Math.floor(h/24)+'d':Math.floor(h)+'h';
   return '<span class="age-alert-badge" title="Open for '+ageTxt+' — past the '+t.hours+'h SLA">Escalate to '+t.label+'</span>';
@@ -2902,6 +2908,7 @@ setInterval(function(){
     maybeAlertReminder(r);
   });
   try{checkCalendarEvents();}catch(e){}
+  try{updateCalBadge();}catch(e){}
   var rrRoActive=SETTINGS.rrRoAlertEnabled!==false&&isRRRoAlertWindowActive();
   if(rrRoActive!==_rrRoAlertWindowActive){
     _rrRoAlertWindowActive=rrRoActive;
@@ -3108,6 +3115,22 @@ function calNextOccurrenceAt(ev,fromTs){
     if(!o)continue;
     var at=calAtFrom(o.y+'-'+pad2(o.m+1)+'-'+pad2(o.d),ev.time);
     if(at!=null&&at>=fromTs)return at;
+  }
+  return null;
+}
+// The next occurrence DATE-string at/after fromStr, or null. Used for all-day
+// events, which have no timestamp (ev.at) so calNextOccurrenceAt can't place them.
+function calNextOccurrenceDate(ev,fromStr){
+  if(!ev.date)return null;
+  var rep=ev.repeat||'none';
+  if(rep==='none')return ev.date>=fromStr?ev.date:null;
+  var b=ev.date.split('-'),by=+b[0],bm=+b[1]-1,bd=+b[2];
+  var n=calStartIndex(by,bm,bd,rep,fromStr),guard=0;
+  while(guard++<3000){
+    var o=calAddPeriod(by,bm,bd,rep,n);n++;
+    if(!o)continue;
+    var s=o.y+'-'+pad2(o.m+1)+'-'+pad2(o.d);
+    if(s>=fromStr&&s>=ev.date)return s;
   }
   return null;
 }
@@ -3405,17 +3428,52 @@ function renderCalYear(host){
 }
 function renderCalUpcoming(){
   var box=document.getElementById('cal-upcoming');if(!box)return;
-  var now=Date.now();
-  var up=CAL_EVENTS.map(function(ev){var at=calNextOccurrenceAt(ev,now);return at?{ev:ev,at:at}:null;})
-    .filter(Boolean).sort(function(a,b){return a.at-b.at;}).slice(0,6);
+  var now=Date.now(),todayStr=calTodayStr();
+  var up=CAL_EVENTS.map(function(ev){
+    if(ev.at){var at=calNextOccurrenceAt(ev,now);return at?{ev:ev,at:at,allday:false}:null;}
+    // All-day events have no timestamp — sort them at the start of their next day.
+    var ds=calNextOccurrenceDate(ev,todayStr);if(!ds)return null;
+    var p=ds.split('-');return {ev:ev,at:new Date(+p[0],+p[1]-1,+p[2]).getTime(),allday:true,ds:ds};
+  }).filter(Boolean).sort(function(a,b){return a.at-b.at;}).slice(0,12);
   if(!up.length){box.innerHTML='<div class="cal-empty">No upcoming events. Click any day to add one.</div>';return;}
   box.innerHTML=up.map(function(x){
-    var ev=x.ev,d=new Date(x.at),h=d.getHours(),m=pad2(d.getMinutes()),ap=h<12?'AM':'PM',h12=h%12;if(h12===0)h12=12;
-    var when=CAL_MONTHS[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+' · '+h12+':'+m+' '+ap+(ev.endTime?' – '+calClock(ev.endTime):'');
+    var ev=x.ev,when;
+    if(x.allday){
+      var pp=x.ds.split('-');
+      when=CAL_MONTHS[(+pp[1]-1)]+' '+(+pp[2])+', '+pp[0]+' · All day';
+    }else{
+      var d=new Date(x.at),h=d.getHours(),m=pad2(d.getMinutes()),ap=h<12?'AM':'PM',h12=h%12;if(h12===0)h12=12;
+      when=CAL_MONTHS[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+' · '+h12+':'+m+' '+ap+(ev.endTime?' – '+calClock(ev.endTime):'');
+    }
     var rep=calIsRepeating(ev)?' <span style="font-size:11px;color:var(--accent)">· ↻ '+(CAL_REPEAT_LABELS[ev.repeat]||'')+'</span>':'';
     var rem=ev.remindBefore>0?' <span style="font-size:11px;color:var(--text3)">· reminds '+calRemindLabel(ev.remindBefore)+' before</span>':'';
     return '<div class="cal-up-item" onclick="openCalEventModal(null,\''+ev.id+'\')"><div class="cal-up-dot"></div><div class="cal-up-name">'+escHtml(ev.title)+rep+rem+'</div><div class="cal-up-when">'+escHtml(when)+'</div></div>';
   }).join('');
+}
+
+// ── Top-bar "upcoming event" badge ──
+// True if any event's next occurrence falls within the next `days` days (timed
+// events by timestamp, all-day events by date). Drives the Calendar tab dot.
+var CAL_BADGE_DAYS=7;                    // user's choice: badge = something in the next 7 days
+function calHasUpcomingWithin(now,days){
+  if(!Array.isArray(CAL_EVENTS)||!CAL_EVENTS.length)return false;
+  var horizon=now+days*86400000,todayStr=calTodayStr(),horizonStr=calDateStrFromTs(horizon);
+  for(var i=0;i<CAL_EVENTS.length;i++){
+    var ev=CAL_EVENTS[i];
+    if(ev.at){var at=calNextOccurrenceAt(ev,now);if(at!=null&&at<=horizon)return true;}
+    else{var ds=calNextOccurrenceDate(ev,todayStr);if(ds&&ds<=horizonStr)return true;}
+  }
+  return false;
+}
+// Toggle the dot on the Calendar tab button. Cheap, but throttled to ~30s when
+// called from the 1-second loop; pass force=true on data changes for an instant update.
+var _calBadgeLastCalc=0;
+function updateCalBadge(force){
+  var btn=document.getElementById('cal-tab-btn');if(!btn)return;
+  var now=Date.now();
+  if(!force&&now-_calBadgeLastCalc<30000)return;
+  _calBadgeLastCalc=now;
+  btn.classList.toggle('has-upcoming',calHasUpcomingWithin(now,CAL_BADGE_DAYS));
 }
 
 // ── Alarm engine ──
@@ -3499,7 +3557,7 @@ function calSnoozeAlert(){
     showCalendarAlert(ev,'due');
   },600000);
 }
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){try{checkCalendarEvents();}catch(e){}}});
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){try{checkCalendarEvents();}catch(e){}try{updateCalBadge(true);}catch(e){}}});
 
 function applyFilters(){
   if(currentTab==='did'){applyDIDFilters();return;}
@@ -5437,6 +5495,7 @@ async function startFirestore(){
       if(!_calReady){_calReady=true;_calAlertSince=Date.now();calPruneAlertKeys();}
       if(currentTab==='calendar'){try{renderCalendar();}catch(e){}}
       try{checkCalendarEvents();}catch(e){}
+      try{updateCalBadge(true);}catch(e){}
     }, function(err){console.error('Calendar sync error',err);});
   }
 }
