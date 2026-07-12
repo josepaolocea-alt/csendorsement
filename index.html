@@ -138,6 +138,8 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
 .tbadge.trestart{position:relative;background:rgba(34,197,94,.18);color:#4ade80;box-shadow:0 0 0 0 rgba(74,222,128,.22);animation:autoRestartPulse 1.5s ease-in-out infinite;}
 .tbadge.trestart::after{content:"Restarted";position:absolute;top:-14px;right:-8px;padding:1px 5px;border-radius:5px;background:rgba(34,197,94,.20);border:1px solid rgba(34,197,94,.35);color:#86efac;font-family:var(--sf);font-size:9px;font-weight:800;letter-spacing:0;white-space:nowrap;}
+.pb-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--sf);font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--bg4);color:var(--text2);white-space:nowrap;border:1px solid transparent;}
+.pb-badge.pb-overdue{background:rgba(239,68,68,.16);color:#f87171;border-color:rgba(248,113,113,.35);box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
 @keyframes timerPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.18)}50%{box-shadow:0 0 0 4px rgba(248,113,113,.08)}}
 @keyframes autoRestartPulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.20)}50%{box-shadow:0 0 0 5px rgba(74,222,128,.08)}}
 .row-acts{display:flex;gap:4px;}
@@ -2391,9 +2393,10 @@ function timerFxPlayMins(){
 function isTimerFxActive(r){
   if(SETTINGS.timerFxEnabled===false||!r||!r.timerStart)return false;
   if(isRecordCompleted(r)||r.rrDisregard)return false;
-  var secs=getTimerSecs(r);
-  if(!secs)return false;
-  var expiredAt=r.timerStart+secs*1000;
+  var pb=rrPostBy(r);
+  var expiredAt;
+  if(pb){expiredAt=pb.deadline;}                 // DIDLOGIC: working-day deadline
+  else{var secs=getTimerSecs(r);if(!secs)return false;expiredAt=r.timerStart+secs*1000;}
   var now=Date.now();
   return now>=expiredAt&&now<expiredAt+timerFxPlayMins()*60000;
 }
@@ -2442,7 +2445,42 @@ function priBadge(p){var cls={High:'pri-high',Normal:'pri-med'}[p]||'pri-med';re
 function fmtDate(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 
 function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.defaultTimer;}
-function calcRem(r){if(!r.timerStart)return null;var elapsed=Math.floor((Date.now()-r.timerStart)/1000);return Math.max(0,getTimerSecs(r)-elapsed);}
+
+/* ── DIDLOGIC 3 WORKING-DAY "Post by" (skips weekends + PH holidays) ──────────
+   A plain 3-day timer counts calendar time, which is unreliable across weekends
+   and holidays. For DIDLOGIC we instead compute a "Post by" date 3 WORKING days
+   out. Keep PH_HOLIDAYS in sync with scripts/rr-reminder.mjs and verify it each
+   year against the official Malacanang holiday proclamation. Dates below are
+   Manila (UTC+8) calendar dates in YYYY-MM-DD form. */
+var RR_3DAY_SECS=259200;
+var PH_OFFSET_MS=8*60*60*1000;   // Asia/Manila = UTC+8 (no daylight saving)
+var PH_HOLIDAYS={};
+['2026-01-01','2026-04-02','2026-04-03','2026-04-09','2026-05-01','2026-06-12','2026-08-31','2026-11-30','2026-12-25','2026-12-30','2026-02-17','2026-02-25','2026-04-04','2026-08-21','2026-11-01','2026-11-02','2026-12-08','2026-12-24','2026-12-31'].forEach(function(k){PH_HOLIDAYS[k]=1;});
+var PH_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function _phParts(ms){var d=new Date(ms+PH_OFFSET_MS);return {y:d.getUTCFullYear(),mo:d.getUTCMonth(),day:d.getUTCDate(),dow:d.getUTCDay()};}
+function _pad2(n){return (n<10?'0':'')+n;}
+function phDateKey(ms){var p=_phParts(ms);return p.y+'-'+_pad2(p.mo+1)+'-'+_pad2(p.day);}
+function isPhWorkingDay(ms){var dow=_phParts(ms).dow;if(dow===0||dow===6)return false;return !PH_HOLIDAYS[phDateKey(ms)];}
+function addPhWorkingDays(startMs,n){var ms=startMs,added=0;while(added<n){ms+=86400000;if(isPhWorkingDay(ms))added++;}return ms;}
+function fmtPhDate(ms){var p=_phParts(ms);return PH_MONTHS[p.mo]+' '+p.day;}
+function isDidlogicSubject(s){return /(^|[^A-Z0-9])DIDLOGIC([^A-Z0-9]|$)/.test(String(s||'').toUpperCase());}
+function rrNeedsPosting(r){return !r.rrCompleted&&!r.rrDisregard&&r.rrPosted!=='Posted MRC'&&r.rrPosted!=='Removed MRC';}
+// For a DIDLOGIC 3-day pending RR with a running timer, the working-day deadline.
+// Returns {deadline, overdue, label} or null when the working-day rule doesn't apply.
+function rrPostBy(r){
+  if(!r||r._type!=='rr'||!r.timerStart)return null;
+  if((r.timerOverride||0)!==RR_3DAY_SECS)return null;
+  if(!isDidlogicSubject(r.rrSubject)||!rrNeedsPosting(r))return null;
+  var deadline=addPhWorkingDays(r.timerStart,3);
+  return {deadline:deadline,overdue:Date.now()>=deadline,label:fmtPhDate(deadline)};
+}
+function calcRem(r){
+  if(!r.timerStart)return null;
+  var pb=rrPostBy(r);
+  if(pb)return Math.max(0,Math.floor((pb.deadline-Date.now())/1000)); // DIDLOGIC: count down to the working-day deadline
+  var elapsed=Math.floor((Date.now()-r.timerStart)/1000);
+  return Math.max(0,getTimerSecs(r)-elapsed);
+}
 var AUTO_RESTART_VISIBLE_MS=300000;
 function isAutoRestartRecent(r){
   return !!(r&&r.autoRestartedAt&&Date.now()-Number(r.autoRestartedAt)<AUTO_RESTART_VISIBLE_MS);
@@ -2589,6 +2627,14 @@ function didTimerHTML(r){
 }
 
 function rrTimerHTML(r){
+  var pb=rrPostBy(r);
+  if(pb){
+    var pcls='pb-badge'+(pb.overdue?' pb-overdue':'');
+    var ptxt=pb.overdue?('&#9888; Overdue &middot; '+pb.label):('Post by '+pb.label);
+    var ptitle=(pb.overdue?'Posting is overdue - was due ':'Due ')+pb.label+' (3 working days from timer start; weekends and PH holidays are skipped)';
+    var pbtns=window._canEdit?'<button class="btn-icon btn-sm" onclick="resetTmr('+r.id+')" title="Restart the 3 working-day clock">&#8635;</button><button class="btn-icon btn-sm" onclick="stopTmr('+r.id+')" title="Stop">&#9632;</button>':'';
+    return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+pcls+'" id="pb-'+r.id+'" title="'+ptitle+'">'+ptxt+'</span>'+pbtns+'</div>';
+  }
   var rem=r.timerStart?calcRem(r):null;
   var isRunning=r.timerStart&&rem!==null;
   var cls='tbadge'+(isRunning?(rem===0?' texp':rem<3600?' twarn':''):'')+autoRestartBadgeClass(r,rem);
@@ -2851,6 +2897,7 @@ var _autoRestartScheduled={};
 var _rrRoAlertWindowActive=null;
 var _slaTickSig=null;
 var _timerFxTickSig=null;
+var _pbTickSig=null;
 var AUTO_RESTART_DELAY_MS=10000;
 var AUTO_RESTART_SKIP_SECS=259200;
 function currentAlertUserKey(){
@@ -3002,6 +3049,14 @@ setInterval(function(){
     _timerFxTickSig=fxSig;
   }else{
     _timerFxTickSig=null;
+  }
+  // Flip DIDLOGIC "Post by" badges to Overdue the moment their working-day deadline passes
+  if(currentTab==='mine'){
+    var pbSig=DATA.map(function(r){var p=rrPostBy(r);return p&&p.overdue?r.id:'';}).filter(Boolean).join(',');
+    if(_pbTickSig!==null&&pbSig!==_pbTickSig)renderRRRows();
+    _pbTickSig=pbSig;
+  }else{
+    _pbTickSig=null;
   }
   ['f','rr','d'].forEach(updateReminderIndicator);
   var sm=document.getElementById('settings-modal');
