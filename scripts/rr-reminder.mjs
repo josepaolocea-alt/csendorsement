@@ -11,6 +11,68 @@ const COLLECTION = 'endorsements';
 
 const THREE_DAYS_SECONDS = 259200;       // only this timer duration triggers email
 const POSTED_VALUES = ['Posted MRC', 'Removed MRC']; // these mean "already posted" -> skip
+const DIDLOGIC_WORKING_DAYS = 3;         // DIDLOGIC is due in 3 WORKING days, not 3 calendar days
+
+// --- Philippine working-day logic for DIDLOGIC (skip weekends + holidays) ---
+// DIDLOGIC posting is due 3 WORKING days after the timer starts, so weekends and
+// Philippine holidays must NOT count. Keep this holiday list in sync with the copy
+// in index.html (search "PH_HOLIDAYS") and check it each year against the official
+// Malacanang holiday proclamation. Dates are Asia/Manila (UTC+8) calendar dates.
+const PH_HOLIDAYS = new Set([
+  // 2026 — Regular holidays
+  '2026-01-01', // New Year's Day
+  '2026-04-02', // Maundy Thursday
+  '2026-04-03', // Good Friday
+  '2026-04-09', // Araw ng Kagitingan (Day of Valor)
+  '2026-05-01', // Labor Day
+  '2026-06-12', // Independence Day
+  '2026-08-31', // National Heroes Day
+  '2026-11-30', // Bonifacio Day
+  '2026-12-25', // Christmas Day
+  '2026-12-30', // Rizal Day
+  // 2026 — Special (non-working) days
+  '2026-02-17', // Chinese New Year
+  '2026-02-25', // EDSA People Power Revolution Anniversary
+  '2026-04-04', // Black Saturday
+  '2026-08-21', // Ninoy Aquino Day
+  '2026-11-01', // All Saints' Day
+  '2026-11-02', // All Souls' Day (special non-working)
+  '2026-12-08', // Feast of the Immaculate Conception
+  '2026-12-24', // Christmas Eve (special non-working)
+  '2026-12-31', // Last Day of the Year
+  // Islamic holidays shift each year — confirm and add when proclaimed:
+  // '2026-03-20', // Eid'l Fitr (approximate — verify)
+  // '2026-05-27', // Eid'l Adha (approximate — verify)
+]);
+
+const PH_OFFSET_MS = 8 * 60 * 60 * 1000; // Asia/Manila = UTC+8 (no daylight saving)
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// PH calendar date (YYYY-MM-DD) for a timestamp, evaluated in Manila time.
+function phDateKey(ms) {
+  const d = new Date(ms + PH_OFFSET_MS);
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return d.getUTCFullYear() + '-' + mm + '-' + dd;
+}
+function isPhWorkingDay(ms) {
+  const dow = new Date(ms + PH_OFFSET_MS).getUTCDay(); // 0=Sun..6=Sat, in PH time
+  if (dow === 0 || dow === 6) return false;            // weekend
+  return !PH_HOLIDAYS.has(phDateKey(ms));              // not a holiday
+}
+// The moment `n` PH working days after startMs (keeps the same time of day),
+// skipping weekends and holidays.
+function addPhWorkingDays(startMs, n) {
+  let ms = startMs, added = 0;
+  while (added < n) {
+    ms += DAY_MS;                    // next calendar day (PH has no DST, so time-of-day holds)
+    if (isPhWorkingDay(ms)) added++;
+  }
+  return ms;
+}
+function isDidlogic(subject) {
+  return /(^|[^A-Z0-9])DIDLOGIC([^A-Z0-9]|$)/.test(String(subject || '').toUpperCase());
+}
 
 const FIREBASE_EMAIL = process.env.FIREBASE_EMAIL;
 const FIREBASE_PASSWORD = process.env.FIREBASE_PASSWORD;
@@ -122,7 +184,11 @@ async function main() {
     if (r.completed || r.disregard) continue;               // skip completed/disregarded
     if (POSTED_VALUES.includes(r.posted)) continue;         // skip already-posted
 
-    const expiry = r.timerStart + r.timerOverride * 1000;
+    // DIDLOGIC is due in 3 WORKING days (weekends + PH holidays skipped); every
+    // other client keeps the plain 3-calendar-day duration.
+    const expiry = isDidlogic(r.subject)
+      ? addPhWorkingDays(r.timerStart, DIDLOGIC_WORKING_DAYS)
+      : r.timerStart + r.timerOverride * 1000;
     if (now < expiry) continue;                             // timer not finished yet
     if (expiry < GO_LIVE_MS) continue;                      // expired before go-live -> ignore
     if (r.emailedFor === r.timerStart) continue;            // already emailed this timer run
