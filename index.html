@@ -514,22 +514,38 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <div class="auto-row">
       <span class="auto-label">Timer alarm:</span>
       <select class="fsel" id="alarm-tone" onchange="saveSettings()">
-        <option value="beep">🔔 Classic Beep</option>
-        <option value="siren">🚨 Siren</option>
-        <option value="bell">🔕 Bell</option>
-        <option value="pulse">💓 Pulse</option>
-        <option value="alarm">⏰ Alarm Clock</option>
-        <option value="ding">✨ Ding Ding</option>
+        <optgroup label="Alerting">
+          <option value="beep">🔔 Classic Beep</option>
+          <option value="siren">🚨 Siren</option>
+          <option value="pulse">💓 Pulse</option>
+          <option value="alarm">⏰ Alarm Clock</option>
+        </optgroup>
+        <optgroup label="Gentle (not alarming)">
+          <option value="bell">🔕 Bell</option>
+          <option value="ding">✨ Ding Ding</option>
+          <option value="chime">🎐 Wind Chime</option>
+          <option value="marimba">🎶 Marimba</option>
+          <option value="soft">🌙 Soft Ping</option>
+          <option value="waterdrop">💧 Water Drop</option>
+        </optgroup>
       </select>
       <button class="btn btn-secondary btn-sm" onclick="testAlert()">Test</button>
       <span class="auto-label" style="margin-left:8px">Reminder alarm:</span>
       <select class="fsel" id="reminder-alarm-tone" onchange="saveSettings()">
-        <option value="bell">🔕 Bell</option>
-        <option value="beep">🔔 Classic Beep</option>
-        <option value="siren">🚨 Siren</option>
-        <option value="pulse">💓 Pulse</option>
-        <option value="alarm">⏰ Alarm Clock</option>
-        <option value="ding">✨ Ding Ding</option>
+        <optgroup label="Gentle (not alarming)">
+          <option value="bell">🔕 Bell</option>
+          <option value="ding">✨ Ding Ding</option>
+          <option value="chime">🎐 Wind Chime</option>
+          <option value="marimba">🎶 Marimba</option>
+          <option value="soft">🌙 Soft Ping</option>
+          <option value="waterdrop">💧 Water Drop</option>
+        </optgroup>
+        <optgroup label="Alerting">
+          <option value="beep">🔔 Classic Beep</option>
+          <option value="siren">🚨 Siren</option>
+          <option value="pulse">💓 Pulse</option>
+          <option value="alarm">⏰ Alarm Clock</option>
+        </optgroup>
       </select>
       <button class="btn btn-secondary btn-sm" onclick="testReminderAlert()">Test</button>
     </div>
@@ -2740,6 +2756,56 @@ function playAlert(toneOverride){
         g.gain.setValueAtTime(0.4,t);
         g.gain.exponentialRampToValueAtTime(0.001,t+0.4);
         o.start(t);o.stop(t+0.42);
+      });
+    }else if(tone==='chime'){
+      // Gentle wind chime - soft overlapping pentatonic notes, slow fade
+      [1568,2093,1760,1319,1047].forEach(function(freq,i){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sine';o.frequency.value=freq;
+        var t=ctx.currentTime+i*0.16;
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(0.22,t+0.03);   // soft fade-in, no harsh click
+        g.gain.exponentialRampToValueAtTime(0.001,t+1.4);
+        o.start(t);o.stop(t+1.45);
+      });
+    }else if(tone==='marimba'){
+      // Warm marimba - soft wooden mallet notes
+      [1047,1319,1568,1319].forEach(function(freq,i){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='triangle';o.frequency.value=freq;      // triangle = mellow, few harmonics
+        var t=ctx.currentTime+i*0.2;
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(0.3,t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+        o.start(t);o.stop(t+0.52);
+      });
+    }else if(tone==='soft'){
+      // Soft gentle ping - two calm notes with a long, smooth tail
+      [784,1047].forEach(function(freq,i){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sine';o.frequency.value=freq;
+        var t=ctx.currentTime+i*0.42;
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(0.25,t+0.05);
+        g.gain.exponentialRampToValueAtTime(0.001,t+1.1);
+        o.start(t);o.stop(t+1.15);
+      });
+    }else if(tone==='waterdrop'){
+      // Gentle water droplets - soft downward plink x3
+      [0,500,1000].forEach(function(d){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sine';
+        var t=ctx.currentTime+d/1000;
+        o.frequency.setValueAtTime(1400,t);
+        o.frequency.exponentialRampToValueAtTime(700,t+0.12);
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(0.3,t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001,t+0.45);
+        o.start(t);o.stop(t+0.47);
       });
     }
   }catch(e){}
