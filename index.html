@@ -29,6 +29,9 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .tab-btn svg{width:18px;height:18px;display:block;pointer-events:none;}
 .tab-btn:hover{background:var(--bg3);color:var(--text);}
 .tab-btn.active{background:var(--bg4);color:var(--text);}
+/* Navigation tabs: icon + short label stacked. Scoped to .nav-tab so toolbar/theme/logout icons stay icon-only. */
+.tab-btn.nav-tab{flex-direction:column;width:auto;height:auto;min-width:50px;padding:4px 9px 3px;gap:2px;}
+.tab-btn.nav-tab .tab-label{font-size:10.5px;font-weight:600;line-height:1;letter-spacing:.2px;white-space:nowrap;}
 .tab-btn::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-3px);background:var(--bg5);color:var(--text);font-size:11px;font-weight:500;padding:4px 9px;border-radius:6px;white-space:nowrap;border:1px solid var(--border2);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .13s,transform .13s;z-index:300;}
 .tab-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0);}
 .toolbar .tab-btn::after{top:auto;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(3px);}
@@ -481,6 +484,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   .entry-comments .comments-section{display:flex;flex-direction:column;max-height:58vh;}
   .entry-comments .comment-list{max-height:32vh;}
   .entry-modal .modal-ftr{position:sticky;bottom:0;}
+}
+/* Labelled nav tabs are wider than plain icons — let the busy 8-tab (admin) bar scroll
+   horizontally on tablet/narrow-desktop widths so it never pushes the page sideways. */
+@media (max-width:920px){
+  .topbar{overflow-x:auto;overflow-y:hidden;}
 }
 /* ── Narrow screens / phones ── */
 @media (max-width:700px){
@@ -2256,6 +2264,22 @@ function initSettingsCollapse(){
   });
 }
 initSettingsCollapse();
+
+// ─── LABELLED NAV TABS (icon + short label under it) ─────────
+// Only the top-bar navigation tabs get labels; toolbar/theme/logout icons stay icon-only.
+// Full name still shows on hover via the existing data-tip tooltip.
+function initNavLabels(){
+  var LBL={all:'Tasks',did:'DID',done:'Done',mine:'RR / RO',trash:'Trash',dashboard:'Dashboard',admin:'Admin',calendar:'Calendar'};
+  document.querySelectorAll('.topbar .tab-btn[onclick^="switchTab"]').forEach(function(b){
+    if(b.querySelector('.tab-label'))return;
+    var m=/switchTab\('([^']+)'/.exec(b.getAttribute('onclick')||'');
+    if(!m||!LBL[m[1]])return;
+    b.classList.add('nav-tab');
+    var s=document.createElement('span');s.className='tab-label';s.textContent=LBL[m[1]];
+    b.appendChild(s);
+  });
+}
+initNavLabels();
 
 function switchTab(tab,el){
   if(tab==='admin'){
