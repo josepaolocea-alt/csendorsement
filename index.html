@@ -298,12 +298,27 @@ textarea.fc{resize:vertical;min-height:70px;}
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px;}
 .empty{text-align:center;padding:50px;color:var(--text3);}
-.comment-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
-.comment-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;}
-.comment-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
-.comment-author{font-size:11px;font-weight:600;color:var(--accent);}
-.comment-time{font-size:11px;color:var(--text3);}
-.comment-text{font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;}
+.comment-list{display:flex;flex-direction:column;gap:14px;margin-bottom:14px;}
+.comment-item{display:flex;gap:10px;align-items:flex-start;}
+.comment-item.comment-own{flex-direction:row-reverse;}
+.comment-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;letter-spacing:.3px;box-shadow:0 1px 3px rgba(0,0,0,.25);user-select:none;}
+.comment-body{display:flex;flex-direction:column;min-width:0;max-width:82%;}
+.comment-own .comment-body{align-items:flex-end;}
+.comment-meta{display:flex;align-items:center;gap:7px;margin-bottom:4px;padding:0 3px;}
+.comment-own .comment-meta{flex-direction:row-reverse;}
+.comment-author{font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap;}
+.comment-own .comment-author{color:var(--accent);}
+.comment-time{font-size:10.5px;color:var(--text3);white-space:nowrap;}
+.comment-actions{display:flex;align-items:center;gap:1px;opacity:0;transition:opacity .15s;}
+.comment-item:hover .comment-actions{opacity:1;}
+@media(hover:none){.comment-actions{opacity:.55;}}
+.comment-bubble{background:var(--bg3);border:1px solid var(--border);border-radius:4px 13px 13px 13px;padding:9px 13px;width:fit-content;max-width:100%;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+.comment-own .comment-bubble{background:var(--bg4);background:color-mix(in srgb,var(--accent) 15%,var(--bg2));border-color:color-mix(in srgb,var(--accent) 32%,var(--border));border-radius:13px 4px 13px 13px;}
+.comment-text{font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;}
+.comment-empty{text-align:center;padding:34px 20px;color:var(--text3);}
+.comment-empty-ic{font-size:34px;line-height:1;margin-bottom:10px;opacity:.55;}
+.comment-empty-t{font-size:13px;font-weight:600;color:var(--text2);}
+.comment-empty-s{font-size:12px;color:var(--text3);margin-top:3px;}
 .comment-new{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;}
 .comment-new label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
 .comments-section{border-top:1px solid var(--border);margin-top:16px;padding-top:16px;}
@@ -5135,6 +5150,28 @@ function fmtCommentTime(ts){
   var d=new Date(ts);
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 }
+// Short "chat style" relative time for comment bubbles (full date kept in the title tooltip)
+function relTime(ts){
+  var s=Math.floor((Date.now()-ts)/1000);
+  if(s<0)s=0;
+  if(s<45)return 'just now';
+  var m=Math.floor(s/60);if(m<60)return m+'m ago';
+  var h=Math.floor(m/60);if(h<24)return h+'h ago';
+  var dd=Math.floor(h/24);if(dd<7)return dd+'d ago';
+  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+// Stable per-person avatar colour + initials for comment threads
+function avatarColor(key){
+  var c=['#5b7cff','#f472b6','#34d399','#fbbf24','#a78bfa','#fb7185','#38bdf8','#f97316','#22c55e','#e879f9','#2dd4bf','#818cf8'];
+  key=key||'?';var h=0;for(var i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;
+  return c[h%c.length];
+}
+function avatarInitials(name){
+  name=(name||'?').trim();
+  var p=name.split(/[\s._@-]+/).filter(Boolean);
+  if(p.length>=2)return (p[0][0]+p[1][0]).toUpperCase();
+  return name.slice(0,2).toUpperCase();
+}
 
 // ─── ATTACHMENT SYSTEM ──────────────────────────────────────
 var _pendingAttachments={}; // keyed by zone id
@@ -5245,7 +5282,7 @@ function _renderCommentList(comments,containerId,recordId,source){
   var el=document.getElementById(containerId);
   if(!el)return;
   if(!comments||!comments.length){
-    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No comments yet</div>';
+    el.innerHTML='<div class="comment-empty"><div class="comment-empty-ic">💬</div><div class="comment-empty-t">No comments yet</div><div class="comment-empty-s">Start the conversation below</div></div>';
     return;
   }
   var sorted=comments.slice().sort(function(a,b){return b.ts-a.ts;});
@@ -5257,18 +5294,26 @@ function _renderCommentList(comments,containerId,recordId,source){
     var safeRid=String(recordId||'').replace(/"/g,'');
     var safeSrc=String(source||'').replace(/"/g,'');
     var safeCont=String(containerId||'').replace(/"/g,'');
+    var display=getUserDisplay(c.user||'');
     var editBtn=isOwner
       ?'<button data-ts="'+safeTs+'" data-rid="'+safeRid+'" data-src="'+safeSrc+'" data-cid="'+safeCont+'" onclick="editComment(this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:0 4px" title="Edit">✏️</button>'
       :'';
     var delBtn=isAdminOrSemi
       ?'<button data-ts="'+safeTs+'" data-rid="'+safeRid+'" data-src="'+safeSrc+'" data-cid="'+safeCont+'" onclick="deleteComment(this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:#f87171;padding:0 4px" title="Delete">🗑️</button>'
       :'';
-    return '<div class="comment-item" id="ci_'+safeCont+'_'+safeTs+'">'
-      +'<div class="comment-meta"><span class="comment-author">💬 '+getUserDisplay(c.user||'')+'</span>'
-      +'<div style="display:flex;align-items:center;gap:4px"><span class="comment-time">'+fmtCommentTime(c.ts)+'</span>'+editBtn+delBtn+'</div>'
+    return '<div class="comment-item'+(isOwner?' comment-own':'')+'" id="ci_'+safeCont+'_'+safeTs+'">'
+      +'<div class="comment-avatar" style="background:'+avatarColor(c.user||display)+'" title="'+escAttr(display)+'">'+escHtml(avatarInitials(display))+'</div>'
+      +'<div class="comment-body">'
+        +'<div class="comment-meta">'
+          +'<span class="comment-author">'+(isOwner?'You':escHtml(display))+'</span>'
+          +'<span class="comment-time" title="'+escAttr(fmtCommentTime(c.ts))+'">'+relTime(c.ts)+'</span>'
+          +'<span class="comment-actions">'+editBtn+delBtn+'</span>'
+        +'</div>'
+        +'<div class="comment-bubble">'
+          +'<div class="comment-text" id="ct_'+safeCont+'_'+safeTs+'"'+(c.text?'':' style="display:none"')+'>'+(c.text?escHtml(c.text):'')+'</div>'
+          +renderCommentAttachments(c.attachments)
+        +'</div>'
       +'</div>'
-      +'<div class="comment-text" id="ct_'+safeCont+'_'+safeTs+'"'+(c.text?'':' style="display:none"')+'>'+(c.text?c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</div>'
-      +renderCommentAttachments(c.attachments)
       +'</div>';
   }).join('');
 }
@@ -6705,6 +6750,9 @@ function editComment(btn){
   var el=document.getElementById('ct_'+containerId+'_'+ts);
   if(!el) return;
   el.style.display='';
+  // give the edit box comfortable room: widen the body (capped at its max-width) and let the bubble fill it
+  var _bdy=el.closest('.comment-body');if(_bdy)_bdy.style.width='100%';
+  var _bub=el.closest('.comment-bubble');if(_bub)_bub.style.width='100%';
   var old=cm.text||'';
   el.innerHTML='<textarea style="width:100%;background:var(--bg4);border:1px solid var(--accent);border-radius:6px;padding:6px;color:var(--text);font-family:var(--sf);font-size:13px;resize:vertical;min-height:50px;overflow:hidden" id="cedit_ta_'+containerId+'_'+ts+'" oninput="autoResize(this)">'+old.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</textarea>'
     +'<div style="display:flex;gap:6px;margin-top:5px">'
@@ -6720,6 +6768,8 @@ function cancelCommentEdit(btn){
   var old=btn.dataset.old||'';
   var el=document.getElementById('ct_'+containerId+'_'+ts);
   if(el){
+    var _bdy=el.closest('.comment-body');if(_bdy)_bdy.style.width=''; // restore body width
+    var _bub=el.closest('.comment-bubble');if(_bub)_bub.style.width=''; // restore bubble to fit-content
     el.innerHTML=old.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     el.style.display=old?'':'none';
   }
