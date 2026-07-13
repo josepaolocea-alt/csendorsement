@@ -13,8 +13,8 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 :root{--sf:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;--mono:'DM Mono',monospace;}
-[data-theme="dark"]{--bg:#0d0d0f;--bg2:#141416;--bg3:#1c1c20;--bg4:#242428;--bg5:#2c2c32;--border:#2a2a30;--border2:#333340;--text:#f0f0f5;--text2:#9090a0;--text3:#55555f;--accent:#5b7cff;--accent2:#3d5ce0;--shadow:0 2px 16px rgba(0,0,0,0.6);}
-[data-theme="light"]{--bg:#f4f4f8;--bg2:#ffffff;--bg3:#f0f0f4;--bg4:#e8e8ee;--bg5:#dddde5;--border:#e0e0e8;--border2:#d0d0da;--text:#0d0d1a;--text2:#55556a;--text3:#9090a8;--accent:#4466ff;--accent2:#2244dd;--shadow:0 2px 16px rgba(0,0,0,0.08);}
+[data-theme="dark"]{--bg:#0d0d0f;--bg2:#141416;--bg3:#1c1c20;--bg4:#242428;--bg5:#2c2c32;--border:#2a2a30;--border2:#333340;--text:#f0f0f5;--text2:#9090a0;--text3:#7a7a88;--accent:#5b7cff;--accent2:#3d5ce0;--shadow:0 2px 16px rgba(0,0,0,0.6);}
+[data-theme="light"]{--bg:#f4f4f8;--bg2:#ffffff;--bg3:#f0f0f4;--bg4:#e8e8ee;--bg5:#dddde5;--border:#e0e0e8;--border2:#d0d0da;--text:#0d0d1a;--text2:#55556a;--text3:#82829a;--accent:#4466ff;--accent2:#2244dd;--shadow:0 2px 16px rgba(0,0,0,0.08);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:var(--sf);background:var(--bg);color:var(--text);font-size:13.5px;min-height:100vh;transition:background .25s,color .25s;}
 /* Form controls and buttons don't inherit the body font by default — force DM Sans everywhere; pre/code always use DM Mono */
@@ -50,7 +50,13 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .settings-sec{padding:12px 0;border-top:1px solid var(--border);}
 .settings-sec:first-child{border-top:none;padding-top:0;}
 .settings-sec:last-child{padding-bottom:0;}
-.settings-sec-title{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:9px;}
+.settings-sec-title{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:9px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none;transition:color .13s;}
+.settings-sec-title:hover{color:var(--text2);}
+.settings-sec-title:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
+.settings-sec-title::after{content:'\25BE';flex:0 0 auto;display:inline-block;font-size:10px;opacity:.7;transition:transform .15s;}
+.settings-sec.collapsed .settings-sec-title{margin-bottom:0;}
+.settings-sec.collapsed .settings-sec-title::after{transform:rotate(-90deg);}
+.settings-sec.collapsed > *:not(.settings-sec-title){display:none!important;}
 .settings-sec .auto-row+.auto-row{margin-top:8px;}
 .auto-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .auto-label{font-size:12px;color:var(--text2);}
@@ -64,6 +70,15 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .stat-chip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px;}
 .stat-chip strong{color:var(--text);font-size:13px;}
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+/* Active-filter chips — summarize which dropdown filters are applied, each removable */
+.filter-chips{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:2px;}
+.filter-chips .fchip-lead{font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--text3);margin-right:2px;}
+.fchip{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;font-weight:500;padding:3px 5px 3px 10px;border-radius:20px;white-space:nowrap;}
+.fchip-k{color:var(--text2);font-weight:600;}
+.fchip-x{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:11px;line-height:1;padding:0;transition:.13s;}
+.fchip-x:hover{background:var(--bg5);color:var(--text);}
+.fchip-clear{background:none;border:1px solid transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:3px 8px;border-radius:7px;font-family:var(--sf);transition:.13s;}
+.fchip-clear:hover{background:var(--bg3);border-color:var(--border);}
 .search-wrap{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;flex:1;min-width:180px;max-width:300px;}
 .search-wrap input{background:none;border:none;color:var(--text);font-family:var(--sf);font-size:13px;outline:none;width:100%;}
 .search-wrap input::placeholder{color:var(--text3);}
@@ -89,6 +104,10 @@ td.cell-sel{background:rgba(91,124,255,.15)!important;outline:1px solid var(--ac
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:var(--bg3);}
 tr.row-done td{opacity:.5;}
+/* Row density — 'compact' trims vertical padding for power users (per-device, persisted in localStorage) */
+body.density-compact td{padding-top:3px;padding-bottom:3px;}
+body.density-compact th{padding-top:5px;padding-bottom:5px;}
+body.density-compact .badge{padding-top:2px;padding-bottom:2px;}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
 .bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:currentColor;}
 .svc-voip{background:rgba(239,68,68,.15);color:#ef4444;}
@@ -130,6 +149,17 @@ tr.fx-shimmer>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
 .pri-high{background:rgba(239,68,68,.15);color:#f87171;}
 .pri-med{background:rgba(156,163,175,.15);color:#9ca3af;}
 .pri-low{background:rgba(156,163,175,.15);color:#9ca3af;}
+/* Light-theme badge contrast — the palettes above are tuned for a dark background;
+   on light backgrounds the bright text needs darker, more saturated tones to stay readable.
+   (Custom per-option colors set in Admin apply inline and are unaffected.) */
+[data-theme="light"] .svc-voip,[data-theme="light"] .plt-email,[data-theme="light"] .st-red,[data-theme="light"] .pri-high{background:rgba(239,68,68,.12);color:#c81e1e;}
+[data-theme="light"] .svc-sms,[data-theme="light"] .st-blue{background:rgba(59,130,246,.12);color:#1d4ed8;}
+[data-theme="light"] .svc-payment,[data-theme="light"] .plt-whatsapp,[data-theme="light"] .st-green{background:rgba(22,163,74,.14);color:#15803d;}
+[data-theme="light"] .st-yellow{background:rgba(202,138,4,.16);color:#a16207;}
+[data-theme="light"] .plt-msteams{background:rgba(99,102,241,.12);color:#4338ca;}
+[data-theme="light"] .plt-viber{background:rgba(168,85,247,.12);color:#7c3aed;}
+[data-theme="light"] .plt-telegram{background:rgba(14,165,233,.12);color:#0369a1;}
+[data-theme="light"] .pri-med,[data-theme="light"] .pri-low{background:rgba(107,114,128,.14);color:#4b5563;}
 .timer-cell{display:flex;align-items:center;gap:5px;}
 tr.pinned-row>td{background:rgba(251,191,36,.07);}
 tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
@@ -435,6 +465,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}
 }
+/* Larger tap targets on touch / pen devices — mouse users (pointer:fine) keep the denser layout */
+@media (pointer:coarse){
+  .btn-icon{width:36px;height:36px;}
+  .tab-btn{width:44px;height:38px;}
+  .btn-sm{padding:7px 12px;}
+  .fchip-x{width:22px;height:22px;font-size:12px;}
+  .cell-copy-btn{width:26px;height:26px;opacity:1;pointer-events:auto;top:6px;right:6px;}
+  .copyable-cell{padding-right:34px!important;}
+}
 @media (max-width:920px){
   .entry-modal{display:block;height:auto;max-height:90vh;overflow-y:auto;max-width:min(700px,96vw);}
   .entry-details{overflow:visible;}
@@ -442,6 +481,21 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   .entry-comments .comments-section{display:flex;flex-direction:column;max-height:58vh;}
   .entry-comments .comment-list{max-height:32vh;}
   .entry-modal .modal-ftr{position:sticky;bottom:0;}
+}
+/* ── Narrow screens / phones ── */
+@media (max-width:700px){
+  /* Keep the 8-icon top bar compact: one horizontally-swipeable strip instead of overflowing.
+     (Its own overflow-x keeps the sticky header intact — we deliberately avoid overflow on body.) */
+  .topbar{padding:0 10px;gap:6px;overflow-x:auto;overflow-y:hidden;}
+  .main{padding:10px 10px;}
+  .modal-ov{padding:10px;}
+  .stats-row{gap:6px;margin-bottom:10px;}
+  .search-wrap{max-width:none;}
+  .table-scroll{-webkit-overflow-scrolling:touch;}
+}
+@media (max-width:480px){
+  .app-title{display:none;}       /* keep the logo mark, drop the wordmark to reclaim space */
+  #user-email-display{display:none;}
 }
 
 </style>
@@ -805,6 +859,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <select class="fsel" id="f-am-filter" onchange="applyFilters()"><option value="">All AM</option></select>
     <span id="date-range-badge" style="display:none;font-size:12px;color:var(--accent);font-weight:600"></span>
     <button class="btn btn-secondary btn-sm" id="date-range-clear-btn" onclick="clearDateRangeFilter()" style="display:none">✕ Clear dates</button>
+    <button class="tab-btn" id="density-btn" data-tip="Compact rows" aria-label="Toggle row density" onclick="toggleDensity()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     <button class="tab-btn" id="auto-toggle-btn" data-tip="Settings" aria-label="Settings" onclick="toggleAutoPanel()" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
     <button class="tab-btn" data-tip="Export" aria-label="Export" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
     <button class="tab-btn" id="daily-report-btn" data-tip="Daily Report" aria-label="Daily Report" onclick="openDailyReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></button>
@@ -813,6 +868,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <button class="btn btn-sm" id="trash-purge-sel-btn" onclick="purgeSelected()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected Now</button>
     <button class="btn btn-sm" id="trash-empty-btn" onclick="emptyTrash()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Empty Trash (Delete All Now)</button>
     <span style="font-size:12px;color:var(--text3);display:none" id="rec-count"></span>
+    <div class="filter-chips" id="filter-chips" style="display:none"></div>
   </div>
   <div id="trash-info" style="display:none;margin:0 16px 8px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2)">Deleted entries are kept here for 30 days, then permanently removed automatically. Restore an entry to send it back to its original tab.</div>
 
@@ -2164,6 +2220,43 @@ function toggleTheme(){
   btn.setAttribute('aria-label',isDark?'Switch to dark mode':'Switch to light mode');
 }
 
+// ─── ROW DENSITY (per-device display preference) ─────────────
+function applyDensity(){
+  var compact=localStorage.getItem('cyn_density')==='compact';
+  document.body.classList.toggle('density-compact',compact);
+  var b=document.getElementById('density-btn');
+  if(b)b.setAttribute('data-tip',compact?'Comfortable rows':'Compact rows');
+}
+function toggleDensity(){
+  var compact=localStorage.getItem('cyn_density')==='compact';
+  localStorage.setItem('cyn_density',compact?'comfortable':'compact');
+  applyDensity();
+}
+applyDensity(); // deferred module → DOM is ready, apply saved preference on load
+
+// ─── COLLAPSIBLE SETTINGS SECTIONS ───────────────────────────
+// Make each Settings section header toggle its content (default expanded; state per-section in localStorage).
+function settingsSecKey(t){return 'cyn_setsec_'+String(t.textContent||'').replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,40);}
+function toggleSettingsSec(t){
+  var sec=t.parentElement; if(!sec)return;
+  var collapsed=sec.classList.toggle('collapsed');
+  t.setAttribute('aria-expanded',collapsed?'false':'true');
+  try{localStorage.setItem(settingsSecKey(t),collapsed?'1':'0');}catch(e){}
+}
+function initSettingsCollapse(){
+  var titles=document.querySelectorAll('#settings-modal .settings-sec-title');
+  titles.forEach(function(t){
+    if(t._collapseBound)return; t._collapseBound=true;
+    t.setAttribute('role','button'); t.setAttribute('tabindex','0');
+    var collapsed=false; try{collapsed=localStorage.getItem(settingsSecKey(t))==='1';}catch(e){}
+    if(collapsed) t.parentElement.classList.add('collapsed');
+    t.setAttribute('aria-expanded',collapsed?'false':'true');
+    t.addEventListener('click',function(){toggleSettingsSec(t);});
+    t.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSettingsSec(t);}});
+  });
+}
+initSettingsCollapse();
+
 function switchTab(tab,el){
   if(tab==='admin'){
     appConfirm('Accessing the Admin tab will consume usage. Do you want to proceed?','Proceed').then(function(ok){
@@ -2421,6 +2514,20 @@ function timerFxRowClass(r){
 }
 function timerFxRowStyle(r){
   return isTimerFxActive(r)?effectColorVars(SETTINGS.timerFxColor,'#f87171'):'';
+}
+// Pick a SINGLE row-highlight effect so a row never stacks competing animations
+// (which also duplicated the --fx-* color vars, letting the wrong color win).
+// Priority, most urgent first: timer expired > SLA escalation > RR/RO missing > Advised-Client aging.
+// SLA and Advised-aging are already mutually exclusive by status. Each condition's
+// informational badge still renders separately, so nothing is hidden — only the
+// row-level animation is deduped to keep the table scannable.
+function rowFxParts(r){
+  var cls;
+  if((cls=timerFxRowClass(r)))      return {cls:cls,style:timerFxRowStyle(r)};
+  if((cls=slaRowClass(r)))          return {cls:cls,style:slaRowStyle(r)};
+  if((cls=rrRoAlertRowClass(r)))    return {cls:cls,style:rrRoAlertRowStyle(r)};
+  if((cls=advisedAgingRowClass(r))) return {cls:cls,style:advisedAgingRowStyle(r)};
+  return {cls:'',style:''};
 }
 function copyCellButton(id,field){
   return '<button type="button" class="cell-copy-btn" onclick="copyRowField(event,'+id+',\''+field+'\')" title="Copy"><span class="copy-icon"></span></button>';
@@ -3742,6 +3849,50 @@ function applyFilters(){
   pinToTop();
   renderRows();updateStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+  renderFilterChips();
+}
+
+// ─── ACTIVE-FILTER CHIPS ────────────────────────────────────
+// Which dropdown filters actually apply on the current tab (others are ignored by the tab's filter fn)
+function _filterChipDefs(){
+  var defs=[];
+  function add(kind,id,prefix){var el=document.getElementById(id);if(el)defs.push({kind:kind,el:el,prefix:prefix});}
+  if(currentTab==='all'||currentTab==='done'){
+    add('svc','f-svc','Service');add('st','f-st','Status');add('pri','f-pri','Priority');add('plt','f-plt','Platform');add('am','f-am-filter','AM');
+  }else if(currentTab==='did'||currentTab==='mine'){
+    add('am','f-am-filter','AM');
+  }
+  return defs;
+}
+function _dateFilterActive(){var b=document.getElementById('date-range-clear-btn');return !!(b&&b.style.display!=='none');}
+function clearOneFilter(kind){
+  var map={svc:'f-svc',st:'f-st',pri:'f-pri',plt:'f-plt',am:'f-am-filter'};
+  var el=document.getElementById(map[kind]);
+  if(el){el.value='';applyFilters();}
+}
+function clearAllFilters(){
+  ['f-svc','f-st','f-pri','f-plt','f-am-filter'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var si=document.getElementById('search-input');if(si&&si.value){si.value='';if(window.toggleSearchClear)toggleSearchClear();}
+  if(_dateFilterActive()&&window.clearDateRangeFilter){clearDateRangeFilter();return;} // this calls applyFilters() itself
+  applyFilters();
+}
+function renderFilterChips(){
+  var box=document.getElementById('filter-chips');
+  if(!box)return;
+  var chips=[];
+  _filterChipDefs().forEach(function(d){
+    if(!d.el.value)return;
+    var opt=d.el.selectedOptions&&d.el.selectedOptions[0];
+    var label=opt?opt.text:d.el.value;
+    chips.push('<span class="fchip"><span class="fchip-k">'+escHtml(d.prefix)+':</span> '+escHtml(label)
+      +'<button type="button" class="fchip-x" aria-label="Remove '+escHtml(d.prefix)+' filter" title="Remove" onclick="clearOneFilter(\''+d.kind+'\')">&#10005;</button></span>');
+  });
+  var searchActive=(searchValue()||'').length>0;
+  if(chips.length===0&&!searchActive&&!_dateFilterActive()){box.style.display='none';box.innerHTML='';return;}
+  var html='<span class="fchip-lead">Filters</span>'+chips.join('')
+    +'<button type="button" class="fchip-clear" onclick="clearAllFilters()">Clear all</button>';
+  box.innerHTML=html;
+  box.style.display='';
 }
 
 function applyDIDFilters(){
@@ -3762,6 +3913,7 @@ function applyDIDFilters(){
   pinToTop();
   renderDIDRows();updateDIDStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+  renderFilterChips();
 }
 
 // ─── PIN TO TOP ─────────────────────────────────────────────
@@ -3895,8 +4047,9 @@ function renderRRRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="15" class="empty">No RR/RO records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
-    rowCls+=rrRoAlertRowClass(r)+timerFxRowClass(r);
-    var rowStyle='cursor:pointer'+rrRoAlertRowStyle(r)+timerFxRowStyle(r);
+    var _fx=rowFxParts(r);
+    rowCls+=_fx.cls;
+    var rowStyle='cursor:pointer'+_fx.style;
     if(r.pinned)rowCls=(rowCls?rowCls+' ':'')+'pinned-row';
     var unreadBadge=(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})();
     return '<tr class="'+rowCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'rr\')" style="'+rowStyle+'">'
@@ -3955,6 +4108,7 @@ function applyRRFilters(){
   pinToTop();
   renderRRRows();updateRRStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+  renderFilterChips();
 }
 
 // ─── TRASH ──────────────────────────────────────────────────
@@ -3994,6 +4148,7 @@ function applyTrashFilters(){
   filteredData.sort(function(a,b){return (b.deletedAt||0)-(a.deletedAt||0);});
   renderTrashRows();updateTrashStats();
   document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+  renderFilterChips();
 }
 
 function updateTrashStats(){
@@ -4304,8 +4459,9 @@ function renderRows(){
   }
   if(!displayData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
-    var agingCls=advisedAgingRowClass(r)+slaRowClass(r)+timerFxRowClass(r);
-    var agingStyle=advisedAgingRowStyle(r)+slaRowStyle(r)+timerFxRowStyle(r);
+    var _fx=rowFxParts(r);
+    var agingCls=_fx.cls;
+    var agingStyle=_fx.style;
     if(r._type==='did'){
       return '<tr class="'+(r.pinned?'pinned-row':'')+agingCls+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer'+agingStyle+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
@@ -4416,8 +4572,9 @@ function renderDIDRows(){
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
-    var agingCls=advisedAgingRowClass(r)+slaRowClass(r)+timerFxRowClass(r);
-    var agingStyle=advisedAgingRowStyle(r)+slaRowStyle(r)+timerFxRowStyle(r);
+    var _fx=rowFxParts(r);
+    var agingCls=_fx.cls;
+    var agingStyle=_fx.style;
     return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer'+agingStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
@@ -7492,6 +7649,10 @@ window.addDIDComment=addDIDComment;
 window.appConfirm=appConfirm;
 window.applyFilters=applyFilters;
 window.applyRolePermissions=applyRolePermissions;
+window.clearOneFilter=clearOneFilter;
+window.clearAllFilters=clearAllFilters;
+window.renderFilterChips=renderFilterChips;
+window.toggleDensity=toggleDensity;
 window.bulkDelete=bulkDelete;
 window.clampDIDTimerHH=clampDIDTimerHH;
 window.clampTimerHH=clampTimerHH;
