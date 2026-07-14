@@ -104,8 +104,10 @@ th.sort-asc::after{content:' \25B2';color:var(--accent);font-size:9px;}
 th.sort-desc::after{content:' \25BC';color:var(--accent);font-size:9px;}
 .col-rz{position:absolute;right:0;top:0;width:5px;height:100%;cursor:col-resize;z-index:5;}
 .col-rz:hover,.col-rz.rz-active{background:var(--accent);opacity:.5;}
-td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;cursor:cell;user-select:none;}
+td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;cursor:cell;user-select:none;-webkit-touch-callout:none;}
 td.cell-sel{background:rgba(91,124,255,.15)!important;outline:1px solid var(--accent);outline-offset:-1px;}
+/* Press-and-hold feedback: a soft accent wash fades in while the mouse button is held on a row (opens Comments). The 0.1s delay keeps normal/double clicks from flashing. */
+tr.lp-arming>td{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;transition:background .42s ease .1s;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:var(--bg3);}
 tr.row-done td{opacity:.5;}
@@ -7852,6 +7854,56 @@ function rowDblClick(e, id, type) {
   else openEdit(id);
 }
 window.rowDblClick = rowDblClick;
+
+// ─── LONG-PRESS A ROW → OPEN ITS COMMENTS ───────────────────
+// Press and hold anywhere on a record row — with the mouse OR a
+// finger — (except on its own buttons / checkbox) for about half
+// a second to pop the Comments box straight open, a quicker route
+// than aiming for the little 💬 button. Moving, scrolling or
+// letting go cancels it, so double-click-to-edit, cell drag-select
+// and touch-scrolling all keep working exactly as before.
+// Uses Pointer Events (mouse + touch + pen) and never calls
+// preventDefault, so a finger swipe still scrolls the table.
+(function(){
+  var HOLD_MS = 500;   // hold this long (ms) before comments open
+  var MOVE_PX = 10;    // if the pointer/finger wanders more than this, treat as a drag/scroll → cancel
+  var timer = null, armedRow = null, startX = 0, startY = 0;
+
+  function disarm(){
+    if(timer){ clearTimeout(timer); timer = null; }
+    if(armedRow){ armedRow.classList.remove('lp-arming'); armedRow = null; }
+  }
+
+  document.addEventListener('pointerdown', function(e){
+    if(e.pointerType === 'mouse' && e.button !== 0) return;  // left mouse only; allow touch/pen
+    if(e.isPrimary === false) return;                        // ignore extra fingers (pinch/zoom)
+    if(currentTab === 'trash') return;                       // trashed rows have no comments
+    var tr = e.target.closest && e.target.closest('tr[id^="row-"]');
+    if(!tr) return;
+    // Don't hijack a press that lands on the row's own controls.
+    if(e.target.closest('button,input,select,textarea,a,label,.col-rz')) return;
+    var id = parseInt(tr.id.slice(4), 10);
+    if(isNaN(id)) return;
+    startX = e.clientX; startY = e.clientY;
+    armedRow = tr; tr.classList.add('lp-arming');
+    timer = setTimeout(function(){
+      timer = null; disarm();
+      // clear any single-cell highlight the drag-select handler left on this press
+      try{ document.querySelectorAll('.cell-sel').forEach(function(c){c.classList.remove('cell-sel');}); _selCells.clear(); _dragging = false; }catch(_){}
+      if(typeof openCommentsModal === 'function') openCommentsModal(id);
+    }, HOLD_MS);
+  });
+
+  document.addEventListener('pointermove', function(e){
+    if(!timer) return;
+    if(Math.abs(e.clientX - startX) > MOVE_PX || Math.abs(e.clientY - startY) > MOVE_PX) disarm();
+  });
+
+  document.addEventListener('pointerup', disarm);
+  document.addEventListener('pointercancel', disarm);  // browser took over the gesture (e.g. touch-scroll) → cancel
+  document.addEventListener('scroll', disarm, true);   // scrolling the table cancels the hold
+  window.addEventListener('blur', disarm);             // tab/window losing focus cancels it
+})();
 
 // Wake Lock: prevent screen/tab sleep while the app is visible
 (async function keepAwake() {
