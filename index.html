@@ -113,6 +113,8 @@ tr.row-done td{opacity:.5;}
 body.density-compact td{padding-top:3px;padding-bottom:3px;}
 body.density-compact th{padding-top:5px;padding-bottom:5px;}
 body.density-compact .badge{padding-top:2px;padding-bottom:2px;}
+/* Compact trims the cell's top padding, so the "Restarted" chip that floats above the timer badge loses its headroom and gets sliced by the td's overflow:hidden. Pull it down to sit flush inside the tighter cell. */
+body.density-compact .tbadge.trestart::after{top:-8px;}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
 .bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:currentColor;}
 .svc-voip{background:rgba(239,68,68,.15);color:#ef4444;}
