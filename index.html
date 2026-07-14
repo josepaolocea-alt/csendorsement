@@ -94,6 +94,8 @@ select.fsel option,select.fc option{background:var(--bg2);color:var(--text);}
 select::-ms-expand{display:none;}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
 .table-scroll{overflow:auto;max-height:calc(100vh - 230px);}
+/* All Tasks + DID: stretch the table box down to fill the empty space instead of ending short */
+#main-table-wrap.fill-height .table-scroll{height:calc(100vh - 230px);}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead tr{background:var(--bg3);}
 th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--bg3);z-index:10;}
@@ -450,25 +452,6 @@ textarea.fc{resize:vertical;min-height:70px;}
 .dash-chart-bar{width:100%;max-width:44px;background:var(--accent);border-radius:4px 4px 0 0;}
 .dash-chart-lbl{font-size:9.5px;color:var(--text3);white-space:nowrap;}
 .dash-chart-val{font-size:10.5px;color:var(--text2);font-weight:600;min-height:14px;}
-
-/* Overview / insights panel (blank-space filler on All Tasks + DID tabs) */
-.ins-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);}
-.ins-head{display:flex;align-items:baseline;gap:9px;margin-bottom:12px;flex-wrap:wrap;}
-.ins-title{font-size:13px;font-weight:700;letter-spacing:-.2px;color:var(--text);}
-.ins-sub{font-size:11px;color:var(--text3);}
-.ins-alerts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-.ins-alert{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid var(--border);color:var(--text2);background:var(--bg);}
-.ins-alert .ins-alert-n{font-weight:700;}
-.ins-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;}
-.ins-card{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 12px;min-width:0;}
-.ins-card-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.55px;margin-bottom:9px;}
-.ins-row{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;font-size:12px;overflow:hidden;}
-.ins-row+.ins-row{margin-top:2px;}
-.ins-row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--pct,0%);background:var(--accent);opacity:.11;pointer-events:none;}
-.ins-row-lbl{position:relative;z-index:1;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
-.ins-row-val{position:relative;z-index:1;color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;flex:0 0 auto;}
-.ins-more{font-size:11px;color:var(--text3);padding:5px 8px 1px;}
-.ins-empty{font-size:11.5px;color:var(--text3);padding:3px 2px;}
 
 .rr-bm{background:rgba(156,163,175,.15);color:#9ca3af;}
 .rr-am{background:rgba(234,179,8,.15);color:#fbbf24;}
@@ -899,7 +882,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   </div>
   <div id="trash-info" style="display:none;margin:0 16px 8px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2)">Deleted entries are kept here for 30 days, then permanently removed automatically. Restore an entry to send it back to its original tab.</div>
 
-  <div class="table-wrap" id="main-table-wrap">
+  <div class="table-wrap fill-height" id="main-table-wrap">
     <div class="table-scroll">
       <table id="main-table">
         <thead id="main-thead"><tr>
@@ -921,9 +904,6 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     </div>
   </div>
   <div id="main-pagination" style="padding:6px 16px 2px"></div>
-
-  <!-- OVERVIEW / INSIGHTS PANEL — fills the space below the table on All Tasks + DID tabs -->
-  <div id="insights-panel" class="ins-panel" style="display:none;margin-top:16px"></div>
 
   <!-- CALENDAR PANEL -->
   <div id="calendar-panel" style="display:none">
@@ -2326,8 +2306,8 @@ function _doSwitchTab(tab,el){
   document.querySelector('.toolbar').style.display=hideMain?'none':'';
   document.getElementById('main-table-wrap').style.display=hideMain?'none':'';
   document.getElementById('main-pagination').style.display=hideMain?'none':'';
-  // Overview panel only lives on All Tasks + DID; hide up-front (the tab's stats fn re-shows it)
-  if(hideMain||(tab!=='all'&&tab!=='did')){var _ip=document.getElementById('insights-panel');if(_ip)_ip.style.display='none';}
+  // On All Tasks + DID the table stretches to fill the space down to the bottom of the window
+  document.getElementById('main-table-wrap').classList.toggle('fill-height',tab==='all'||tab==='did');
   document.getElementById('admin-panel').style.display=isAdmin?'':'none';
   document.getElementById('dashboard-panel').style.display=isDash?'':'none';
   document.getElementById('calendar-panel').style.display=isCal?'':'none';
@@ -3227,14 +3207,6 @@ setInterval(function(){
     _pbTickSig=pbSig;
   }else{
     _pbTickSig=null;
-  }
-  // Keep the Overview panel's live "Timers overdue/running" counts in step as timers hit 0
-  if(currentTab==='all'||currentTab==='did'){
-    var ip=document.getElementById('insights-panel');
-    if(ip&&ip.style.display!=='none'&&_insOverdueSig!==null){
-      var ovSig=(filteredData||[]).map(function(r){return (r.timerStart&&calcRem(r)===0)?r.id:'';}).filter(Boolean).join(',');
-      if(ovSig!==_insOverdueSig)renderInsights();
-    }
   }
   ['f','rr','d'].forEach(updateReminderIndicator);
   var sm=document.getElementById('settings-modal');
@@ -4576,81 +4548,6 @@ function updateStats(){
   }
   html+='<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
   document.getElementById('stats-row').innerHTML=html;
-  renderInsights();
-}
-
-// ─── OVERVIEW / INSIGHTS PANEL ──────────────────────────────
-// Fills the blank space below the table on the All Tasks ('all') and DID ('did')
-// tabs with an at-a-glance summary of the rows currently shown (respects search + filters).
-var _insOverdueSig=null;
-function _insTally(arr,keyFn){
-  var m={},order=[];
-  arr.forEach(function(r){
-    var k=keyFn(r); if(k==null||k==='')k='—';
-    if(m[k]===undefined){m[k]=0;order.push(k);}
-    m[k]++;
-  });
-  return order.map(function(k){return {k:k,n:m[k]};}).sort(function(a,b){return b.n-a.n;});
-}
-// One breakdown card: title + proportional rows. labelFn returns HTML for each row's label.
-function _insCard(title,entries,labelFn,limit){
-  limit=limit||6;
-  if(!entries.length)return '<div class="ins-card"><div class="ins-card-title">'+title+'</div><div class="ins-empty">None</div></div>';
-  var max=entries[0].n||1;
-  var shown=entries.slice(0,limit);
-  var rows=shown.map(function(e){
-    var pct=Math.round((e.n/max)*100);
-    return '<div class="ins-row" style="--pct:'+pct+'%"><span class="ins-row-lbl">'+labelFn(e.k)+'</span><span class="ins-row-val">'+e.n+'</span></div>';
-  }).join('');
-  if(entries.length>limit){
-    var restCats=entries.length-limit;
-    var restN=entries.slice(limit).reduce(function(s,e){return s+e.n;},0);
-    rows+='<div class="ins-more">+'+restN+' in '+restCats+' more</div>';
-  }
-  return '<div class="ins-card"><div class="ins-card-title">'+title+'</div>'+rows+'</div>';
-}
-function renderInsights(){
-  var panel=document.getElementById('insights-panel');
-  if(!panel)return;
-  var isDID=currentTab==='did';
-  if(currentTab!=='all'&&!isDID){panel.style.display='none';_insOverdueSig=null;return;}
-  var rows=filteredData||[];
-  // ── attention counts (things needing action now)
-  var overdue=0,running=0,aging=0,highOpen=0;
-  rows.forEach(function(r){
-    if(r.timerStart){var rem=calcRem(r); if(rem===0)overdue++; else running++;}
-    if(isAdvisedAgingDue(r))aging++;
-    if(r.priority==='High')highOpen++;
-  });
-  var alerts=[];
-  function alert(cond,hex,icon,label,n){
-    if(!cond)return;
-    var bg=hex?'background:'+hex+'1f;border-color:'+hex+'55;color:'+hex:'';
-    alerts.push('<span class="ins-alert" style="'+bg+'"><span>'+icon+'</span>'+label+' <span class="ins-alert-n">'+n+'</span></span>');
-  }
-  alert(overdue>0,'#f87171','&#9203;','Timers overdue',overdue);
-  alert(aging>0,'#fbbf24','&#9888;&#65039;','Lack update aging',aging);
-  alert(highOpen>0,'#fb7185','&#128681;','High priority open',highOpen);
-  alert(running>0,'#5b7cff','&#9654;','Timers running',running);
-  if(!alerts.length){
-    alerts.push('<span class="ins-alert" style="background:#4ade8018;border-color:#4ade8055;color:#4ade80"><span>&#10003;</span>All clear — nothing overdue or aging</span>');
-  }
-  // ── breakdown cards
-  var stFn=isDID?didStBadge:stBadge;
-  var priFn=isDID?didPriBadge:priBadge;
-  var cards=[];
-  cards.push(_insCard('By status',_insTally(rows,function(r){return r.status;}),function(k){return k==='—'?'<span style="color:var(--text3)">No status</span>':stFn(k);}));
-  cards.push(_insCard('By AM',_insTally(rows,function(r){return r.am;}),function(k){return k==='—'?'<span style="color:var(--text3)">Unassigned</span>':escHtml(k);}));
-  cards.push(_insCard('By service',_insTally(rows,function(r){return r.service;}),function(k){return k==='—'?'<span style="color:var(--text3)">—</span>':svcBadge(k);}));
-  cards.push(_insCard('By priority',_insTally(rows,function(r){return r.priority;}),function(k){return k==='—'?'<span style="color:var(--text3)">—</span>':priFn(k);}));
-  if(!isDID)cards.push(_insCard('By platform',_insTally(rows,function(r){return r.platform;}),function(k){return k==='—'?'<span style="color:var(--text3)">None</span>':pltBadge(k);}));
-  panel.innerHTML=
-    '<div class="ins-head"><span class="ins-title">Overview</span>'
-    +'<span class="ins-sub">'+rows.length+' '+(rows.length===1?'record':'records')+' shown · reflects current filters</span></div>'
-    +'<div class="ins-alerts">'+alerts.join('')+'</div>'
-    +'<div class="ins-grid">'+cards.join('')+'</div>';
-  panel.style.display='';
-  _insOverdueSig=rows.map(function(r){return (r.timerStart&&calcRem(r)===0)?r.id:'';}).filter(Boolean).join(',');
 }
 
 var DID_THEAD='<tr>'
@@ -4738,7 +4635,6 @@ function updateDIDStats(){
     '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
     +'<div class="stat-chip">Pending <strong>'+pending+'</strong></div>'
     +'<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
-  renderInsights();
 }
 
 var editingDIDId=null;
