@@ -558,8 +558,8 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <button class="tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
   <button class="tab-btn" id="dashboard-tab-btn" style="display:none" data-tip="Dashboard" aria-label="Dashboard" onclick="switchTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></button>
   <button class="tab-btn" id="admin-tab-btn" style="display:none" data-tip="Admin" aria-label="Admin" onclick="switchTab('admin',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
-  <div class="divider"></div>
-  <button class="tab-btn" id="cal-tab-btn" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
+  <div class="divider" id="cal-divider" style="display:none"></div>
+  <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar">?</div>
@@ -3745,6 +3745,7 @@ function calHasUpcomingWithin(now,days){
 var _calBadgeLastCalc=0;
 function updateCalBadge(force){
   var btn=document.getElementById('cal-tab-btn');if(!btn)return;
+  if(_currentUserRole!=='Admin'){btn.classList.remove('has-upcoming');return;}
   var now=Date.now();
   if(!force&&now-_calBadgeLastCalc<30000)return;
   _calBadgeLastCalc=now;
@@ -3772,6 +3773,7 @@ function calPruneAlertKeys(){
   }catch(e){}
 }
 function checkCalendarEvents(){
+  if(_currentUserRole!=='Admin')return;               // Calendar is Admin-only — no reminders for other roles
   if(!_calReady||!Array.isArray(CAL_EVENTS)||!CAL_EVENTS.length)return;
   var now=Date.now();
   CAL_EVENTS.forEach(function(ev){
@@ -5866,6 +5868,12 @@ function applyRolePermissions(role){
   // Dashboard tab: Admin only
   var dashTabBtn = document.getElementById('dashboard-tab-btn');
   if(dashTabBtn) dashTabBtn.style.display = isAdmin ? '' : 'none';
+
+  // Calendar tab (and its divider): Admin only
+  var calTabBtn = document.getElementById('cal-tab-btn');
+  if(calTabBtn) calTabBtn.style.display = isAdmin ? '' : 'none';
+  var calDivider = document.getElementById('cal-divider');
+  if(calDivider) calDivider.style.display = isAdmin ? '' : 'none';
 
   // Settings button: Admin only
   var settingsBtn = document.getElementById('auto-toggle-btn');
