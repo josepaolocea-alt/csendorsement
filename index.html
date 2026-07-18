@@ -1021,6 +1021,15 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <button class="btn btn-secondary btn-sm" onclick="loadAdminData(true)">↻ Refresh</button>
     </div>
 
+    <!-- DATA BACKUP -->
+    <div class="admin-section">
+      <div class="admin-toolbar">
+        <span class="admin-ctitle">Data Backup</span>
+        <button class="btn btn-primary btn-sm" id="backup-btn" onclick="downloadBackup()">Download Full Backup</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:2px">Saves one JSON file containing every record, comment, user, client, dropdown, setting, activity log, and calendar event — a complete snapshot to keep as a safety net in case data is ever lost or changed by mistake. Admin only.</p>
+    </div>
+
     <!-- USER MANAGEMENT -->
     <div class="admin-section">
       <div class="admin-toolbar">
@@ -2609,7 +2618,17 @@ function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.default
 var RR_3DAY_SECS=259200;
 var PH_OFFSET_MS=8*60*60*1000;   // Asia/Manila = UTC+8 (no daylight saving)
 var PH_HOLIDAYS={};
-['2026-01-01','2026-04-02','2026-04-03','2026-04-09','2026-05-01','2026-06-12','2026-08-31','2026-11-30','2026-12-25','2026-12-30','2026-02-17','2026-02-25','2026-04-04','2026-08-21','2026-11-01','2026-11-02','2026-12-08','2026-12-24','2026-12-31'].forEach(function(k){PH_HOLIDAYS[k]=1;});
+[
+  // 2026 — keep this list identical to the copy in scripts/rr-reminder.mjs
+  '2026-01-01','2026-04-02','2026-04-03','2026-04-09','2026-05-01','2026-06-12','2026-08-31','2026-11-30','2026-12-25','2026-12-30', // regular
+  '2026-02-17','2026-02-25','2026-04-04','2026-08-21','2026-11-01','2026-11-02','2026-12-08','2026-12-24','2026-12-31',              // special non-working
+  // 2027 — fixed + Easter-derived dates are confirmed; the special non-working days
+  // (Chinese New Year, EDSA, All Souls, Christmas Eve, Dec 31) follow the 2026 pattern —
+  // re-verify against the official 2027 Malacañang proclamation when it is released, and
+  // add Eid'l Fitr / Eid'l Adha once their 2027 dates are proclaimed.
+  '2027-01-01','2027-03-25','2027-03-26','2027-04-09','2027-05-01','2027-06-12','2027-08-30','2027-11-30','2027-12-25','2027-12-30', // regular
+  '2027-02-06','2027-02-25','2027-03-27','2027-08-21','2027-11-01','2027-11-02','2027-12-08','2027-12-24','2027-12-31'               // special non-working
+].forEach(function(k){PH_HOLIDAYS[k]=1;});
 var PH_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function _phParts(ms){var d=new Date(ms+PH_OFFSET_MS);return {y:d.getUTCFullYear(),mo:d.getUTCMonth(),day:d.getUTCDate(),dow:d.getUTCDay()};}
 function _pad2(n){return (n<10?'0':'')+n;}
@@ -5247,6 +5266,39 @@ function doExportRows(rows,mode){
   toast('Exported '+rows.length+' record'+(rows.length!==1?'s':''),'success');
 }
 
+// Full backup — downloads every Firestore collection as one JSON snapshot (Admin only).
+// This is a read-only safety net: it never changes any data, it just copies it out.
+async function downloadBackup(){
+  if(_currentUserRole!=='Admin'){toast('Only Admin can download a backup','error');return;}
+  var btn=document.getElementById('backup-btn');
+  if(btn){btn.disabled=true;btn.textContent='Preparing…';}
+  var colls=['endorsements','endorsements_trash','users','clients','dropdown_options','logs','app_settings','calendar_events','app_config'];
+  try{
+    var snaps=await Promise.all(colls.map(function(c){return getDocs(collection(db,c));}));
+    var backup={_app:'CYN Endorsement',_backup:'full',_version:1,exportedAt:new Date().toISOString(),exportedBy:normalizeEmail((_currentUser&&_currentUser.email)||''),project:firebaseConfig.projectId,collections:{}};
+    var total=0;
+    colls.forEach(function(c,i){
+      var arr=[];
+      snaps[i].forEach(function(d){arr.push(Object.assign({_id:d.id},d.data()));});
+      backup.collections[c]=arr;
+      total+=arr.length;
+    });
+    var today=new Date().toISOString().split('T')[0];
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));
+    a.download='cyn_backup_'+today+'.json';
+    a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    writeLog('exported','Full backup','Backed up '+total+' documents across '+colls.length+' collections');
+    toast('Backup downloaded — '+total+' records saved','success');
+  }catch(e){
+    console.error('Backup failed',e);
+    toast('Backup failed — check your connection and try again','error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Download Full Backup';}
+  }
+}
+
 function appConfirm(msg,okLabel){
   return new Promise(function(resolve){
     _confirmResolve=resolve;
@@ -7736,6 +7788,7 @@ window.uploadClientCSV=uploadClientCSV;
 window.applyDateRangeFilter=applyDateRangeFilter;
 window.clearDateRangeFilter=clearDateRangeFilter;
 window.exportCSV=exportCSV;
+window.downloadBackup=downloadBackup;
 window.initResizers=initResizers;
 window.markDIDTimerDirty=markDIDTimerDirty;
 window.markEndorsementTimerDirty=markEndorsementTimerDirty;
