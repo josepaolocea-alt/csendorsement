@@ -271,6 +271,17 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .cal-ym-cell.cal-ym-today{background:var(--accent);color:#fff;font-weight:700;}
 .cal-ym-cell.cal-ym-has:after{content:"";position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);}
 .cal-ym-cell.cal-ym-today.cal-ym-has:after{background:#fff;}
+/* Notepad tab — a private, auto-saving scratchpad (Admin only) */
+.note-wrap{max-width:900px;margin:0 auto;}
+.note-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.note-title{font-size:16px;font-weight:700;letter-spacing:-.2px;}
+.note-status{font-size:12px;font-weight:600;color:var(--text3);padding:3px 11px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);transition:.15s;white-space:nowrap;}
+.note-status.saving{color:var(--accent);border-color:var(--accent);}
+.note-status.error{color:#f87171;border-color:#f87171;}
+.note-area{width:100%;min-height:62vh;resize:vertical;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;color:var(--text);font-family:var(--sf);font-size:14px;line-height:1.6;outline:none;box-shadow:var(--shadow);transition:border-color .15s;}
+.note-area:focus{border-color:var(--accent);}
+.note-area::placeholder{color:var(--text3);}
+.note-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:11px;color:var(--text3);flex-wrap:wrap;}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.5);}
 .modal-ov:not(.hidden){animation:ovFadeIn .16s ease-out;}
@@ -560,6 +571,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <button class="tab-btn" id="admin-tab-btn" style="display:none" data-tip="Admin" aria-label="Admin" onclick="switchTab('admin',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
   <div class="divider" id="cal-divider" style="display:none"></div>
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
+  <button class="tab-btn" id="notepad-tab-btn" style="display:none" data-tip="Notepad" aria-label="Notepad" onclick="switchTab('notepad',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9.5 8h5"/><path d="M9.5 12H16"/><path d="M9.5 16H14"/></svg></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar">?</div>
@@ -933,6 +945,24 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div class="cal-up">
         <div class="cal-up-title">Upcoming</div>
         <div id="cal-upcoming"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTEPAD PANEL (Admin only) — a private, free-form scratchpad. The text
+       autosaves to Firestore and syncs to every device the same account signs
+       in on, exactly like the calendar but as one always-there note. -->
+  <div id="notepad-panel" style="display:none">
+    <div class="note-wrap">
+      <div class="note-head">
+        <div class="note-title">Notepad</div>
+        <span class="note-status" id="note-status">Saved</span>
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="copyNotepad()">Copy all</button>
+      </div>
+      <textarea id="note-area" class="note-area" spellcheck="true" oninput="noteInput()" placeholder="Type anything here — it saves automatically and syncs to every device you sign in on with this account."></textarea>
+      <div class="note-foot">
+        <span id="note-count">0 characters</span>
+        <span>Autosaves as you type · Private to your account</span>
       </div>
     </div>
   </div>
@@ -1897,6 +1927,7 @@ function doLogout(){
     if(!ok)return;
     if(_firestoreUnsub){_firestoreUnsub();_firestoreUnsub=null;}
     if(_settingsUnsub){_settingsUnsub();_settingsUnsub=null;}
+    if(_noteUnsub){_noteUnsub();_noteUnsub=null;}
     _fbReady=false;DATA=[];filteredData=[];
     signOut(auth);
   });
@@ -2284,7 +2315,7 @@ initSettingsCollapse();
 // Only the top-bar navigation tabs get labels; toolbar/theme/logout icons stay icon-only.
 // Full name still shows on hover via the existing data-tip tooltip.
 function initNavLabels(){
-  var LBL={all:'Tasks',did:'DID',done:'Done',mine:'RR / RO',trash:'Trash',dashboard:'Dashboard',admin:'Admin',calendar:'Calendar'};
+  var LBL={all:'Tasks',did:'DID',done:'Done',mine:'RR / RO',trash:'Trash',dashboard:'Dashboard',admin:'Admin',calendar:'Calendar',notepad:'Notepad'};
   document.querySelectorAll('.topbar .tab-btn[onclick^="switchTab"]').forEach(function(b){
     if(b.querySelector('.tab-label'))return;
     var m=/switchTab\('([^']+)'/.exec(b.getAttribute('onclick')||'');
@@ -2314,7 +2345,8 @@ function _doSwitchTab(tab,el){
   var isTrash=tab==='trash';
   var isDash=tab==='dashboard';
   var isCal=tab==='calendar';
-  var hideMain=isAdmin||isDash||isCal;
+  var isNote=tab==='notepad';
+  var hideMain=isAdmin||isDash||isCal||isNote;
   document.getElementById('stats-row').style.display=hideMain?'none':'';
   document.querySelector('.toolbar').style.display=hideMain?'none':'';
   document.getElementById('main-table-wrap').style.display=hideMain?'none':'';
@@ -2324,12 +2356,14 @@ function _doSwitchTab(tab,el){
   document.getElementById('admin-panel').style.display=isAdmin?'':'none';
   document.getElementById('dashboard-panel').style.display=isDash?'':'none';
   document.getElementById('calendar-panel').style.display=isCal?'':'none';
+  document.getElementById('notepad-panel').style.display=isNote?'':'none';
   document.getElementById('new-btn').style.display=(hideMain||isTrash)?'none':'';
   document.getElementById('trash-info').style.display=isTrash?'':'none';
   document.getElementById('trash-empty-btn').style.display=(isTrash&&window._canEdit)?'':'none';
   if(isAdmin){loadAdminData();return;}
   if(isDash){loadDashboard();return;}
   if(isCal){renderCalendar();return;}
+  if(isNote){renderNotepad();return;}
   DATA.forEach(function(r){r._sel=false;});
   TRASH_DATA.forEach(function(r){r._sel=false;});
   window._lastCheckAll=false;
@@ -5272,7 +5306,7 @@ async function downloadBackup(){
   if(_currentUserRole!=='Admin'){toast('Only Admin can download a backup','error');return;}
   var btn=document.getElementById('backup-btn');
   if(btn){btn.disabled=true;btn.textContent='Preparing…';}
-  var colls=['endorsements','endorsements_trash','users','clients','dropdown_options','logs','app_settings','calendar_events','app_config'];
+  var colls=['endorsements','endorsements_trash','users','clients','dropdown_options','logs','app_settings','calendar_events','notepad','app_config'];
   try{
     var snaps=await Promise.all(colls.map(function(c){return getDocs(collection(db,c));}));
     var backup={_app:'CYN Endorsement',_backup:'full',_version:1,exportedAt:new Date().toISOString(),exportedBy:normalizeEmail((_currentUser&&_currentUser.email)||''),project:firebaseConfig.projectId,collections:{}};
@@ -5907,6 +5941,15 @@ async function startFirestore(){
       try{updateCalBadge(true);}catch(e){}
     }, function(err){console.error('Calendar sync error',err);});
   }
+  // Live-sync the Admin's private notepad across their devices. Only the Admin
+  // account can read/write this doc (enforced by Firestore rules), so we attach
+  // the listener just for that account to avoid a permission error for others.
+  if(!_noteUnsub && _currentUser && normalizeEmail(_currentUser.email)===PRIMARY_ADMIN_EMAIL){
+    _noteUnsub = onSnapshot(doc(db,'notepad',noteDocId()), function(snap){
+      if(snap.metadata.hasPendingWrites) return;      // our own save echoing back
+      applyRemoteNote(snap.exists()?(snap.data().text||''):'');
+    }, function(err){console.error('Notepad sync error',err);});
+  }
 }
 
 function applyRolePermissions(role){
@@ -5926,6 +5969,10 @@ function applyRolePermissions(role){
   if(calTabBtn) calTabBtn.style.display = isAdmin ? '' : 'none';
   var calDivider = document.getElementById('cal-divider');
   if(calDivider) calDivider.style.display = isAdmin ? '' : 'none';
+
+  // Notepad tab: Admin only (shares the calendar divider)
+  var noteTabBtn = document.getElementById('notepad-tab-btn');
+  if(noteTabBtn) noteTabBtn.style.display = isAdmin ? '' : 'none';
 
   // Settings button: Admin only
   var settingsBtn = document.getElementById('auto-toggle-btn');
@@ -7726,6 +7773,80 @@ function renderDashboard(){
     :'<div style="color:var(--text3);font-size:12px">No open client tasks</div>';
 }
 
+// ─── NOTEPAD (Admin only) ────────────────────────────────────
+// A private, free-form scratchpad for the Admin. The text lives in Firestore
+// under 'notepad/<sanitized-email>', tagged with its owner, so it autosaves as
+// you type and syncs to every device the same account signs in on — like the
+// calendar, but a single always-there note instead of dated events. The
+// Firestore rules restrict this collection to the Admin email, so no other role
+// can read or write it even straight from the browser console.
+var NOTEPAD_TEXT='';        // last text seen from / written to Firestore
+var _noteUnsub=null;        // live-sync listener
+var _noteSaveTimer=null;    // debounce handle for autosave
+
+function noteOwner(){return currentAlertUserKey();}                       // the signed-in email
+function noteDocId(){return String(noteOwner()||'anon').replace(/[^a-z0-9]/gi,'_').toLowerCase();}
+function noteEl(){return document.getElementById('note-area');}
+
+function setNoteStatus(state){
+  var s=document.getElementById('note-status');if(!s)return;
+  s.classList.remove('saving','error');
+  if(state==='saving'){s.textContent='Saving…';s.classList.add('saving');}
+  else if(state==='error'){s.textContent='Save failed — retrying';s.classList.add('error');}
+  else s.textContent='Saved';
+}
+function updateNoteCount(){
+  var c=document.getElementById('note-count');if(!c)return;
+  var n=(noteEl()?noteEl().value.length:0);
+  c.textContent=n+(n===1?' character':' characters');
+}
+
+// Opening the Notepad tab: drop the latest synced text into the box and put the
+// cursor at the end so the Admin can keep writing straight away.
+function renderNotepad(){
+  var ta=noteEl();if(!ta)return;
+  if(document.activeElement!==ta) ta.value=NOTEPAD_TEXT;
+  updateNoteCount();
+  setNoteStatus('saved');
+  setTimeout(function(){try{ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);}catch(e){}},0);
+}
+
+// Typing: debounce so we save once the Admin pauses, not on every keystroke.
+function noteInput(){
+  updateNoteCount();
+  setNoteStatus('saving');
+  if(_noteSaveTimer)clearTimeout(_noteSaveTimer);
+  _noteSaveTimer=setTimeout(saveNotepad,600);
+}
+
+function saveNotepad(){
+  var ta=noteEl();if(!ta)return;
+  var text=ta.value;
+  NOTEPAD_TEXT=text;
+  setDoc(doc(db,'notepad',noteDocId()),{text:text,owner:noteOwner(),updatedAt:Date.now()})
+    .then(function(){setNoteStatus('saved');})
+    .catch(function(){setNoteStatus('error');
+      if(_noteSaveTimer)clearTimeout(_noteSaveTimer);   // one gentle retry
+      _noteSaveTimer=setTimeout(saveNotepad,4000);});
+}
+
+function copyNotepad(){
+  var text=(noteEl()?noteEl().value:'').trim();
+  if(!text){toast('Notepad is empty — nothing to copy','info');return;}
+  writeClipboardText(text).then(function(){toast('Notepad copied','success');}).catch(function(){toast('Copy failed','error');});
+}
+
+// Updates arriving from Firestore — our own saves echo back here, and so do
+// saves made on the Admin's other devices. Refresh the box UNLESS the Admin is
+// actively typing in it on THIS device, so we never yank text out mid-sentence.
+function applyRemoteNote(text){
+  NOTEPAD_TEXT=text||'';
+  var ta=noteEl();if(!ta)return;
+  if(document.activeElement===ta)return;               // local editing wins until they click away
+  if(ta.value!==NOTEPAD_TEXT){ta.value=NOTEPAD_TEXT;updateNoteCount();}
+  setNoteStatus('saved');
+}
+
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
 window.loadDashboard=loadDashboard;
 window.renderDashboard=renderDashboard;
@@ -7906,6 +8027,9 @@ window.calAlldayToggle=calAlldayToggle;
 window.closeCalAlert=closeCalAlert;
 window.calSnoozeAlert=calSnoozeAlert;
 window.copyCalNote=copyCalNote;
+window.noteInput=noteInput;
+window.copyNotepad=copyNotepad;
+window.renderNotepad=renderNotepad;
 
 // Double-click row to open edit modal
 function rowDblClick(e, id, type) {
