@@ -282,6 +282,18 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .note-area:focus{border-color:var(--accent);}
 .note-area::placeholder{color:var(--text3);}
 .note-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:11px;color:var(--text3);flex-wrap:wrap;}
+/* Notepad page tabs — a row of pills, one per note page */
+.note-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.note-tab{display:inline-flex;align-items:center;gap:5px;max-width:230px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;user-select:none;}
+.note-tab:hover{background:var(--bg4);color:var(--text);transform:translateY(-1px);}
+.note-tab.active{background:var(--bg4);color:var(--text);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
+.note-tab-label{overflow:hidden;text-overflow:ellipsis;max-width:170px;}
+.note-tab-ico{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;line-height:1;padding:2px 3px;border-radius:5px;font-family:var(--sf);display:inline-flex;align-items:center;}
+.note-tab-ico:hover{background:var(--bg2);color:var(--text);}
+.note-tab-del:hover{color:#f87171;}
+.note-tab-add{display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:9px;border:1px dashed var(--border2);background:transparent;color:var(--text3);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sf);transition:.15s;white-space:nowrap;}
+.note-tab-add:hover{border-color:var(--accent);color:var(--accent);background:var(--bg3);transform:translateY(-1px);}
+.note-tab-input{background:var(--bg2);border:1px solid var(--accent);color:var(--text);font-family:var(--sf);font-size:12.5px;font-weight:600;border-radius:6px;padding:2px 6px;outline:none;width:130px;max-width:150px;}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.5);}
 .modal-ov:not(.hidden){animation:ovFadeIn .16s ease-out;}
@@ -957,12 +969,13 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <div class="note-head">
         <div class="note-title">Notepad</div>
         <span class="note-status" id="note-status">Saved</span>
-        <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="copyNotepad()">Copy all</button>
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="copyNotepad()">Copy note</button>
       </div>
+      <div class="note-tabs" id="note-tabs"></div>
       <textarea id="note-area" class="note-area" spellcheck="true" oninput="noteInput()" placeholder="Type anything here — it saves automatically and syncs to every device you sign in on with this account."></textarea>
       <div class="note-foot">
         <span id="note-count">0 characters</span>
-        <span>Autosaves as you type · Private to your account</span>
+        <span>Autosaves as you type · Double-click a tab to rename · Private to your account</span>
       </div>
     </div>
   </div>
@@ -5947,7 +5960,7 @@ async function startFirestore(){
   if(!_noteUnsub && _currentUser && normalizeEmail(_currentUser.email)===PRIMARY_ADMIN_EMAIL){
     _noteUnsub = onSnapshot(doc(db,'notepad',noteDocId()), function(snap){
       if(snap.metadata.hasPendingWrites) return;      // our own save echoing back
-      applyRemoteNote(snap.exists()?(snap.data().text||''):'');
+      applyRemoteNote(snap.exists()?snap.data():null);
     }, function(err){console.error('Notepad sync error',err);});
   }
 }
@@ -7780,13 +7793,39 @@ function renderDashboard(){
 // calendar, but a single always-there note instead of dated events. The
 // Firestore rules restrict this collection to the Admin email, so no other role
 // can read or write it even straight from the browser console.
-var NOTEPAD_TEXT='';        // last text seen from / written to Firestore
-var _noteUnsub=null;        // live-sync listener
-var _noteSaveTimer=null;    // debounce handle for autosave
+// The whole notepad lives in ONE Firestore doc as a list of pages:
+//   { notes:[{id,title,text},…], activeId, owner, updatedAt }
+// Keeping every page in a single doc means one listener, one atomic save and —
+// best of all — NO change to the Firestore rules (still one doc per Admin email).
+// Older docs stored the note as a plain { text } field; noteNormalize() upgrades
+// those on the fly into a single "Note 1" page, so nothing is ever lost.
+var NOTE_DOC={notes:[],activeId:null};   // full in-memory model of every page
+var _noteUnsub=null;                     // live-sync listener
+var _noteSaveTimer=null;                 // debounce handle for autosave
 
 function noteOwner(){return currentAlertUserKey();}                       // the signed-in email
 function noteDocId(){return String(noteOwner()||'anon').replace(/[^a-z0-9]/gi,'_').toLowerCase();}
 function noteEl(){return document.getElementById('note-area');}
+function noteGenId(){return 'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function noteById(id){for(var i=0;i<NOTE_DOC.notes.length;i++){if(NOTE_DOC.notes[i].id===id)return NOTE_DOC.notes[i];}return null;}
+function noteActive(){return noteById(NOTE_DOC.activeId)||NOTE_DOC.notes[0]||null;}
+
+// Turn whatever is in Firestore (the new multi-page shape, the old single-text
+// shape, or nothing at all) into a clean {notes,activeId} model with at least one
+// page. Titles and ids are sanitised so a hand-edited doc can't break the UI.
+function noteNormalize(data){
+  data=data||{};
+  var notes=Array.isArray(data.notes)?data.notes:null;
+  if(!notes)notes=[{id:noteGenId(),title:'Note 1',text:(data.text||'')}];   // legacy upgrade
+  notes=notes.filter(function(n){return n&&typeof n==='object';}).map(function(n,i){
+    var t=(n.title!=null?String(n.title).trim():'');
+    return {id:String(n.id||noteGenId()),title:t?t.slice(0,40):('Note '+(i+1)),text:(n.text!=null?String(n.text):'')};
+  });
+  if(!notes.length)notes=[{id:noteGenId(),title:'Note 1',text:''}];
+  var activeId=data.activeId;
+  if(!notes.some(function(n){return n.id===activeId;}))activeId=notes[0].id;
+  return {notes:notes,activeId:activeId};
+}
 
 function setNoteStatus(state){
   var s=document.getElementById('note-status');if(!s)return;
@@ -7801,18 +7840,157 @@ function updateNoteCount(){
   c.textContent=n+(n===1?' character':' characters');
 }
 
-// Opening the Notepad tab: drop the latest synced text into the box and put the
-// cursor at the end so the Admin can keep writing straight away.
-function renderNotepad(){
-  var ta=noteEl();if(!ta)return;
-  if(document.activeElement!==ta) ta.value=NOTEPAD_TEXT;
-  updateNoteCount();
-  setNoteStatus('saved');
-  setTimeout(function(){try{ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);}catch(e){}},0);
+// Keep the in-memory page in step with what's in the box before any save/switch.
+function noteSyncTextareaToModel(){
+  var ta=noteEl(),a=noteActive();
+  if(ta&&a)a.text=ta.value;
 }
 
-// Typing: debounce so we save once the Admin pauses, not on every keystroke.
+// Draw the row of page tabs. The active tab also shows a rename (✎) and, when
+// there's more than one page, a delete (✕) control; a "+ New note" pill sits at
+// the end. Handlers are wired here in JS, so no inline onclick is needed.
+function renderNoteTabs(){
+  var bar=document.getElementById('note-tabs');if(!bar)return;
+  bar.innerHTML='';
+  NOTE_DOC.notes.forEach(function(n){
+    var active=n.id===NOTE_DOC.activeId;
+    var pill=document.createElement('div');
+    pill.className='note-tab'+(active?' active':'');
+    pill.title=n.title;
+    pill.onclick=function(){noteSwitch(n.id);};
+    pill.ondblclick=function(e){e.stopPropagation();noteBeginRename(n.id);};
+    var lbl=document.createElement('span');
+    lbl.className='note-tab-label';lbl.textContent=n.title;
+    pill.appendChild(lbl);
+    if(active){
+      var ren=document.createElement('button');
+      ren.type='button';ren.className='note-tab-ico';ren.innerHTML='✎';
+      ren.title='Rename';ren.setAttribute('aria-label','Rename note');
+      ren.onclick=function(e){e.stopPropagation();noteBeginRename(n.id);};
+      pill.appendChild(ren);
+      if(NOTE_DOC.notes.length>1){
+        var del=document.createElement('button');
+        del.type='button';del.className='note-tab-ico note-tab-del';del.innerHTML='✕';
+        del.title='Delete';del.setAttribute('aria-label','Delete note');
+        del.onclick=function(e){e.stopPropagation();noteDelete(n.id);};
+        pill.appendChild(del);
+      }
+    }
+    bar.appendChild(pill);
+  });
+  var add=document.createElement('button');
+  add.type='button';add.className='note-tab-add';add.textContent='+ New note';
+  add.title='Create a new note';add.onclick=noteNewTab;
+  bar.appendChild(add);
+}
+
+// Move focus into the box, unless a rename input is open (don't steal it away).
+function noteFocusArea(){
+  var ta=noteEl();if(!ta)return;
+  setTimeout(function(){
+    if(document.querySelector('.note-tab-input'))return;   // a rename is in progress
+    try{ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);}catch(e){}
+  },0);
+}
+
+// Opening the Notepad tab: make sure we have a model, draw the tabs, drop the
+// active page's text into the box and put the cursor at the end.
+function renderNotepad(){
+  if(!NOTE_DOC.notes||!NOTE_DOC.notes.length)NOTE_DOC=noteNormalize(null);
+  renderNoteTabs();
+  var ta=noteEl();if(!ta)return;
+  var a=noteActive();
+  if(document.activeElement!==ta)ta.value=a?a.text:'';
+  updateNoteCount();
+  setNoteStatus('saved');
+  noteFocusArea();
+}
+
+// Switch which page is showing. Sync + save first so the page you're leaving
+// keeps its text (and the new activeId is remembered). No-op on the active tab.
+function noteSwitch(id,skipFocus){
+  if(!noteById(id)||id===NOTE_DOC.activeId)return;
+  noteSyncTextareaToModel();
+  NOTE_DOC.activeId=id;
+  var ta=noteEl(),a=noteActive();
+  if(ta)ta.value=a?a.text:'';
+  renderNoteTabs();
+  updateNoteCount();
+  setNoteStatus('saved');
+  saveNotepad();
+  if(!skipFocus)noteFocusArea();
+}
+
+// Add a fresh blank page and jump to it. Picks the next free "Note N" name.
+function noteNewTab(){
+  noteSyncTextareaToModel();
+  var used={};NOTE_DOC.notes.forEach(function(n){used[n.title]=1;});
+  var i=NOTE_DOC.notes.length+1;while(used['Note '+i])i++;
+  var n={id:noteGenId(),title:'Note '+i,text:''};
+  NOTE_DOC.notes.push(n);
+  NOTE_DOC.activeId=n.id;
+  var ta=noteEl();if(ta)ta.value='';
+  renderNoteTabs();
+  updateNoteCount();
+  setNoteStatus('saved');
+  saveNotepad();
+  noteFocusArea();
+}
+
+// Rename a page inline — the tab label turns into a little text box. Enter or
+// clicking away saves; Escape cancels.
+function noteBeginRename(id){
+  if(NOTE_DOC.activeId!==id)noteSwitch(id,true);
+  var bar=document.getElementById('note-tabs');
+  var pill=bar&&bar.querySelector('.note-tab.active');
+  var note=noteById(id),lbl=pill&&pill.querySelector('.note-tab-label');
+  if(!pill||!note||!lbl)return;
+  var inp=document.createElement('input');
+  inp.type='text';inp.className='note-tab-input';inp.value=note.title;inp.maxLength=40;
+  lbl.replaceWith(inp);
+  inp.focus();inp.select();
+  var done=false;
+  function commit(save){
+    if(done)return;done=true;
+    var v=inp.value.trim();
+    if(save&&v&&v!==note.title){note.title=v.slice(0,40);saveNotepad();}
+    renderNoteTabs();
+  }
+  inp.onkeydown=function(e){
+    if(e.key==='Enter'){e.preventDefault();commit(true);}
+    else if(e.key==='Escape'){e.preventDefault();commit(false);}
+  };
+  inp.onblur=function(){commit(true);};
+}
+
+// Delete a page. If it still has text we confirm first; empty pages go quietly.
+// The button only appears when there's more than one page, so we always keep one.
+function noteDelete(id){
+  if(NOTE_DOC.notes.length<=1){toast('You need at least one note','info');return;}
+  var n=noteById(id);if(!n)return;
+  var doDelete=function(){
+    var idx=-1;for(var i=0;i<NOTE_DOC.notes.length;i++){if(NOTE_DOC.notes[i].id===id){idx=i;break;}}
+    if(idx<0)return;
+    NOTE_DOC.notes.splice(idx,1);
+    if(NOTE_DOC.activeId===id){
+      var next=NOTE_DOC.notes[Math.max(0,idx-1)]||NOTE_DOC.notes[0];
+      NOTE_DOC.activeId=next?next.id:null;
+    }
+    var ta=noteEl(),a=noteActive();
+    if(ta)ta.value=a?a.text:'';
+    renderNoteTabs();updateNoteCount();setNoteStatus('saved');saveNotepad();
+    noteFocusArea();
+    toast('Note deleted','success');
+  };
+  if((n.text||'').trim())
+    appConfirm('Delete note “'+n.title+'”? This can’t be undone.','Delete').then(function(ok){if(ok)doDelete();});
+  else doDelete();
+}
+
+// Typing: mirror the box into the model, then debounce so we save once the Admin
+// pauses, not on every keystroke.
 function noteInput(){
+  noteSyncTextareaToModel();
   updateNoteCount();
   setNoteStatus('saving');
   if(_noteSaveTimer)clearTimeout(_noteSaveTimer);
@@ -7820,31 +7998,47 @@ function noteInput(){
 }
 
 function saveNotepad(){
-  var ta=noteEl();if(!ta)return;
-  var text=ta.value;
-  NOTEPAD_TEXT=text;
-  setDoc(doc(db,'notepad',noteDocId()),{text:text,owner:noteOwner(),updatedAt:Date.now()})
+  if(_noteSaveTimer){clearTimeout(_noteSaveTimer);_noteSaveTimer=null;}   // fold any pending debounce in
+  noteSyncTextareaToModel();
+  var payload={
+    notes:NOTE_DOC.notes.map(function(n){return {id:n.id,title:n.title,text:n.text};}),
+    activeId:NOTE_DOC.activeId,
+    owner:noteOwner(),
+    updatedAt:Date.now()
+  };
+  setDoc(doc(db,'notepad',noteDocId()),payload)
     .then(function(){setNoteStatus('saved');})
     .catch(function(){setNoteStatus('error');
       if(_noteSaveTimer)clearTimeout(_noteSaveTimer);   // one gentle retry
       _noteSaveTimer=setTimeout(saveNotepad,4000);});
 }
 
+// Copy the CURRENT page's text.
 function copyNotepad(){
-  var text=(noteEl()?noteEl().value:'').trim();
-  if(!text){toast('Notepad is empty — nothing to copy','info');return;}
-  writeClipboardText(text).then(function(){toast('Notepad copied','success');}).catch(function(){toast('Copy failed','error');});
+  var a=noteActive();
+  var text=(a?a.text:'').trim();
+  if(!text){toast('This note is empty — nothing to copy','info');return;}
+  writeClipboardText(text).then(function(){toast('Note copied','success');}).catch(function(){toast('Copy failed','error');});
 }
 
-// Updates arriving from Firestore — our own saves echo back here, and so do
-// saves made on the Admin's other devices. Refresh the box UNLESS the Admin is
-// actively typing in it on THIS device, so we never yank text out mid-sentence.
-function applyRemoteNote(text){
-  NOTEPAD_TEXT=text||'';
-  var ta=noteEl();if(!ta)return;
-  if(document.activeElement===ta)return;               // local editing wins until they click away
-  if(ta.value!==NOTEPAD_TEXT){ta.value=NOTEPAD_TEXT;updateNoteCount();}
-  setNoteStatus('saved');
+// Updates arriving from Firestore — our own saves echo back here (filtered by the
+// listener), and so do saves made on the Admin's other devices. Rebuild the model
+// UNLESS the Admin is actively typing on THIS device, so we never yank text out
+// mid-sentence. We also keep OUR active page put, so another device switching
+// pages doesn't move this one.
+function applyRemoteNote(data){
+  var ta=noteEl();
+  if(ta&&currentTab==='notepad'&&document.activeElement===ta)return;   // local editing wins
+  var localActive=NOTE_DOC.activeId;
+  NOTE_DOC=noteNormalize(data);
+  if(localActive&&noteById(localActive))NOTE_DOC.activeId=localActive;
+  if(currentTab==='notepad'){
+    renderNoteTabs();
+    var a=noteActive();
+    if(ta)ta.value=a?a.text:'';
+    updateNoteCount();
+    setNoteStatus('saved');
+  }
 }
 
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
