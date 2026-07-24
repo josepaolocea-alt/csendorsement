@@ -36,8 +36,9 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .tab-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0);}
 .toolbar .tab-btn::after{top:auto;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(3px);}
 .toolbar .tab-btn:hover::after{transform:translateX(-50%) translateY(0);}
-/* Upcoming-event indicator on the Calendar tab — a single-color, semi-transparent dot */
-.tab-btn.has-upcoming::before{content:"";position:absolute;top:5px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:.55;pointer-events:none;z-index:1;}
+/* Tab dot — a single-color, semi-transparent blue dot. Calendar uses it for an
+   upcoming event; Tasks/DID/RR-RO use it (has-pending) for unfinished entries. */
+.tab-btn.has-upcoming::before,.tab-btn.has-pending::before{content:"";position:absolute;top:5px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:.55;pointer-events:none;z-index:1;}
 .ml-auto{margin-left:auto;}
 .btn{padding:7px 14px;border-radius:8px;border:none;font-family:var(--sf);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap;}
 .btn-primary{background:var(--accent);color:#fff;}
@@ -632,10 +633,10 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <span class="app-title">CYN Endorsement</span>
   </div>
   <div class="divider"></div>
-  <button class="tab-btn active" data-tip="All Tasks" aria-label="All Tasks" onclick="switchTab('all',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></button>
-  <button class="tab-btn" data-tip="DID Order / Cancel" aria-label="DID Order / Cancel" onclick="switchTab('did',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></button>
+  <button class="tab-btn active" id="tab-btn-all" data-tip="All Tasks" aria-label="All Tasks" onclick="switchTab('all',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></button>
+  <button class="tab-btn" id="tab-btn-did" data-tip="DID Order / Cancel" aria-label="DID Order / Cancel" onclick="switchTab('did',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></button>
   <button class="tab-btn" data-tip="Done / Resolved" aria-label="Done / Resolved" onclick="switchTab('done',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></button>
-  <button class="tab-btn" data-tip="Pending RR / RO" aria-label="Pending RR / RO" onclick="switchTab('mine',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+  <button class="tab-btn" id="tab-btn-mine" data-tip="Pending RR / RO" aria-label="Pending RR / RO" onclick="switchTab('mine',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
   <button class="tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
   <button class="tab-btn" id="dashboard-tab-btn" style="display:none" data-tip="Dashboard" aria-label="Dashboard" onclick="switchTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></button>
   <button class="tab-btn" id="admin-tab-btn" style="display:none" data-tip="Admin" aria-label="Admin" onclick="switchTab('admin',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
@@ -3898,6 +3899,32 @@ function updateCalBadge(force){
   btn.classList.toggle('has-upcoming',calHasUpcomingWithin(now,CAL_BADGE_DAYS));
 }
 
+// ── Pending-work dots on the Tasks / DID / RR-RO tabs ──
+// A blue dot (same style as the Calendar "upcoming" dot) sits on a tab whenever it
+// still holds unfinished entries, so pending work is visible from any tab:
+//   • Tasks  — main tickets not in a Done/Resolved status
+//   • DID    — DID orders/cancels not yet Done / Cancel by Client
+//   • RR/RO  — RR entries still pending (not completed and not disregarded)
+// Recomputed on every applyFilters() call, which the Firestore snapshot and every
+// local edit go through, so the dots stay in sync without a per-second loop.
+function updatePendingBadges(){
+  if(!Array.isArray(DATA))return;
+  var nAll=0,nDID=0,nRR=0;
+  for(var i=0;i<DATA.length;i++){
+    var r=DATA[i];
+    if(r._type==='did'){ if(!isRecordCompleted(r))nDID++; }
+    else if(r._type==='rr'){ if(!r.rrCompleted&&!r.rrDisregard)nRR++; }
+    else { if(!isRecordCompleted(r))nAll++; }
+  }
+  _togglePendingDot('tab-btn-all',nAll);
+  _togglePendingDot('tab-btn-did',nDID);
+  _togglePendingDot('tab-btn-mine',nRR);
+}
+function _togglePendingDot(id,n){
+  var b=document.getElementById(id);
+  if(b)b.classList.toggle('has-pending',n>0);
+}
+
 // ── Alarm engine ──
 // Runs from the 1-second loop (so it fires on any tab), from the calendar
 // onSnapshot (fires even when this tab is throttled in the background), and on
@@ -3983,6 +4010,7 @@ function calSnoozeAlert(){
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){try{checkCalendarEvents();}catch(e){}try{updateCalBadge(true);}catch(e){}}});
 
 function applyFilters(){
+  try{updatePendingBadges();}catch(e){}
   if(currentTab==='did'){applyDIDFilters();return;}
   if(currentTab==='mine'){applyRRFilters();return;}
   if(currentTab==='trash'){applyTrashFilters();return;}
@@ -5516,6 +5544,28 @@ function _trelloCreds(){
 }
 function _trelloGetMap(boardId){try{return JSON.parse(localStorage.getItem('trello_map_'+boardId)||'{}');}catch(e){return {};}}
 function _trelloSaveMap(boardId,map){try{localStorage.setItem('trello_map_'+boardId,JSON.stringify(map));}catch(e){}}
+// Trello card position so the list mirrors the app order (newest entry on top).
+// The app sorts each list by its primary date desc (rrDate for RR, else startDate),
+// with createdAt breaking same-day ties. Trello lists sort by ascending pos, so newest
+// must map to the SMALLEST number. Derived only from the record's own date, so it is
+// stable: adding a new entry never shifts anyone else's position.
+function _trelloPos(r){
+  var ds=r._type==='rr'?r.rrDate:r.startDate;            // date the app sorts this row by
+  var dayMs=ds?Date.parse(String(ds)+'T00:00:00'):NaN;
+  if(isNaN(dayMs))dayMs=Number(r.createdAt)||0;          // no date set -> fall back to when it was added
+  var day=Math.floor(dayMs/86400000);                    // whole days since epoch
+  var created=Math.floor((Number(r.createdAt)||0)/1000); // seconds since epoch (tiebreaker)
+  return (60000-day)*5000000000+(4000000000-created);    // newer -> smaller -> top; safe exact integer
+}
+// Fingerprint of everything that ends up on a card (title, description, column, labels, position).
+// If it matches last sync's fingerprint, the card is already up to date and we skip it.
+function _trelloFp(r){
+  var s=[_trelloCatFor(r),_trelloTitle(r),_trelloDesc(r),_trelloLabels(r).join('|')].join('');
+  var h=5381,i=s.length;while(i)h=((h*33)^s.charCodeAt(--i))>>>0;
+  return h.toString(36)+'.'+_trelloPos(r);   // fold in position so a moved card re-syncs
+}
+function _trelloGetFp(boardId){try{return JSON.parse(localStorage.getItem('trello_fp_'+boardId)||'{}');}catch(e){return {};}}
+function _trelloSaveFp(boardId,fp){try{localStorage.setItem('trello_fp_'+boardId,JSON.stringify(fp));}catch(e){}}
 function _trelloSetStatus(text,ok){var el=document.getElementById('trello-status');if(el){el.textContent=text;el.style.color=ok?'#4ade80':'var(--text3)';}}
 var _trelloRestored=false;
 
@@ -5627,38 +5677,65 @@ async function trelloSync(){
       labelMap[name]=nlb.id;return nlb.id;
     }
 
-    var created=0,updated=0,failed=0;
-    for(var i=0;i<tasks.length;i++){
-      var r=tasks[i];
-      if(btn)btn.textContent='Syncing… '+(i+1)+'/'+tasks.length;
-      try{
-        var idList=listMap[_trelloCatFor(r)];
-        var idLabels=[];
-        var lbls=_trelloLabels(r);
-        for(var li2=0;li2<lbls.length;li2++){
-          var lid=await ensureLabel(lbls[li2],priColors[lbls[li2]]||'sky');
-          if(lid)idLabels.push(lid);
-        }
-        var fields={name:_trelloTitle(r),desc:_trelloDesc(r),idList:idList,idLabels:idLabels.join(',')};
-        var existingId=map[r.id];
-        if(existingId){
-          try{await _trelloApi('PUT','/cards/'+existingId,null,fields);updated++;}
-          catch(e){
-            if(String(e.message).indexOf(' 404')>-1){var nc=await _trelloApi('POST','/cards',null,fields);map[r.id]=nc.id;created++;}
-            else throw e;
-          }
-        }else{
-          var nc2=await _trelloApi('POST','/cards',null,fields);map[r.id]=nc2.id;created++;
-        }
-      }catch(e2){failed++;log('⚠️ '+(_trelloTitle(r)||r.id||'record')+' — '+e2.message);}
-      // Persist the card map every 10 records so an interrupted sync won't re-create those cards next time
-      if((i+1)%10===0){_trelloSaveMap(c.boardId,map);log('… '+(i+1)+'/'+tasks.length+' done ('+created+' new, '+updated+' updated)');}
-      if(tasks.length>1)await new Promise(function(res){setTimeout(res,90);});
+    // Skip cards that are already up to date: only sync records whose fingerprint changed.
+    var fpMap=_trelloGetFp(c.boardId);
+    var newFp={};
+    var toSync=[],skipped=0;
+    for(var t=0;t<tasks.length;t++){
+      var tr=tasks[t],tfp=_trelloFp(tr);
+      if(map[tr.id]&&fpMap[tr.id]===tfp){newFp[tr.id]=tfp;skipped++;}   // unchanged -> keep, don't call Trello
+      else toSync.push(tr);
     }
+    log(skipped+' unchanged (skipped), '+toSync.length+' to sync.');
+
+    // Create any brand-new labels once, up front, so the parallel phase below never
+    // races to create the same label twice.
+    for(var pl=0;pl<toSync.length;pl++){
+      var plbls=_trelloLabels(toSync[pl]);
+      for(var pl2=0;pl2<plbls.length;pl2++){await ensureLabel(plbls[pl2],priColors[plbls[pl2]]||'sky');}
+    }
+
+    // Pace requests to ~9/sec (Trello allows 100/10s per token) regardless of how many
+    // workers are in flight, so we stay under the limit without going one-at-a-time.
+    var gateAt=0;
+    function gate(){var now=Date.now(),at=now>gateAt?now:gateAt;gateAt=at+110;return new Promise(function(res){setTimeout(res,at-now);});}
+
+    var created=0,updated=0,failed=0,done=0,next=0;
+    async function worker(){
+      while(next<toSync.length){
+        var r=toSync[next++],fp=_trelloFp(r);
+        try{
+          var idLabels=[],lbls=_trelloLabels(r);
+          for(var li2=0;li2<lbls.length;li2++){if(labelMap[lbls[li2]])idLabels.push(labelMap[lbls[li2]]);}
+          var fields={pos:_trelloPos(r),name:_trelloTitle(r),desc:_trelloDesc(r),idList:listMap[_trelloCatFor(r)],idLabels:idLabels.join(',')};
+          var existingId=map[r.id];
+          await gate();
+          if(existingId){
+            try{await _trelloApi('PUT','/cards/'+existingId,null,fields);updated++;}
+            catch(e){
+              if(String(e.message).indexOf(' 404')>-1){var nc=await _trelloApi('POST','/cards',null,fields);map[r.id]=nc.id;created++;}
+              else throw e;
+            }
+          }else{
+            var nc2=await _trelloApi('POST','/cards',null,fields);map[r.id]=nc2.id;created++;
+          }
+          newFp[r.id]=fp;   // success -> remember fingerprint so next sync can skip it
+        }catch(e2){failed++;log('⚠️ '+(_trelloTitle(r)||r.id||'record')+' — '+e2.message);}
+        done++;
+        if(btn)btn.textContent='Syncing… '+done+'/'+toSync.length;
+        // Persist every 10 records so an interrupted sync won't re-create or re-send those next time
+        if(done%10===0){_trelloSaveMap(c.boardId,map);_trelloSaveFp(c.boardId,newFp);log('… '+done+'/'+toSync.length+' done ('+created+' new, '+updated+' updated)');}
+      }
+    }
+    var CONC=Math.min(4,toSync.length)||1,workers=[];
+    for(var w=0;w<CONC;w++)workers.push(worker());
+    await Promise.all(workers);
+
     _trelloSaveMap(c.boardId,map);
-    log('✅ Done. Created '+created+', updated '+updated+(failed?(', failed '+failed):'')+'.');
-    try{writeLog('exported','Trello sync','Trello board sync — created '+created+', updated '+updated+', failed '+failed);}catch(e){}
-    toast('Trello sync complete — '+created+' new, '+updated+' updated'+(failed?(', '+failed+' failed'):''),failed?'info':'success');
+    _trelloSaveFp(c.boardId,newFp);
+    log('✅ Done. Created '+created+', updated '+updated+(skipped?(', skipped '+skipped):'')+(failed?(', failed '+failed):'')+'.');
+    try{writeLog('exported','Trello sync','Trello board sync — created '+created+', updated '+updated+', skipped '+skipped+', failed '+failed);}catch(e){}
+    toast('Trello sync complete — '+created+' new, '+updated+' updated'+(skipped?(', '+skipped+' unchanged'):'')+(failed?(', '+failed+' failed'):''),failed?'info':'success');
   }catch(e){
     log('❌ Sync failed: '+e.message);
     toast('Trello sync failed — '+e.message,'error');
