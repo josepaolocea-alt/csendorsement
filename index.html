@@ -5630,6 +5630,7 @@ async function trelloSync(){
     var created=0,updated=0,failed=0;
     for(var i=0;i<tasks.length;i++){
       var r=tasks[i];
+      if(btn)btn.textContent='Syncing… '+(i+1)+'/'+tasks.length;
       try{
         var idList=listMap[_trelloCatFor(r)];
         var idLabels=[];
@@ -5650,10 +5651,12 @@ async function trelloSync(){
           var nc2=await _trelloApi('POST','/cards',null,fields);map[r.id]=nc2.id;created++;
         }
       }catch(e2){failed++;log('⚠️ '+(_trelloTitle(r)||r.id||'record')+' — '+e2.message);}
+      // Persist the card map every 10 records so an interrupted sync won't re-create those cards next time
+      if((i+1)%10===0){_trelloSaveMap(c.boardId,map);log('… '+(i+1)+'/'+tasks.length+' done ('+created+' new, '+updated+' updated)');}
       if(tasks.length>1)await new Promise(function(res){setTimeout(res,90);});
     }
     _trelloSaveMap(c.boardId,map);
-    log('Done. Created '+created+', updated '+updated+(failed?(', failed '+failed):'')+'.');
+    log('✅ Done. Created '+created+', updated '+updated+(failed?(', failed '+failed):'')+'.');
     try{writeLog('exported','Trello sync','Trello board sync — created '+created+', updated '+updated+', failed '+failed);}catch(e){}
     toast('Trello sync complete — '+created+' new, '+updated+' updated'+(failed?(', '+failed+' failed'):''),failed?'info':'success');
   }catch(e){
