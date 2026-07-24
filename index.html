@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CYN Endorsement</title>
 <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22CYN+Endorsement%22%2C%22short_name%22%3A%22CYN%22%2C%22description%22%3A%22CYN+Endorsement+App%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230d0d0f%22%2C%22theme_color%22%3A%22%230d0d0f%22%2C%22orientation%22%3A%22any%22%7D">
 <meta name="theme-color" content="#0d0d0f">
@@ -533,6 +533,64 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 @media (max-width:480px){
   .app-title{display:none;}       /* keep the logo mark, drop the wordmark to reclaim space */
   #user-email-display{display:none;}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MOBILE / TOUCH COMPATIBILITY
+   Consolidated phone-first fixes. Desktop is untouched — every rule is
+   gated behind a narrow max-width or a coarse pointer.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* 1. Stop iOS Safari zooming the whole page when a field is focused.
+      Mobile Safari auto-zooms any <input>/<select>/<textarea> whose font
+      is < 16px. The app's controls are 13px, so every tap zoomed the page.
+      16px keeps the layout put. (Desktop keeps the denser 13px.) */
+@media (max-width:700px){
+  input,select,textarea,.fc,.fsel,.search-wrap input,.note-tab-input{font-size:16px;}
+  /* number spinners for the custom-timer HH:MM already set 16px inline — leave them */
+}
+
+/* 2. Keep the primary actions reachable on phones.
+      The top bar is a single horizontally-swipeable strip, which pushed the
+      New / theme / sign-out cluster ~730px off-screen. Pin that cluster to
+      the right edge so it stays visible while only the tab icons scroll
+      underneath it. */
+@media (max-width:700px){
+  .topbar{scroll-padding-right:150px;}
+  .topbar .ml-auto{position:sticky;right:0;padding-left:8px;background:var(--bg2);
+    box-shadow:-12px 0 12px -6px rgba(0,0,0,.28);z-index:3;}
+  .topbar .ml-auto #user-chip{display:none!important;} /* identity is non-essential on a phone; sign-out icon stays */
+}
+
+/* 3. Collapse two/three-column form grids to a single column so modal forms
+      stop overflowing and fields get full width to tap. */
+@media (max-width:600px){
+  .fg,.fg3{grid-template-columns:1fr;}
+  .cal-field-row{flex-direction:column;gap:0;}
+  .cal-field-row>.cal-field{width:100%;}
+  /* Footers with pin toggle + meta + buttons: let them wrap instead of squashing */
+  .modal-ftr{flex-wrap:wrap;}
+  .modal-footer-left{width:100%;}
+  .entry-modal .modal-ftr>div:last-child{margin-left:auto;}
+}
+
+/* 4. Notch / home-indicator safe areas (the app installs as a standalone PWA
+      with a translucent status bar). env() is 0 on non-notch devices, so the
+      max() falls back to the existing padding everywhere else. */
+@media (max-width:700px){
+  .topbar{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right));}
+  .main{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right));}
+}
+.modal-ftr{padding-bottom:max(12px,env(safe-area-inset-bottom));}
+.toast-wrap{bottom:max(20px,env(safe-area-inset-bottom));right:max(20px,env(safe-area-inset-right));}
+
+/* 5. Small-phone polish */
+@media (max-width:480px){
+  .login-screen{padding:16px;}       /* let the card float with margins instead of edge-to-edge */
+  .login-card{padding:28px 22px;}
+  .toast{max-width:calc(100vw - 24px);}
+  /* the New button keeps its label for discoverability but tightens up */
+  #new-btn{padding:7px 11px;}
 }
 
 </style>
