@@ -958,6 +958,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
     <button class="tab-btn" id="density-btn" data-tip="Compact rows" aria-label="Toggle row density" onclick="toggleDensity()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     <button class="tab-btn" id="auto-toggle-btn" data-tip="Settings" aria-label="Settings" onclick="toggleAutoPanel()" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
     <button class="tab-btn" data-tip="Export" aria-label="Export" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
+    <button class="tab-btn" data-tip="Export to Trello (All Tasks)" aria-label="Export to Trello" onclick="exportTrello()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="7" y="7" width="3" height="9"/><rect x="14" y="7" width="3" height="5"/></svg></button>
     <button class="tab-btn" id="daily-report-btn" data-tip="Daily Report" aria-label="Daily Report" onclick="openDailyReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></button>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
     <button class="btn btn-sm" id="trash-restore-sel-btn" onclick="restoreSelected()" style="display:none;background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)">Restore Selected</button>
@@ -1129,6 +1130,27 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <button class="btn btn-primary btn-sm" id="backup-btn" onclick="downloadBackup()">Download Full Backup</button>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-top:2px">Saves one JSON file containing every record, comment, user, client, dropdown, setting, activity log, and calendar event — a complete snapshot to keep as a safety net in case data is ever lost or changed by mistake. Admin only.</p>
+    </div>
+
+    <!-- TRELLO SYNC -->
+    <div class="admin-section" id="trello-section">
+      <div class="admin-toolbar">
+        <span class="admin-ctitle">Trello Sync</span>
+        <span id="trello-status" style="font-size:11px;color:var(--text3)">Not connected</span>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:2px 0 10px">Pushes your records to a Trello board as cards, laid out in <strong>four columns</strong> — ALL TASK, DID Order/Cancel, Done / Resolved, Pending RR / RO — one card per entry. Re-syncing <strong>updates the same card</strong> (and moves it to the right column if its status changed) instead of creating duplicates. Your key &amp; token are saved only on <strong>this device</strong>, never in the shared app — the token is like a password to your Trello, so keep it private.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+        <input class="fc" id="trello-key" type="text" placeholder="Trello API Key" style="width:230px" autocomplete="off" spellcheck="false">
+        <input class="fc" id="trello-token" type="password" placeholder="Trello Token" style="width:230px" autocomplete="off" spellcheck="false">
+        <button class="btn btn-secondary btn-sm" id="trello-connect-btn" onclick="trelloConnect()">Connect</button>
+      </div>
+      <div id="trello-board-row" style="display:none;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--text3)">Board:</span>
+        <select class="fsel" id="trello-board" style="min-width:200px"></select>
+        <button class="btn btn-primary btn-sm" id="trello-sync-btn" onclick="trelloSync()">Sync to Trello now</button>
+        <button class="btn btn-secondary btn-sm" onclick="trelloDisconnect()">Disconnect</button>
+      </div>
+      <pre id="trello-log" style="display:none;white-space:pre-wrap;word-break:break-word;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.5;color:var(--text3);max-height:180px;overflow:auto;font-family:'DM Mono',monospace;margin:0"></pre>
     </div>
 
     <!-- USER MANAGEMENT -->
@@ -5371,6 +5393,277 @@ function doExportRows(rows,mode){
   toast('Exported '+rows.length+' record'+(rows.length!==1?'s':''),'success');
 }
 
+// ─── EXPORT TO TRELLO ───────────────────────────────────────
+// Downloads the open All Tasks records as a Trello-ready CSV. The columns use Trello's
+// standard import headers (Card Name / List Name / Labels / Start Date / Description) so the
+// file maps cleanly in Trello's native importer (Premium) or a free import Power-Up such as
+// "Import to Trello by Blue Cat". Mapping: Status → Trello list, Priority + Platform → labels,
+// and every other detail (incl. comments) is folded into the card description as Markdown.
+// This is export-only — it never contacts Trello and never changes any data; it just makes a file.
+function exportTrello(){
+  // All Tasks = open endorsements only (exclude DID Order/Cancel, Pending RR/RO, and completed statuses)
+  var allTasks=DATA.filter(function(r){
+    return r._type!=='did'&&r._type!=='rr'&&DONE_ST.indexOf(r.status)===-1;
+  });
+  var selected=allTasks.filter(function(r){return r._sel;});
+  var rows=selected.length>0?selected:allTasks;
+  if(rows.length===0){toast('No open All Tasks records to export','info');return;}
+
+  function run(){
+    function cell(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}
+    var headers=['Card Name','List Name','Labels','Start Date','Description'];
+    var lines=[headers.join(',')];
+    rows.forEach(function(r){
+      var title=[r.client,r.concern].filter(function(x){return x&&String(x).trim();}).join(' — ')||'(untitled task)';
+      var list=r.status||'No Status';
+      var labels=[r.priority,r.platform].filter(function(x){return x&&String(x).trim();}).join(', ');
+      lines.push([cell(title),cell(list),cell(labels),cell(r.startDate||''),cell(_trelloDesc(r))].join(','));
+    });
+    var today=new Date().toISOString().split('T')[0];
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+    a.download='trello_all_tasks_'+today+'.csv';
+    a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    try{writeLog('exported','Trello CSV','Exported '+rows.length+' All Tasks records for Trello');}catch(e){}
+    toast('Trello CSV ready — '+rows.length+' card'+(rows.length!==1?'s':''),'success');
+  }
+
+  if(selected.length>0){run();}
+  else appConfirm('Export all '+allTasks.length+' open All Tasks record'+(allTasks.length!==1?'s':'')+' to a Trello-ready CSV file?','Export to Trello').then(function(ok){if(ok)run();});
+}
+
+// ─── TRELLO API SYNC ────────────────────────────────────────
+// Live sync of every app record to a Trello board via Trello's REST API. Records are laid out in
+// four fixed columns (Lists) mirroring the app's tabs — ALL TASK, DID Order/Cancel, Done / Resolved,
+// Pending RR / RO — one card per entry. Re-syncing UPDATES the same card (and moves it to the right
+// column if its category changed) instead of duplicating, via a {recordId → cardId} map kept in this
+// browser's localStorage (per board). Credentials (key + token) are localStorage-only — never written
+// to Firestore or the shared app. Priority (+ Platform) → labels; the rest → the card description.
+
+// The Markdown card description — branches by record type so RR and DID cards show their own fields.
+// Shared by the CSV export (endorsements only) and the API sync.
+function _trelloDesc(r){
+  var d=[];
+  if(r._type==='rr'){
+    d.push('**Subject:** '+(r.rrSubject||'—'));
+    d.push('**Priority:** '+(r.rrPriority||'—'));
+    d.push('**RR Date:** '+(fmtDate(r.rrDate)||'—'));
+    d.push('**RR By:** '+(r.rrBy||'—'));
+    d.push('**RO By:** '+(r.roBy||'—'));
+    d.push('**Status:** '+(r.rrStatus||'—'));
+    d.push('**Effectivity:** '+(fmtDate(r.rrEffDate)||'—'));
+    d.push('**Advised to Client:** '+(r.rrAdvised||'—'));
+    d.push('**Posted:** '+(r.rrPosted||'—'));
+    d.push('**Updated Inventory:** '+(r.rrInv||'—'));
+    if(r.rrRemarks){d.push('','**Description:** '+r.rrRemarks);}
+  }else if(r._type==='did'){
+    d.push('**Client / Vendor:** '+(r.client||'—'));
+    d.push('**Service:** '+(r.service||'—'));
+    d.push('**Priority:** '+(r.priority||'—'));
+    d.push('**Status:** '+(r.status||'—'));
+    d.push('**AM:** '+(r.am||'—'));
+    d.push('**Start Date:** '+(fmtDate(r.startDate)||'—'));
+    if(r.desc){d.push('','**Detail:** '+r.desc);}
+  }else{
+    d.push('**Client / Vendor:** '+(r.client||'—'));
+    d.push('**Service:** '+(r.service||'—'));
+    d.push('**Platform:** '+(r.platform||'—'));
+    d.push('**Priority:** '+(r.priority||'—'));
+    d.push('**Status:** '+(r.status||'—'));
+    d.push('**AM:** '+(r.am||'—'));
+    d.push('**Start Date:** '+(fmtDate(r.startDate)||'—'));
+    if(r.concern){d.push('','**Concern:** '+r.concern);}
+    if(r.remarks){d.push('','**Description / Remarks:** '+r.remarks);}
+  }
+  var cms=r.comments||[];
+  if(cms.length){
+    d.push('','**Comments:**');
+    cms.forEach(function(cm){d.push('['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||''));});
+  }
+  var out=d.join('\n');
+  if(out.length>16000) out=out.slice(0,15980)+'\n…(truncated)';
+  return out;
+}
+
+// The four fixed Trello columns (Lists), in display order — one per app tab/category.
+var TRELLO_LISTS=['ALL TASK','DID Order/Cancel','Done / Resolved','Pending RR / RO'];
+// Which column a record belongs in — mirrors the app's tab rules (DID/endorsements split done vs open).
+function _trelloCatFor(r){
+  if(r._type==='rr') return 'Pending RR / RO';
+  if(r._type==='did') return DID_DONE_ST.indexOf(r.status)>-1?'Done / Resolved':'DID Order/Cancel';
+  return DONE_ST.indexOf(r.status)>-1?'Done / Resolved':'ALL TASK';
+}
+// Card title per record type.
+function _trelloTitle(r){
+  if(r._type==='rr') return r.rrSubject||'(untitled RR)';
+  if(r._type==='did') return [r.client,r.desc].filter(function(x){return x&&String(x).trim();}).join(' — ')||'(untitled DID)';
+  return [r.client,r.concern].filter(function(x){return x&&String(x).trim();}).join(' — ')||'(untitled task)';
+}
+// Label names per record type.
+function _trelloLabels(r){
+  if(r._type==='rr') return [r.rrPriority];
+  if(r._type==='did') return [r.priority];
+  return [r.priority,r.platform];
+}
+
+function _trelloCreds(){
+  return {
+    key:(localStorage.getItem('trello_key')||'').trim(),
+    token:(localStorage.getItem('trello_token')||'').trim(),
+    boardId:(localStorage.getItem('trello_board')||'').trim()
+  };
+}
+function _trelloGetMap(boardId){try{return JSON.parse(localStorage.getItem('trello_map_'+boardId)||'{}');}catch(e){return {};}}
+function _trelloSaveMap(boardId,map){try{localStorage.setItem('trello_map_'+boardId,JSON.stringify(map));}catch(e){}}
+function _trelloSetStatus(text,ok){var el=document.getElementById('trello-status');if(el){el.textContent=text;el.style.color=ok?'#4ade80':'var(--text3)';}}
+var _trelloRestored=false;
+
+// Thin fetch wrapper for the Trello REST API. Key/token go in the query string (Trello's scheme);
+// mutating fields go in a form-encoded body so long descriptions never hit URL-length limits.
+async function _trelloApi(method,path,params,body,_retried){
+  var c=_trelloCreds();
+  var url=new URL('https://api.trello.com/1'+path);
+  url.searchParams.set('key',c.key||'');
+  url.searchParams.set('token',c.token||'');
+  if(params)Object.keys(params).forEach(function(k){if(params[k]!=null)url.searchParams.set(k,String(params[k]));});
+  var opts={method:method};
+  if(body){opts.headers={'Content-Type':'application/x-www-form-urlencoded'};opts.body=new URLSearchParams(body).toString();}
+  var res=await fetch(url.toString(),opts);
+  if(res.status===429&&!_retried){await new Promise(function(r){setTimeout(r,1200);});return _trelloApi(method,path,params,body,true);}
+  if(!res.ok){var txt='';try{txt=await res.text();}catch(e){}throw new Error('Trello '+res.status+(txt?(': '+String(txt).slice(0,140)):''));}
+  var ct=res.headers.get('content-type')||'';
+  return ct.indexOf('application/json')>-1?res.json():res.text();
+}
+
+function _trelloFillBoards(boards){
+  var sel=document.getElementById('trello-board');
+  if(!sel)return;
+  var saved=(localStorage.getItem('trello_board')||'').trim();
+  sel.innerHTML='';
+  var o0=document.createElement('option');o0.value='';o0.textContent='— pick a board —';sel.appendChild(o0);
+  boards.forEach(function(b){var o=document.createElement('option');o.value=b.id;o.textContent=b.name;sel.appendChild(o);});
+  if(saved)sel.value=saved;
+  sel.onchange=function(){localStorage.setItem('trello_board',sel.value);};
+}
+
+async function _trelloLoadBoards(silent){
+  var me=await _trelloApi('GET','/members/me',{fields:'username,fullName'});
+  var boards=await _trelloApi('GET','/members/me/boards',{fields:'name',filter:'open'});
+  _trelloFillBoards(boards);
+  var row=document.getElementById('trello-board-row');if(row)row.style.display='flex';
+  _trelloSetStatus('Connected as '+(me.username||me.fullName||'you'),true);
+  if(!silent)toast('Trello connected','success');
+}
+
+async function trelloConnect(){
+  var keyEl=document.getElementById('trello-key'),tokEl=document.getElementById('trello-token');
+  var key=(keyEl?keyEl.value:'').trim(),token=(tokEl?tokEl.value:'').trim();
+  if(!key||!token){toast('Enter both your API Key and Token','error');return;}
+  var btn=document.getElementById('trello-connect-btn');
+  if(btn){btn.disabled=true;btn.textContent='Connecting…';}
+  localStorage.setItem('trello_key',key);
+  localStorage.setItem('trello_token',token);
+  try{
+    await _trelloLoadBoards(false);
+  }catch(e){
+    _trelloSetStatus('Connection failed',false);
+    toast('Trello connection failed — check your key/token. '+e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Connect';}
+  }
+}
+
+function trelloDisconnect(){
+  localStorage.removeItem('trello_key');
+  localStorage.removeItem('trello_token');
+  // Board choice and the card map are kept, so reconnecting won't duplicate existing cards.
+  var k=document.getElementById('trello-key');if(k)k.value='';
+  var t=document.getElementById('trello-token');if(t)t.value='';
+  var row=document.getElementById('trello-board-row');if(row)row.style.display='none';
+  var logEl=document.getElementById('trello-log');if(logEl){logEl.style.display='none';logEl.textContent='';}
+  _trelloSetStatus('Not connected',false);
+  toast('Trello disconnected on this device','info');
+}
+
+// Prefill inputs and (if already connected) reload the board list — runs once when Admin opens.
+function trelloRestoreUI(){
+  if(_trelloRestored)return;_trelloRestored=true;
+  var key=(localStorage.getItem('trello_key')||'').trim(),token=(localStorage.getItem('trello_token')||'').trim();
+  var k=document.getElementById('trello-key');if(k)k.value=key;
+  var t=document.getElementById('trello-token');if(t)t.value=token;
+  if(key&&token)_trelloLoadBoards(true).catch(function(){_trelloSetStatus('Not connected — reconnect',false);});
+}
+
+async function trelloSync(){
+  var c=_trelloCreds();
+  if(!c.key||!c.token){toast('Connect your Trello first','error');return;}
+  if(!c.boardId){toast('Pick a Trello board first','error');return;}
+  var btn=document.getElementById('trello-sync-btn'),logEl=document.getElementById('trello-log');
+  function log(m){if(logEl){logEl.style.display='block';logEl.textContent+=(logEl.textContent?'\n':'')+m;logEl.scrollTop=logEl.scrollHeight;}}
+  if(logEl)logEl.textContent='';
+  if(btn){btn.disabled=true;btn.textContent='Syncing…';}
+  try{
+    var tasks=DATA.filter(function(r){return !!_trelloCatFor(r);});
+    log('Found '+tasks.length+' record'+(tasks.length!==1?'s':'')+' to sync into 4 columns.');
+    if(tasks.length===0){log('Nothing to sync.');return;}
+
+    // Make sure the four category columns exist, in display order
+    var lists=await _trelloApi('GET','/boards/'+c.boardId+'/lists',{fields:'name',filter:'open'});
+    var listMap={};lists.forEach(function(l){listMap[l.name]=l.id;});
+    for(var li=0;li<TRELLO_LISTS.length;li++){
+      var ln=TRELLO_LISTS[li];
+      if(!listMap[ln]){var nl=await _trelloApi('POST','/lists',null,{name:ln,idBoard:c.boardId,pos:'bottom'});listMap[ln]=nl.id;log('Created column "'+ln+'".');}
+    }
+    var labels=await _trelloApi('GET','/boards/'+c.boardId+'/labels',{fields:'name',limit:1000});
+    var labelMap={};labels.forEach(function(l){if(l.name)labelMap[l.name]=l.id;});
+    var map=_trelloGetMap(c.boardId);
+    var priColors={High:'red',Normal:'blue',Critical:'orange',Urgent:'red'};
+
+    async function ensureLabel(name,color){
+      if(!name||!String(name).trim())return null;
+      if(labelMap[name])return labelMap[name];
+      var nlb=await _trelloApi('POST','/labels',null,{name:name,color:color||'null',idBoard:c.boardId});
+      labelMap[name]=nlb.id;return nlb.id;
+    }
+
+    var created=0,updated=0,failed=0;
+    for(var i=0;i<tasks.length;i++){
+      var r=tasks[i];
+      try{
+        var idList=listMap[_trelloCatFor(r)];
+        var idLabels=[];
+        var lbls=_trelloLabels(r);
+        for(var li2=0;li2<lbls.length;li2++){
+          var lid=await ensureLabel(lbls[li2],priColors[lbls[li2]]||'sky');
+          if(lid)idLabels.push(lid);
+        }
+        var fields={name:_trelloTitle(r),desc:_trelloDesc(r),idList:idList,idLabels:idLabels.join(',')};
+        var existingId=map[r.id];
+        if(existingId){
+          try{await _trelloApi('PUT','/cards/'+existingId,null,fields);updated++;}
+          catch(e){
+            if(String(e.message).indexOf(' 404')>-1){var nc=await _trelloApi('POST','/cards',null,fields);map[r.id]=nc.id;created++;}
+            else throw e;
+          }
+        }else{
+          var nc2=await _trelloApi('POST','/cards',null,fields);map[r.id]=nc2.id;created++;
+        }
+      }catch(e2){failed++;log('⚠️ '+(_trelloTitle(r)||r.id||'record')+' — '+e2.message);}
+      if(tasks.length>1)await new Promise(function(res){setTimeout(res,90);});
+    }
+    _trelloSaveMap(c.boardId,map);
+    log('Done. Created '+created+', updated '+updated+(failed?(', failed '+failed):'')+'.');
+    try{writeLog('exported','Trello sync','Trello board sync — created '+created+', updated '+updated+', failed '+failed);}catch(e){}
+    toast('Trello sync complete — '+created+' new, '+updated+' updated'+(failed?(', '+failed+' failed'):''),failed?'info':'success');
+  }catch(e){
+    log('❌ Sync failed: '+e.message);
+    toast('Trello sync failed — '+e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Sync to Trello now';}
+  }
+}
+
 // Full backup — downloads every Firestore collection as one JSON snapshot (Admin only).
 // This is a read-only safety net: it never changes any data, it just copies it out.
 async function downloadBackup(){
@@ -6526,6 +6819,7 @@ function closeDropdownColorModal(){
 }
 
 function loadAdminData(force){
+  try{trelloRestoreUI();}catch(e){}
   if(_adminLoaded && !force){
     renderClientGrid();
     renderDropdownOptionsPanel();
@@ -8161,6 +8455,10 @@ window.uploadClientCSV=uploadClientCSV;
 window.applyDateRangeFilter=applyDateRangeFilter;
 window.clearDateRangeFilter=clearDateRangeFilter;
 window.exportCSV=exportCSV;
+window.exportTrello=exportTrello;
+window.trelloConnect=trelloConnect;
+window.trelloSync=trelloSync;
+window.trelloDisconnect=trelloDisconnect;
 window.downloadBackup=downloadBackup;
 window.initResizers=initResizers;
 window.markDIDTimerDirty=markDIDTimerDirty;
