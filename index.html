@@ -822,6 +822,9 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="rr-ro-alert-color-picker"></div>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Also pop a desktop notification on this computer for Pending RR / RO entries that still have no RO by after the set time">
+        <input type="checkbox" id="rr-ro-alert-notify" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> 🔔 Notify PC
+      </label>
     </div>
     </div>
     <div class="settings-sec">
@@ -1957,7 +1960,7 @@ const SETTINGS_DOC = 'app_settings/main';
 var DATA = [];
 var TRASH_DATA = [];
 var idSeq = 1;
-var SETTINGS = {defaultTimer:3600, paymentTimer:86400, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
+var SETTINGS = {defaultTimer:3600, paymentTimer:86400, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', rrRoAlertNotify:true, slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
 var EFFECT_COLOR_PALETTE=['#000000','#666666','#999999','#cccccc','#ffffff','#f87171','#fb7185','#f97316','#fbbf24','#facc15','#4ade80','#22c55e','#38bdf8','#60a5fa','#818cf8','#a78bfa','#c084fc','#f472b6','#14b8a6','#94a3b8'];
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
@@ -2310,6 +2313,7 @@ function saveSettings(){
   var rrRoAlertEnabled=document.getElementById('rr-ro-alert-enabled');
   var rrRoAlertTime=document.getElementById('rr-ro-alert-time');
   var rrRoAlertEffect=document.getElementById('rr-ro-alert-effect');
+  var rrRoAlertNotify=document.getElementById('rr-ro-alert-notify');
   SETTINGS.advisedAgingEnabled=agingEnabled?agingEnabled.checked:true;
   SETTINGS.advisedAgingDays=agingDays?Math.max(1,parseInt(agingDays.value,10)||7):7;
   SETTINGS.advisedAgingEffect=agingEffect?agingEffect.value:'soft';
@@ -2317,6 +2321,7 @@ function saveSettings(){
   SETTINGS.rrRoAlertEnabled=rrRoAlertEnabled?rrRoAlertEnabled.checked:true;
   SETTINGS.rrRoAlertTime=rrRoAlertTime&&rrRoAlertTime.value?rrRoAlertTime.value:'18:00';
   SETTINGS.rrRoAlertEffect=rrRoAlertEffect?rrRoAlertEffect.value:'pulse';
+  SETTINGS.rrRoAlertNotify=rrRoAlertNotify?rrRoAlertNotify.checked:true;
   SETTINGS.rrRoAlertColor=normalizeColorHex(SETTINGS.rrRoAlertColor,'#38bdf8');
   var slaL2En=document.getElementById('sla-l2-enabled');
   var slaCtoEn=document.getElementById('sla-cto-enabled');
@@ -3010,6 +3015,7 @@ document.addEventListener('visibilitychange',function(){
   if(document.visibilityState!=='visible')return;
   if(_audioCtx&&_audioCtx.state==='suspended')_audioCtx.resume().catch(function(){});
   try{checkTimerExpiries();}catch(e){}
+  try{checkRRRoMissingNotifs();}catch(e){}
 });
 
 function testAlert(){playAlert(SETTINGS.alarmTone||'beep');toast('Timer alarm sound test!','info');}
@@ -3305,6 +3311,57 @@ function checkTimerExpiries(){
   });
 }
 
+// ─── PENDING RR/RO "missing RO by" desktop notification ──────
+// In addition to the row-highlight effect, pop a computer notification once per day
+// per device for every Pending RR/RO entry that still has no RO by after the set time
+// (SETTINGS.rrRoAlertTime). Gated by its own toggle (rrRoAlertNotify) so it can be
+// switched off without disabling the row effect. Dedup is per entry per calendar day
+// via localStorage, matching the per-device alarm model used for timer/reminder alerts.
+var _rrRoNotifPruneDay=null;
+function rrRoNotifDayStr(){
+  var d=new Date();
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+function pruneRRRoNotifKeys(dayStr){
+  if(_rrRoNotifPruneDay===dayStr)return;      // prune stale (previous-day) keys once per day
+  _rrRoNotifPruneDay=dayStr;
+  try{
+    var tail='_'+dayStr,rm=[];
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&k.indexOf('cyn_rronotify_')===0&&k.slice(-tail.length)!==tail)rm.push(k);
+    }
+    rm.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+  }catch(e){}
+}
+function checkRRRoMissingNotifs(){
+  if(SETTINGS.rrRoAlertEnabled===false||SETTINGS.rrRoAlertNotify===false)return;
+  if(!isRRRoAlertWindowActive()||!Array.isArray(DATA))return;
+  var dayStr=rrRoNotifDayStr();
+  pruneRRRoNotifKeys(dayStr);
+  var dueAll=[],dueNew=[];
+  DATA.forEach(function(r){
+    if(!isRRRoMissingDue(r))return;           // Pending RR/RO, not done/disregarded, no RO by, past set time
+    dueAll.push(r);
+    var key='cyn_rronotify_'+currentAlertUserKey()+'_'+r.id+'_'+dayStr;
+    var seen=_sessionAlerted[key];
+    if(!seen){try{seen=localStorage.getItem(key)==='1';}catch(e){}}
+    if(!seen)dueNew.push({r:r,key:key});
+  });
+  if(!dueNew.length)return;                    // nothing new to announce this evening
+  dueNew.forEach(function(o){
+    _sessionAlerted[o.key]=true;
+    try{localStorage.setItem(o.key,'1');}catch(e){}
+  });
+  var t=SETTINGS.rrRoAlertTime||'18:00';
+  var names=dueAll.map(function(r){return r.rrSubject||'(no subject)';});
+  var body=dueAll.length===1
+    ? names[0]+' still has no RO by after '+t+'.'
+    : dueAll.length+' Pending RR/RO entries still have no RO by after '+t+':\n• '+names.slice(0,6).join('\n• ')+(names.length>6?'\n…and '+(names.length-6)+' more':'');
+  toast('🔔 '+dueAll.length+' Pending RR/RO '+(dueAll.length===1?'entry has':'entries have')+' no RO by after '+t,'error');
+  sendBrowserNotif('🔔 Pending RR/RO: missing RO by',body,'rroalert_'+dayStr,true);
+}
+
 setInterval(function(){
   DATA.forEach(function(r){
     if(r.timerStart){
@@ -3328,6 +3385,7 @@ setInterval(function(){
     _rrRoAlertWindowActive=rrRoActive;
     if(currentTab==='mine')renderRRRows();
   }
+  try{checkRRRoMissingNotifs();}catch(e){}
   // Re-render when any record crosses an SLA escalation threshold
   if(slaAnyEnabled()){
     var slaSig=DATA.map(function(r){var t=slaTier(r);return t?r.id+':'+t.key:'';}).filter(Boolean).join(',');
@@ -6236,7 +6294,7 @@ function matchesDateRange(r){
 }
 
 // Load settings from localStorage (fast, local)
-SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171',pinEffect:'soft',pinColor:'#fbbf24'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
+SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',rrRoAlertNotify:true,slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171',pinEffect:'soft',pinColor:'#fbbf24'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
 // Push SETTINGS values into the Settings panel fields (runs at load and whenever synced settings arrive)
 function applySettingsToUI(){
 document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
@@ -6267,6 +6325,7 @@ document.getElementById('advised-aging-effect').value=SETTINGS.advisedAgingEffec
 document.getElementById('rr-ro-alert-enabled').checked=SETTINGS.rrRoAlertEnabled!==false;
 document.getElementById('rr-ro-alert-time').value=SETTINGS.rrRoAlertTime||'18:00';
 document.getElementById('rr-ro-alert-effect').value=SETTINGS.rrRoAlertEffect||'pulse';
+document.getElementById('rr-ro-alert-notify').checked=SETTINGS.rrRoAlertNotify!==false;
 // Migrate the old single SLA on/off switch to per-level switches
 if(SETTINGS.slaL2Enabled===undefined)SETTINGS.slaL2Enabled=SETTINGS.slaEnabled===true;
 if(SETTINGS.slaCtoEnabled===undefined)SETTINGS.slaCtoEnabled=SETTINGS.slaEnabled===true;
