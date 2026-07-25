@@ -136,6 +136,8 @@ body.density-compact .tbadge.trestart::after{top:-8px;}
 .st-gray{background:var(--bg4);color:var(--text3);}
 .age-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(244,63,94,.16));color:var(--fx-color,#fb7185);border:1px solid var(--fx-border,rgba(244,63,94,.30));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
 .rr-ro-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(14,165,233,.16));color:var(--fx-color,#38bdf8);border:1px solid var(--fx-border,rgba(14,165,233,.32));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
+/* "Days since Done" aging chip for still-pending RR/RO (counts calendar days from when Status was set to Done). */
+.rr-done-age{display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:2px 6px;border-radius:6px;background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.32);font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
 .sla-text-badge{display:inline-flex;align-items:center;margin-right:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(250,204,21,.16));color:var(--fx-color,#facc15);border:1px solid var(--fx-border,rgba(250,204,21,.30));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
 /* Shared row alert effects (Advised Client aging + RR/RO missing RO by). Colors come from --fx-* vars set inline per row. Animated variants use non-!important backgrounds so keyframes can win. */
 tr.fx-row>td:first-child{box-shadow:inset 3px 0 0 var(--fx-color,#fb7185);}
@@ -825,6 +827,13 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Also pop a desktop notification on this computer for Pending RR / RO entries that still have no RO by after the set time">
         <input type="checkbox" id="rr-ro-alert-notify" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> 🔔 Notify PC
       </label>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">Days since Done (Pending RR/RO):</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Show a small ⏳ badge on each pending RR/RO counting the days since its Status was set to Done">
+        <input type="checkbox" id="rr-done-aging-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
+      </label>
+      <span class="auto-label" style="color:var(--text3)">shows a ⏳ day count on the row once Status = Done, until it's completed</span>
     </div>
     </div>
     <div class="settings-sec">
@@ -2323,6 +2332,8 @@ function saveSettings(){
   SETTINGS.rrRoAlertEffect=rrRoAlertEffect?rrRoAlertEffect.value:'pulse';
   SETTINGS.rrRoAlertNotify=rrRoAlertNotify?rrRoAlertNotify.checked:true;
   SETTINGS.rrRoAlertColor=normalizeColorHex(SETTINGS.rrRoAlertColor,'#38bdf8');
+  var rrDoneAgingEnabled=document.getElementById('rr-done-aging-enabled');
+  SETTINGS.rrDoneAgingEnabled=rrDoneAgingEnabled?rrDoneAgingEnabled.checked:true;
   var slaL2En=document.getElementById('sla-l2-enabled');
   var slaCtoEn=document.getElementById('sla-cto-enabled');
   var slaAmEn=document.getElementById('sla-am-enabled');
@@ -2612,6 +2623,36 @@ function rrRoAlertRowStyle(r){
 function rrRoAlertBadge(r){
   if(!isRRRoMissingDue(r))return '';
   return '<span class="rr-ro-alert-badge" title="No RO by after '+(SETTINGS.rrRoAlertTime||'18:00')+'">No RO</span>';
+}
+// ── "Days since Done" aging for still-pending RR/RO ─────────────
+// Anchor = the moment Status was set to Done (rrStatusDoneAt, captured in saveRR).
+// For records that were already Done before this feature existed, fall back to the RR Date.
+function rrDoneAnchorMs(r){
+  if(!r||r._type!=='rr')return null;
+  if(r.rrStatusDoneAt)return r.rrStatusDoneAt;
+  if(r.rrDate){var t=new Date(r.rrDate+'T00:00:00').getTime();if(!isNaN(t))return t;}
+  return null;
+}
+function calendarDaysBetween(fromMs,toMs){
+  var a=new Date(fromMs);a.setHours(0,0,0,0);
+  var b=new Date(toMs);b.setHours(0,0,0,0);
+  return Math.max(0,Math.round((b-a)/86400000));
+}
+function rrDoneAgeDays(r){
+  if(SETTINGS.rrDoneAgingEnabled===false)return null;          // feature toggled off in Settings
+  if(!r||r._type!=='rr'||r.rrStatus!=='Done')return null;      // only once Status = Done
+  if(r.rrCompleted||r.rrDisregard)return null;                 // only while still pending
+  var anchor=rrDoneAnchorMs(r);
+  if(anchor===null)return null;
+  return calendarDaysBetween(anchor,Date.now());
+}
+function rrDoneAgingBadge(r){
+  var d=rrDoneAgeDays(r);
+  if(d===null)return '';
+  var src=r.rrStatusDoneAt?'Status was set to Done':'the RR Date';
+  var txt=d===0?'Today':d+'d';
+  var title=(d===0?'Marked Done today':d+' day'+(d===1?'':'s')+' since '+src)+' — pending RR/RO';
+  return '<span class="rr-done-age" title="'+title+'">⏳ '+txt+'</span>';
 }
 function entryAgeHours(r){
   if(!r)return null;
@@ -3205,6 +3246,7 @@ var _rrRoAlertWindowActive=null;
 var _slaTickSig=null;
 var _timerFxTickSig=null;
 var _pbTickSig=null;
+var _dayTickSig=null;
 var AUTO_RESTART_DELAY_MS=10000;
 var AUTO_RESTART_SKIP_SECS=259200;
 function currentAlertUserKey(){
@@ -3417,6 +3459,10 @@ setInterval(function(){
   }else{
     _pbTickSig=null;
   }
+  // Advance the "days since Done" badges when the calendar day rolls over
+  var _todayStr=new Date().toDateString();
+  if(_dayTickSig!==null&&_todayStr!==_dayTickSig&&currentTab==='mine')renderRRRows();
+  _dayTickSig=_todayStr;
   ['f','rr','d'].forEach(updateReminderIndicator);
   var sm=document.getElementById('settings-modal');
   if(sm&&!sm.classList.contains('hidden'))updateAlertStatusUI();
@@ -4328,7 +4374,7 @@ function renderRRRows(){
       +'<td>'+fmtDate(r.rrDate)+'</td>'
       +'<td>'+rrBadge(r.rrBy||'','rrby')+'</td>'
       +'<td>'+rrBadge(r.roBy||'','roby')+rrRoAlertBadge(r)+'</td>'
-      +'<td>'+rrBadge(r.rrStatus||'Not Yet','status')+'</td>'
+      +'<td>'+rrBadge(r.rrStatus||'Not Yet','status')+rrDoneAgingBadge(r)+'</td>'
       +'<td>'+rrBadge(r.rrAdvised||'Not Yet','advised')+'</td>'
       +'<td>'+rrBadge(r.rrPosted||'None','posted')+'</td>'
       +'<td>'+rrBadge(r.rrInv||'None','inv')+'</td>'
@@ -4651,6 +4697,12 @@ function saveRRRecord(){
     var idx=DATA.findIndex(function(d){return d.id===editingRRId;});
     if(idx>=0){
       var prev=DATA[idx];
+      // Stamp when Status becomes Done so the "days since Done" counter can start.
+      if(rec.rrStatus==='Done'){
+        rec.rrStatusDoneAt=prev.rrStatus==='Done'?(prev.rrStatusDoneAt||rrDoneAnchorMs(prev)||Date.now()):Date.now();
+      }else{
+        rec.rrStatusDoneAt=null;
+      }
       applyReminderToRecord(rec,prev,reminder);
       if(rec.rrCompleted) rec.pinned=false;
       if(rec.rrCompleted) rec.autoRestartTimer=false;
@@ -4674,6 +4726,7 @@ function saveRRRecord(){
     applyReminderToRecord(rec,null,reminder);
     if(rec.rrCompleted) rec.pinned=false;
     if(rec.rrCompleted) rec.autoRestartTimer=false;
+    if(rec.rrStatus==='Done')rec.rrStatusDoneAt=Date.now();
     var nr=Object.assign({id:allocId(),_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
@@ -6326,6 +6379,7 @@ document.getElementById('rr-ro-alert-enabled').checked=SETTINGS.rrRoAlertEnabled
 document.getElementById('rr-ro-alert-time').value=SETTINGS.rrRoAlertTime||'18:00';
 document.getElementById('rr-ro-alert-effect').value=SETTINGS.rrRoAlertEffect||'pulse';
 document.getElementById('rr-ro-alert-notify').checked=SETTINGS.rrRoAlertNotify!==false;
+document.getElementById('rr-done-aging-enabled').checked=SETTINGS.rrDoneAgingEnabled!==false;
 // Migrate the old single SLA on/off switch to per-level switches
 if(SETTINGS.slaL2Enabled===undefined)SETTINGS.slaL2Enabled=SETTINGS.slaEnabled===true;
 if(SETTINGS.slaCtoEnabled===undefined)SETTINGS.slaCtoEnabled=SETTINGS.slaEnabled===true;
