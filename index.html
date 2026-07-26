@@ -5811,7 +5811,7 @@ async function trelloSync(){
     var gateAt=0;
     function gate(){var now=Date.now(),at=now>gateAt?now:gateAt;gateAt=at+110;return new Promise(function(res){setTimeout(res,at-now);});}
 
-    var created=0,updated=0,failed=0,done=0,next=0;
+    var created=0,updated=0,failed=0,done=0,next=0,failedList=[];
     async function worker(){
       while(next<toSync.length){
         var r=toSync[next++],fp=_trelloFp(r);
@@ -5831,7 +5831,7 @@ async function trelloSync(){
             var nc2=await _trelloApi('POST','/cards',null,fields);map[r.id]=nc2.id;created++;
           }
           newFp[r.id]=fp;   // success -> remember fingerprint so next sync can skip it
-        }catch(e2){failed++;log('⚠️ '+(_trelloTitle(r)||r.id||'record')+' — '+e2.message);}
+        }catch(e2){failed++;var _ferr=(_trelloTitle(r)||r.id||'record')+' — '+e2.message;failedList.push(_ferr);log('⚠️ '+_ferr);}
         done++;
         if(btn)btn.textContent='Syncing… '+done+'/'+toSync.length;
         // Persist every 10 records so an interrupted sync won't re-create or re-send those next time
@@ -5845,6 +5845,7 @@ async function trelloSync(){
     _trelloSaveMap(c.boardId,map);
     _trelloSaveFp(c.boardId,newFp);
     log('✅ Done. Created '+created+', updated '+updated+(skipped?(', skipped '+skipped):'')+(failed?(', failed '+failed):'')+'.');
+    if(failedList.length){log('   ✗ Failed entr'+(failedList.length>1?'ies':'y')+' (fix and re-sync):');failedList.forEach(function(f){log('      • '+f);});}
     try{writeLog('exported','Trello sync','Trello board sync — created '+created+', updated '+updated+', skipped '+skipped+', failed '+failed);}catch(e){}
     toast('Trello sync complete — '+created+' new, '+updated+' updated'+(skipped?(', '+skipped+' unchanged'):'')+(failed?(', '+failed+' failed'):''),failed?'info':'success');
   }catch(e){
