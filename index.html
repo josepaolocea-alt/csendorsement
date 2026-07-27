@@ -641,6 +641,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   <button class="tab-btn" id="tab-btn-mine" data-tip="Pending RR / RO" aria-label="Pending RR / RO" onclick="switchTab('mine',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
   <button class="tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
   <button class="tab-btn" id="dashboard-tab-btn" style="display:none" data-tip="Dashboard" aria-label="Dashboard" onclick="switchTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></button>
+  <button class="tab-btn" id="trello-tab-btn" style="display:none" data-tip="Trello Sync" aria-label="Trello Sync" onclick="switchTab('trello',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><rect width="4" height="8" x="7" y="7" rx="1"/><rect width="4" height="5" x="13" y="7" rx="1"/></svg></button>
   <button class="tab-btn" id="admin-tab-btn" style="display:none" data-tip="Admin" aria-label="Admin" onclick="switchTab('admin',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
   <div class="divider" id="cal-divider" style="display:none"></div>
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
@@ -1129,20 +1130,11 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
   </div>
 
   <!-- ADMIN PANEL -->
-  <div id="admin-panel" style="display:none">
+  <!-- TRELLO SYNC PANEL (own tab — does not read Firebase, so no usage warning) -->
+  <div id="trello-panel" style="display:none">
 
-    <!-- ADMIN HEADER -->
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-      <button class="btn btn-secondary btn-sm" onclick="loadAdminData(true)">↻ Refresh</button>
-    </div>
-
-    <!-- DATA BACKUP -->
-    <div class="admin-section">
-      <div class="admin-toolbar">
-        <span class="admin-ctitle">Data Backup</span>
-        <button class="btn btn-primary btn-sm" id="backup-btn" onclick="downloadBackup()">Download Full Backup</button>
-      </div>
-      <p style="font-size:11px;color:var(--text3);margin-top:2px">Saves one JSON file containing every record, comment, user, client, dropdown, setting, activity log, and calendar event — a complete snapshot to keep as a safety net in case data is ever lost or changed by mistake. Admin only.</p>
+    <div style="margin-bottom:12px">
+      <span style="font-size:12px;color:var(--text3)">Push your records to Trello here — no need to open the Admin tab.</span>
     </div>
 
     <!-- TRELLO SYNC -->
@@ -1164,6 +1156,23 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
         <button class="btn btn-secondary btn-sm" onclick="trelloDisconnect()">Disconnect</button>
       </div>
       <pre id="trello-log" style="display:none;white-space:pre-wrap;word-break:break-word;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.5;color:var(--text3);max-height:180px;overflow:auto;font-family:'DM Mono',monospace;margin:0"></pre>
+    </div>
+  </div>
+
+  <div id="admin-panel" style="display:none">
+
+    <!-- ADMIN HEADER -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <button class="btn btn-secondary btn-sm" onclick="loadAdminData(true)">↻ Refresh</button>
+    </div>
+
+    <!-- DATA BACKUP -->
+    <div class="admin-section">
+      <div class="admin-toolbar">
+        <span class="admin-ctitle">Data Backup</span>
+        <button class="btn btn-primary btn-sm" id="backup-btn" onclick="downloadBackup()">Download Full Backup</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:2px">Saves one JSON file containing every record, comment, user, client, dropdown, setting, activity log, and calendar event — a complete snapshot to keep as a safety net in case data is ever lost or changed by mistake. Admin only.</p>
     </div>
 
     <!-- USER MANAGEMENT -->
@@ -1942,7 +1951,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 <script type="module">
 // ─── FIREBASE CONFIG ────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -2425,7 +2434,7 @@ initSettingsCollapse();
 // Only the top-bar navigation tabs get labels; toolbar/theme/logout icons stay icon-only.
 // Full name still shows on hover via the existing data-tip tooltip.
 function initNavLabels(){
-  var LBL={all:'Tasks',did:'DID',done:'Done',mine:'RR / RO',trash:'Trash',dashboard:'Dashboard',admin:'Admin',calendar:'Calendar',notepad:'Notepad'};
+  var LBL={all:'Tasks',did:'DID',done:'Done',mine:'RR / RO',trash:'Trash',dashboard:'Dashboard',trello:'Trello',admin:'Admin',calendar:'Calendar',notepad:'Notepad'};
   document.querySelectorAll('.topbar .tab-btn[onclick^="switchTab"]').forEach(function(b){
     if(b.querySelector('.tab-label'))return;
     var m=/switchTab\('([^']+)'/.exec(b.getAttribute('onclick')||'');
@@ -2456,7 +2465,8 @@ function _doSwitchTab(tab,el){
   var isDash=tab==='dashboard';
   var isCal=tab==='calendar';
   var isNote=tab==='notepad';
-  var hideMain=isAdmin||isDash||isCal||isNote;
+  var isTrello=tab==='trello';
+  var hideMain=isAdmin||isDash||isCal||isNote||isTrello;
   document.getElementById('stats-row').style.display=hideMain?'none':'';
   document.querySelector('.toolbar').style.display=hideMain?'none':'';
   document.getElementById('main-table-wrap').style.display=hideMain?'none':'';
@@ -2464,12 +2474,14 @@ function _doSwitchTab(tab,el){
   // On All Tasks + DID the table stretches to fill the space down to the bottom of the window
   document.getElementById('main-table-wrap').classList.toggle('fill-height',tab==='all'||tab==='did');
   document.getElementById('admin-panel').style.display=isAdmin?'':'none';
+  document.getElementById('trello-panel').style.display=isTrello?'':'none';
   document.getElementById('dashboard-panel').style.display=isDash?'':'none';
   document.getElementById('calendar-panel').style.display=isCal?'':'none';
   document.getElementById('notepad-panel').style.display=isNote?'':'none';
   document.getElementById('new-btn').style.display=(hideMain||isTrash)?'none':'';
   document.getElementById('trash-info').style.display=isTrash?'':'none';
   document.getElementById('trash-empty-btn').style.display=(isTrash&&window._canEdit)?'':'none';
+  if(isTrello){try{trelloRestoreUI();}catch(e){}return;}
   if(isAdmin){loadAdminData();return;}
   if(isDash){loadDashboard();return;}
   if(isCal){renderCalendar();return;}
@@ -5618,7 +5630,10 @@ function _trelloDesc(r){
   var cms=r.comments||[];
   if(cms.length){
     d.push('','**Comments:**');
-    cms.forEach(function(cm){d.push('['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||''));});
+    cms.forEach(function(cm,i){
+      if(i) d.push('');  // blank line so each comment is clearly separated from the previous one
+      d.push('**['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+':** '+(cm.text||''));
+    });
   }
   var out=d.join('\n');
   if(out.length>16000) out=out.slice(0,15980)+'\n…(truncated)';
@@ -6522,6 +6537,10 @@ function applyRolePermissions(role){
   var dashTabBtn = document.getElementById('dashboard-tab-btn');
   if(dashTabBtn) dashTabBtn.style.display = isAdmin ? '' : 'none';
 
+  // Trello Sync tab: Admin only
+  var trelloTabBtn = document.getElementById('trello-tab-btn');
+  if(trelloTabBtn) trelloTabBtn.style.display = isAdmin ? '' : 'none';
+
   // Calendar tab (and its divider): Admin only
   var calTabBtn = document.getElementById('cal-tab-btn');
   if(calTabBtn) calTabBtn.style.display = isAdmin ? '' : 'none';
@@ -7013,16 +7032,20 @@ function closeDropdownColorModal(){
 }
 
 function loadAdminData(force){
-  try{trelloRestoreUI();}catch(e){}
   if(_adminLoaded && !force){
     renderClientGrid();
     renderDropdownOptionsPanel();
+    renderLogsSection();   // reflect logs that may have loaded elsewhere (e.g. Dashboard)
     return;
   }
   _adminLoaded = true;
   loadAdminUsers();
   renderClientGrid();
-  loadLogs();
+  // Activity logs load lazily (see renderLogsSection) so opening Admin for user/dropdown
+  // work no longer reads the logs collection. Re-read from Firebase only on a forced
+  // refresh of logs already in view; otherwise just render whatever is cached (or the
+  // "Load activity logs" placeholder if nothing has been loaded yet).
+  if(force && _logsLoaded) loadLogs(); else renderLogsSection();
   if(!Object.keys(_dropdownData).length){
     Object.keys(DROPDOWN_OPTS).forEach(function(key){_dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();});
   }
@@ -7446,6 +7469,8 @@ function loadNicknames(){
 
 // ─── LOGS ────────────────────────────────────────────────────
 var LOGS = [];
+var _logsLoaded=false;      // logs are fetched lazily (only when actually viewed) to save Firebase reads
+var LOG_READ_LIMIT=3000;    // and capped to the most recent N entries so the read can never grow unbounded
 
 function writeLog(action, record, details, extra){
   var entry={
@@ -7462,14 +7487,31 @@ function writeLog(action, record, details, extra){
 
 function loadLogs(){
   document.getElementById('log-count-label').textContent='Loading...';
-  getDocs(collection(db,'logs')).then(function(snap){
+  // Read only the most recent LOG_READ_LIMIT entries (newest first) instead of the whole
+  // ever-growing collection — this is the main Firebase-read saving for Admin.
+  getDocs(query(collection(db,'logs'),orderBy('ts','desc'),limit(LOG_READ_LIMIT))).then(function(snap){
     LOGS=[];
     snap.forEach(function(d){LOGS.push(d.data());});
     LOGS.sort(function(a,b){return b.ts-a.ts;});
+    _logsLoaded=true;
+    _logPage=0;
     renderLogs();
   }).catch(function(e){
     document.getElementById('log-count-label').textContent='Error loading logs';
   });
+}
+
+// Lazy placeholder for the Activity Logs section: nothing is read from Firebase until
+// the Admin actually clicks "Load activity logs" (or opens the Dashboard, which needs them).
+function renderLogsSection(){
+  if(_logsLoaded){renderLogs();return;}
+  var lbl=document.getElementById('log-count-label');
+  if(lbl)lbl.textContent='Not loaded';
+  var tbody=document.getElementById('log-tbody');
+  if(tbody)tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:28px">'
+    +'Activity logs are not loaded yet — this saves Firebase reads.<br><br>'
+    +'<button class="btn btn-primary btn-sm" onclick="loadLogs()">Load activity logs</button></td></tr>';
+  var pg=document.getElementById('log-pagination');if(pg)pg.innerHTML='';
 }
 
 var _logPage=0;
@@ -7547,6 +7589,7 @@ function clearLogFilters(){
 }
 
 function exportLogs(){
+  if(!_logsLoaded){toast('Load the activity logs first','info');return;}
   var headers=['#','Date & Time','User','Action','Record','Details'];
   var rows=[headers.join(',')].concat(LOGS.map(function(l,i){
     var d=new Date(l.ts);
@@ -7568,7 +7611,7 @@ function clearAllLogs(){
       var promises=[];snap.forEach(function(d){promises.push(deleteDoc(doc(db,'logs',d.id)));});
       return Promise.all(promises);
     }).then(function(){
-      LOGS=[];renderLogs();toast('All logs cleared','info');
+      LOGS=[];_logsLoaded=true;renderLogs();toast('All logs cleared','info');
     });
   });
 }
@@ -8099,11 +8142,12 @@ function loadDashboard(force){
     _dashUsers=[];
     snap.forEach(function(d){_dashUsers.push(d.data());});
   }));
-  if(!LOGS.length||force){
-    jobs.push(getDocs(collection(db,'logs')).then(function(snap){
+  if(!_logsLoaded||force){
+    jobs.push(getDocs(query(collection(db,'logs'),orderBy('ts','desc'),limit(LOG_READ_LIMIT))).then(function(snap){
       LOGS=[];
       snap.forEach(function(d){LOGS.push(d.data());});
       LOGS.sort(function(a,b){return b.ts-a.ts;});
+      _logsLoaded=true;
     }));
   }
   jobs.push(getDocs(collection(db,TRASH_COLL)).then(function(snap){
@@ -8624,6 +8668,7 @@ window.doLogout=doLogout;
 window.clearAllLogs=clearAllLogs;
 window.exportLogs=exportLogs;
 window.renderLogs=renderLogs;
+window.loadLogs=loadLogs;
 window.renameDropdownOption=renameDropdownOption;
 window.closeDropdownEditModal=closeDropdownEditModal;
 window.saveDropdownEdit=saveDropdownEdit;
