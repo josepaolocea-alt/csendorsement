@@ -2521,7 +2521,7 @@ function isRecordCompleted(r){
 
 function recordStatusStopsTimer(r){
   if(!r)return false;
-  if(r._type==='rr')return !!r.rrCompleted;
+  if(r._type==='rr')return !!r.rrCompleted||!!r.rrDisregard;
   if(r._type==='did')return DID_DONE_ST.indexOf(r.status)>-1||r.status==='Advised Client';
   return NO_TIMER_ST.indexOf(r.status)>-1||r.status==='Advised Client';
 }
@@ -3280,7 +3280,7 @@ function markLocalAlerted(kind,r,basisOverride){
 }
 function canAutoRestartTimer(r){
   if(!r||!r.autoRestartTimer||!r.timerStart)return false;
-  if(isRecordCompleted(r))return false;
+  if(isRecordCompleted(r)||r.rrDisregard)return false;
   if(r.status==='Advised Client')return false;
   var secs=getTimerSecs(r);
   return secs>0&&secs!==AUTO_RESTART_SKIP_SECS;
@@ -4717,7 +4717,7 @@ function saveRRRecord(){
       }
       applyReminderToRecord(rec,prev,reminder);
       if(rec.rrCompleted) rec.pinned=false;
-      if(rec.rrCompleted) rec.autoRestartTimer=false;
+      if(rec.rrCompleted||rec.rrDisregard) rec.autoRestartTimer=false;
       var timerChanged=_rrTimerDirty;
       var timerUpdate;
       if(timerChanged&&rrTimerSecs){
@@ -4737,7 +4737,7 @@ function saveRRRecord(){
   }else{
     applyReminderToRecord(rec,null,reminder);
     if(rec.rrCompleted) rec.pinned=false;
-    if(rec.rrCompleted) rec.autoRestartTimer=false;
+    if(rec.rrCompleted||rec.rrDisregard) rec.autoRestartTimer=false;
     if(rec.rrStatus==='Done')rec.rrStatusDoneAt=Date.now();
     var nr=Object.assign({id:allocId(),_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
