@@ -325,6 +325,28 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .modal-pin-toggle:hover{background:var(--bg4);color:var(--text);}
 .modal-pin-toggle input{accent-color:#fbbf24;width:14px;height:14px;cursor:pointer;}
 .entry-modal .modal-ftr .meta-info{margin-right:auto;}
+/* ── Entry modal header actions + Compact toggle (per-device preference) ── */
+.modal-hdr-actions{display:flex;align-items:center;gap:8px;}
+.compact-toggle{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg3);color:var(--text2);font-size:11px;font-weight:600;font-family:var(--sf);cursor:pointer;white-space:nowrap;transition:.15s;}
+.compact-toggle:hover{background:var(--bg4);color:var(--text);}
+.compact-toggle svg{width:13px;height:13px;flex:0 0 auto;}
+body.entry-compact .compact-toggle{background:var(--accent);border-color:var(--accent);color:#fff;}
+/* ── Compact layout: tighter spacing + smaller popup for record / RR / DID modals ── */
+body.entry-compact .entry-modal{height:min(92vh,640px);}
+body.entry-compact .entry-modal .modal-hdr{padding:9px 16px;}
+body.entry-compact .entry-modal .modal-hdr h3{font-size:14px;}
+body.entry-compact .entry-details{padding:10px 14px;}
+body.entry-compact .entry-modal .fg{gap:8px 10px;}
+body.entry-compact .entry-modal .fgrp{gap:3px;}
+body.entry-compact .entry-modal .fgrp label{font-size:10px;letter-spacing:.3px;}
+body.entry-compact .entry-modal .fc{padding:5px 9px;font-size:12px;}
+body.entry-compact .entry-details textarea.fc{min-height:38px!important;}
+body.entry-compact .entry-modal .timer-auto-toggle,body.entry-compact .entry-modal .modal-pin-toggle{padding:5px 8px;}
+body.entry-compact .entry-modal .modal-ftr{padding:8px 14px;}
+body.entry-compact .entry-comments .comments-section h4{padding:9px 14px;}
+body.entry-compact .entry-comments .comment-list{padding:10px 14px;}
+body.entry-compact .entry-comments .comment-new{padding:10px 14px;}
+body.entry-compact .entry-comments textarea.fc{min-height:44px!important;}
 .timer-auto-toggle{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;width:max-content;max-width:100%;}
 .timer-auto-toggle:hover{background:var(--bg4);color:var(--text);}
 .timer-auto-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
@@ -511,6 +533,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 }
 @media (max-width:920px){
   .entry-modal{display:block;height:auto;max-height:90vh;overflow-y:auto;max-width:min(700px,96vw);}
+  body.entry-compact .entry-modal{height:auto;}
   .entry-details{overflow:visible;}
   .entry-comments{border-left:0;border-top:1px solid var(--border);overflow:visible;}
   .entry-comments .comments-section{display:flex;flex-direction:column;max-height:58vh;}
@@ -1417,7 +1440,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 
 <div class="modal-ov hidden" id="record-modal">
   <div class="modal entry-modal">
-    <div class="modal-hdr"><h3 id="modal-title">New Endorsement</h3><button class="modal-cls" onclick="closeModal()">x</button></div>
+    <div class="modal-hdr"><h3 id="modal-title">New Endorsement</h3><div class="modal-hdr-actions"><button class="compact-toggle" onclick="toggleEntryCompact()" title="Toggle compact view — tighter spacing &amp; smaller popup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Compact</span></button><button class="modal-cls" onclick="closeModal()">x</button></div></div>
     <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
@@ -1522,7 +1545,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 <!-- RR / RO MODAL -->
 <div class="modal-ov hidden" id="rr-modal">
   <div class="modal entry-modal">
-    <div class="modal-hdr"><h3 id="rr-modal-title">New RR / RO Entry</h3><button class="modal-cls" onclick="closeRRModal()">x</button></div>
+    <div class="modal-hdr"><h3 id="rr-modal-title">New RR / RO Entry</h3><div class="modal-hdr-actions"><button class="compact-toggle" onclick="toggleEntryCompact()" title="Toggle compact view — tighter spacing &amp; smaller popup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Compact</span></button><button class="modal-cls" onclick="closeRRModal()">x</button></div></div>
     <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp full"><label>Subject *</label><input class="fc" id="rr-subject" placeholder="e.g. ROUTE REQUEST - CID CYN DIDLOGIC - THREE (3) PLDT FCS" oninput="onRRSubjectInput()"></div>
@@ -1641,7 +1664,7 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 <!-- DID ORDER MODAL -->
 <div class="modal-ov hidden" id="did-modal">
   <div class="modal entry-modal">
-    <div class="modal-hdr"><h3 id="did-modal-title">New DID Order / Cancel</h3><button class="modal-cls" onclick="closeDIDModal()">x</button></div>
+    <div class="modal-hdr"><h3 id="did-modal-title">New DID Order / Cancel</h3><div class="modal-hdr-actions"><button class="compact-toggle" onclick="toggleEntryCompact()" title="Toggle compact view — tighter spacing &amp; smaller popup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Compact</span></button><button class="modal-cls" onclick="closeDIDModal()">x</button></div></div>
     <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
@@ -2406,6 +2429,23 @@ function toggleDensity(){
   applyDensity();
 }
 applyDensity(); // deferred module → DOM is ready, apply saved preference on load
+
+// ─── ENTRY MODAL COMPACT MODE (per-device display preference) ─────────────
+// One toggle shared by the Endorsement / RR-RO / DID add-or-edit popups.
+function applyEntryCompact(){
+  var compact=localStorage.getItem('cyn_entry_compact')==='1';
+  document.body.classList.toggle('entry-compact',compact);
+  document.querySelectorAll('.compact-toggle').forEach(function(b){
+    b.setAttribute('aria-pressed',compact?'true':'false');
+    b.title=compact?'Compact view is ON — click for normal spacing':'Toggle compact view — tighter spacing & smaller popup';
+  });
+}
+function toggleEntryCompact(){
+  var compact=localStorage.getItem('cyn_entry_compact')==='1';
+  localStorage.setItem('cyn_entry_compact',compact?'0':'1');
+  applyEntryCompact();
+}
+applyEntryCompact();
 
 // ─── COLLAPSIBLE SETTINGS SECTIONS ───────────────────────────
 // Make each Settings section header toggle its content (default expanded; state per-section in localStorage).
@@ -8650,6 +8690,7 @@ window.clearOneFilter=clearOneFilter;
 window.clearAllFilters=clearAllFilters;
 window.renderFilterChips=renderFilterChips;
 window.toggleDensity=toggleDensity;
+window.toggleEntryCompact=toggleEntryCompact;
 window.bulkDelete=bulkDelete;
 window.clampDIDTimerHH=clampDIDTimerHH;
 window.clampTimerHH=clampTimerHH;
