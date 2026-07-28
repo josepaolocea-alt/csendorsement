@@ -142,7 +142,7 @@ body.density-compact .tbadge.trestart::after{top:-8px;}
 /* Shared row alert effects (Advised Client aging + RR/RO missing RO by). Colors come from --fx-* vars set inline per row. Animated variants use non-!important backgrounds so keyframes can win. */
 tr.fx-row>td:first-child{box-shadow:inset 3px 0 0 var(--fx-color,#fb7185);}
 tr.fx-soft>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
-tr.fx-stripe>td{background:repeating-linear-gradient(135deg,var(--fx-stripe,rgba(244,63,94,.11)) 0,var(--fx-stripe,rgba(244,63,94,.11)) 8px,var(--fx-stripe-soft,rgba(244,63,94,.04)) 8px,var(--fx-stripe-soft,rgba(244,63,94,.04)) 16px)!important;}
+tr.fx-stripe>td{background:repeating-linear-gradient(135deg,var(--fx-stripe,rgba(244,63,94,.11)) 0,var(--fx-stripe,rgba(244,63,94,.11)) 8px,var(--fx-stripe-soft,rgba(244,63,94,.04)) 8px,var(--fx-stripe-soft,rgba(244,63,94,.04)) 16px)!important;background-attachment:fixed!important;/* fixed = one continuous pattern across all cells (no per-column seam) */}
 tr.fx-outline>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;border-top:1px solid var(--fx-outline,rgba(244,63,94,.55))!important;border-bottom:1px solid var(--fx-outline,rgba(244,63,94,.55))!important;}
 tr.fx-outline>td:first-child{border-left:1px solid var(--fx-outline,rgba(244,63,94,.55))!important;}
 tr.fx-outline>td:last-child{border-right:1px solid var(--fx-outline,rgba(244,63,94,.55))!important;}
@@ -2298,7 +2298,7 @@ function applyPinStyle(){
       +'@keyframes pinPulse{0%,100%{background:'+rgba(hex,.07)+'}50%{background:'+rgba(hex,.17)+'}}'
       +'@keyframes pinPulseBar{0%,100%{box-shadow:inset 3px 0 0 '+hex+'}50%{box-shadow:inset 7px 0 0 '+strong+'}}';
   }else if(eff==='stripe'){
-    css+='tr.pinned-row>td{background:repeating-linear-gradient(135deg,'+rgba(hex,.12)+' 0,'+rgba(hex,.12)+' 8px,'+rgba(hex,.04)+' 8px,'+rgba(hex,.04)+' 16px);}';
+    css+='tr.pinned-row>td{background:repeating-linear-gradient(135deg,'+rgba(hex,.12)+' 0,'+rgba(hex,.12)+' 8px,'+rgba(hex,.04)+' 8px,'+rgba(hex,.04)+' 16px);background-attachment:fixed;}';
   }else if(eff==='blink'){
     css+='tr.pinned-row>td{animation:pinBlink 1.2s linear infinite;}'
       +'@keyframes pinBlink{0%,45%{background:'+rgba(hex,.30)+'}55%,100%{background:'+rgba(hex,.08)+'}}';
