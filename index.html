@@ -527,6 +527,11 @@ textarea.fc{resize:vertical;min-height:70px;}
 tr.rr-completed-row td{background:rgba(34,197,94,.06)!important;color:#4ade80!important;}
 tr.rr-completed-row td .badge{opacity:.85;}
 tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through;opacity:.6;}
+/* Pending RR/RO Remarks cell: content is absolutely positioned so it does NOT stretch the row.
+   Row height is driven by the Subject cell instead; long remarks scroll inside the fixed cell height. */
+td.rr-remarks-cell{position:relative;padding:0;min-width:180px;}
+td.rr-remarks-cell>.rr-remarks-inner{position:absolute;inset:0;overflow-y:auto;padding:8px 12px;white-space:normal;color:var(--text2);font-size:12px;line-height:1.45;}
+body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;padding-bottom:3px;}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 
 @media (prefers-reduced-motion:reduce){
@@ -4433,7 +4438,7 @@ function renderRRRows(){
       +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
       +'<td class="copyable-cell" style="font-weight:600;max-width:220px;white-space:normal" title="'+(r.rrSubject||'')+'">'+(r.rrSubject||'')+copyCellButton(r.id,'rrSubject')+'</td>'
       +'<td>'+fmtDate(r.rrEffDate)+'</td>'
-      +'<td style="max-width:200px;white-space:normal;color:var(--text2);font-size:12px">'+(r.rrRemarks||'')+'</td>'
+      +'<td class="rr-remarks-cell" title="'+(r.rrRemarks||'').replace(/"/g,'&quot;')+'"><div class="rr-remarks-inner">'+(r.rrRemarks||'')+'</div></td>'
       +'<td>'+fmtDate(r.rrDate)+'</td>'
       +'<td>'+rrBadge(r.rrBy||'','rrby')+'</td>'
       +'<td>'+rrBadge(r.roBy||'','roby')+rrRoAlertBadge(r)+'</td>'
