@@ -7087,7 +7087,7 @@ function loadAdminData(force){
   if(_adminLoaded && !force){
     renderClientGrid();
     renderDropdownOptionsPanel();
-    renderLogsSection();   // reflect logs that may have loaded elsewhere (e.g. Dashboard)
+    renderLogsSection();   // show logs only if the user explicitly loaded them here (a Dashboard fetch must NOT reveal them)
     return;
   }
   _adminLoaded = true;
@@ -7097,7 +7097,7 @@ function loadAdminData(force){
   // work no longer reads the logs collection. Re-read from Firebase only on a forced
   // refresh of logs already in view; otherwise just render whatever is cached (or the
   // "Load activity logs" placeholder if nothing has been loaded yet).
-  if(force && _logsLoaded) loadLogs(); else renderLogsSection();
+  if(force && _logsViewed) loadLogs(); else renderLogsSection();
   if(!Object.keys(_dropdownData).length){
     Object.keys(DROPDOWN_OPTS).forEach(function(key){_dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();});
   }
@@ -7521,8 +7521,9 @@ function loadNicknames(){
 
 // ─── LOGS ────────────────────────────────────────────────────
 var LOGS = [];
-var _logsLoaded=false;      // logs are fetched lazily (only when actually viewed) to save Firebase reads
-var LOG_READ_LIMIT=3000;    // and capped to the most recent N entries so the read can never grow unbounded
+var _logsLoaded=false;      // TRUE once the LOGS array has been fetched from Firebase (by the Admin button OR the Dashboard). Data-cache flag only.
+var _logsViewed=false;      // TRUE only when the user explicitly opens logs in the Admin section. Controls whether Admin SHOWS them, so a Dashboard fetch never reveals them here.
+var LOG_READ_LIMIT=3000;    // reads are capped to the most recent N entries so the read can never grow unbounded
 
 function writeLog(action, record, details, extra){
   var entry={
@@ -7546,6 +7547,7 @@ function loadLogs(){
     snap.forEach(function(d){LOGS.push(d.data());});
     LOGS.sort(function(a,b){return b.ts-a.ts;});
     _logsLoaded=true;
+    _logsViewed=true;   // the user explicitly clicked "Load activity logs", so Admin may now show them
     _logPage=0;
     renderLogs();
   }).catch(function(e){
@@ -7556,7 +7558,7 @@ function loadLogs(){
 // Lazy placeholder for the Activity Logs section: nothing is read from Firebase until
 // the Admin actually clicks "Load activity logs" (or opens the Dashboard, which needs them).
 function renderLogsSection(){
-  if(_logsLoaded){renderLogs();return;}
+  if(_logsViewed){renderLogs();return;}
   var lbl=document.getElementById('log-count-label');
   if(lbl)lbl.textContent='Not loaded';
   var tbody=document.getElementById('log-tbody');
@@ -7641,7 +7643,7 @@ function clearLogFilters(){
 }
 
 function exportLogs(){
-  if(!_logsLoaded){toast('Load the activity logs first','info');return;}
+  if(!_logsViewed){toast('Load the activity logs first','info');return;}
   var headers=['#','Date & Time','User','Action','Record','Details'];
   var rows=[headers.join(',')].concat(LOGS.map(function(l,i){
     var d=new Date(l.ts);
@@ -7663,7 +7665,7 @@ function clearAllLogs(){
       var promises=[];snap.forEach(function(d){promises.push(deleteDoc(doc(db,'logs',d.id)));});
       return Promise.all(promises);
     }).then(function(){
-      LOGS=[];_logsLoaded=true;renderLogs();toast('All logs cleared','info');
+      LOGS=[];_logsLoaded=true;_logsViewed=true;renderLogs();toast('All logs cleared','info');
     });
   });
 }
