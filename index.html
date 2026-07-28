@@ -528,9 +528,10 @@ tr.rr-completed-row td{background:rgba(34,197,94,.06)!important;color:#4ade80!im
 tr.rr-completed-row td .badge{opacity:.85;}
 tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through;opacity:.6;}
 /* Pending RR/RO Remarks cell: content is absolutely positioned so it does NOT stretch the row.
-   Row height is driven by the Subject cell instead; long remarks scroll inside the fixed cell height. */
+   Row height is driven by the Subject cell instead; long remarks are clipped to the fixed cell
+   height (no scroll bar) — the full text is available via the cell's hover tooltip. */
 td.rr-remarks-cell{position:relative;padding:0;min-width:180px;}
-td.rr-remarks-cell>.rr-remarks-inner{position:absolute;inset:0;overflow-y:auto;padding:8px 12px;white-space:normal;color:var(--text2);font-size:12px;line-height:1.45;}
+td.rr-remarks-cell>.rr-remarks-inner{position:absolute;inset:0;overflow:hidden;padding:8px 12px;white-space:normal;color:var(--text2);font-size:12px;line-height:1.45;}
 body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;padding-bottom:3px;}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 
@@ -1009,7 +1010,6 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
     <button class="tab-btn" id="density-btn" data-tip="Compact rows" aria-label="Toggle row density" onclick="toggleDensity()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     <button class="tab-btn" id="auto-toggle-btn" data-tip="Settings" aria-label="Settings" onclick="toggleAutoPanel()" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
     <button class="tab-btn" data-tip="Export" aria-label="Export" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
-    <button class="tab-btn" data-tip="Export to Trello (All Tasks)" aria-label="Export to Trello" onclick="exportTrello()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="7" y="7" width="3" height="9"/><rect x="14" y="7" width="3" height="5"/></svg></button>
     <button class="tab-btn" id="daily-report-btn" data-tip="Daily Report" aria-label="Daily Report" onclick="openDailyReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></button>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
     <button class="btn btn-sm" id="trash-restore-sel-btn" onclick="restoreSelected()" style="display:none;background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)">Restore Selected</button>
