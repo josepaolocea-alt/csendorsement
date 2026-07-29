@@ -304,8 +304,8 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.5);}
 .modal-ov:not(.hidden){animation:ovFadeIn .16s ease-out;}
 .modal-ov:not(.hidden) .modal{animation:modalIn .18s cubic-bezier(.2,.8,.2,1);}
-.timer-alert-box{max-width:380px;border:2px solid #f87171;}
-.modal-ov:not(.hidden) .timer-alert-box{animation:modalIn .18s cubic-bezier(.2,.8,.2,1),alertGlow 1.8s ease-in-out .18s infinite;}
+.timer-alert-box{max-width:380px;border:1px solid rgba(248,113,113,.35);}
+.modal-ov:not(.hidden) .timer-alert-box{animation:modalIn .18s cubic-bezier(.2,.8,.2,1);}
 .modal-hdr{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1;}
 .modal-hdr h3{font-size:15px;font-weight:600;}
 .modal-cls{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:2px 7px;border-radius:6px;font-family:var(--sf);}
@@ -5329,7 +5329,16 @@ document.addEventListener('keydown',function(e){
     navigator.clipboard.writeText(lines.join('\n')).then(function(){toast('Copied!','success');}).catch(function(){});
     e.preventDefault();
   }
-  if(e.key==='Escape'){document.querySelectorAll('.cell-sel').forEach(function(c){c.classList.remove('cell-sel');});_selCells.clear();}
+  if(e.key==='Escape'){
+    // Esc closes an open Add/Edit entry popup — any style (centre pop-up / side panel / full window).
+    // Uses the real close fns so cleanup runs (same as clicking ✕); only one entry popup is ever open.
+    var entryClosers=[['record-modal',closeModal],['rr-modal',closeRRModal],['did-modal',closeDIDModal]];
+    for(var _i=0;_i<entryClosers.length;_i++){
+      var _ov=document.getElementById(entryClosers[_i][0]);
+      if(_ov&&!_ov.classList.contains('hidden')){entryClosers[_i][1]();return;}
+    }
+    document.querySelectorAll('.cell-sel').forEach(function(c){c.classList.remove('cell-sel');});_selCells.clear();
+  }
 });
 
 function updateBulkBar(){
