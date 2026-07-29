@@ -1499,11 +1499,12 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         <div class="fgrp" id="f-resolved-wrap"><label>Resolved Date</label><div id="f-resolved-display" style="font-size:13px;color:#4ade80;padding:8px 0;font-family:var(--mono)">—</div></div>
         <div class="fgrp"><label>Timer Duration</label>
           <select class="fc" id="f-timer-sel" onchange="onModalTimerChange()">
-            <option value="1800">30 Minutes</option>
             <option value="3600" selected>1 Hour</option>
             <option value="7200">2 Hours</option>
+            <option value="28800">8 Hours</option>
             <option value="86400">1 Day (24 Hours)</option>
             <option value="259200">3 Days (72 Hours)</option>
+            <option value="432000">5 Days (120 Hours)</option>
             <option value="604800">7 Days (168 Hours)</option>
             <option value="custom">Custom...</option>
           </select>
@@ -1614,9 +1615,12 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         <div class="fgrp"><label>Timer Duration</label>
           <select class="fc" id="rr-timer-sel" onchange="onRRTimerChange()">
             <option value="3600">1 Hour</option>
-            <option value="14400">4 Hours</option>
+            <option value="7200">2 Hours</option>
             <option value="28800" selected>8 Hours</option>
+            <option value="86400">1 Day (24 Hours)</option>
             <option value="259200">3 Days (72 Hours)</option>
+            <option value="432000">5 Days (120 Hours)</option>
+            <option value="604800">7 Days (168 Hours)</option>
             <option value="custom">Custom...</option>
           </select>
           <div id="rr-timer-custom-wrap" style="display:none;flex-direction:column;gap:5px;margin-top:5px">
@@ -1720,9 +1724,12 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         </div>
         <div class="fgrp"><label>Timer Duration</label>
           <select class="fc" id="d-timer-sel" onchange="onDIDTimerChange()">
-            <option value="0">None (00:00)</option>
-            <option value="86400">1 Day (24 Hours)</option>
+            <option value="3600">1 Hour</option>
+            <option value="7200">2 Hours</option>
+            <option value="28800">8 Hours</option>
+            <option value="86400" selected>1 Day (24 Hours)</option>
             <option value="259200">3 Days (72 Hours)</option>
+            <option value="432000">5 Days (120 Hours)</option>
             <option value="604800">7 Days (168 Hours)</option>
             <option value="custom">Custom...</option>
           </select>
@@ -3086,8 +3093,16 @@ function onRRPriorityChange(){
   if(editingRRId!==null) return;
   var pri=document.getElementById('rr-priority').value;
   var secs=pri==='Critical'?3600:pri==='Urgent'?14400:28800;
-  document.getElementById('rr-timer-sel').value=secs;
-  document.getElementById('rr-timer-custom-wrap').style.display='none';
+  var rrKnown=[3600,7200,28800,86400,259200,432000,604800]; // must match #rr-timer-sel options
+  if(rrKnown.indexOf(secs)===-1){ // Urgent => 4h, no longer a preset: show via Custom
+    document.getElementById('rr-timer-sel').value='custom';
+    document.getElementById('rr-timer-hh').value=Math.floor(secs/3600);
+    document.getElementById('rr-timer-mm').value=Math.floor((secs%3600)/60);
+    document.getElementById('rr-timer-custom-wrap').style.display='flex';
+  }else{
+    document.getElementById('rr-timer-sel').value=String(secs);
+    document.getElementById('rr-timer-custom-wrap').style.display='none';
+  }
 }
 
 // ─── PERSISTENT AUDIO CONTEXT ────────────────────────────────
@@ -4710,7 +4725,7 @@ function openEditRR(id){
   document.getElementById('rr-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
   document.getElementById('rr-auto-restart').checked=!!r.autoRestartTimer;
   var rrTov=r.timerOverride||28800;
-  var rrKnown=[3600,14400,28800];
+  var rrKnown=[3600,7200,28800,86400,259200,432000,604800]; // must match #rr-timer-sel options
   if(rrKnown.indexOf(rrTov)===-1){
     document.getElementById('rr-timer-sel').value='custom';
     document.getElementById('rr-timer-hh').value=Math.floor(rrTov/3600)||0;
@@ -5015,7 +5030,7 @@ function openNewDIDModal(){
   document.getElementById('d-am').value='';
   document.getElementById('d-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('d-priority').value='Normal';
-  document.getElementById('d-timer-sel').value='0';
+  document.getElementById('d-timer-sel').value='86400'; // default 1 Day (the "None" option was removed)
   document.getElementById('d-timer-custom-wrap').style.display='none';
   document.getElementById('d-timer-hh').value='';
   document.getElementById('d-timer-mm').value='';
@@ -5049,14 +5064,16 @@ function openEditDID(id){
   document.getElementById('d-date').value=r.startDate||'';
   document.getElementById('d-priority').value=(r.priority==='Medium'||r.priority==='Low')?'Normal':(r.priority||'Normal');
   var _dtov=r.timerOverride||0;
-  var _dKnown=[86400,259200,604800];
+  var _dKnown=[3600,7200,28800,86400,259200,432000,604800]; // must match #d-timer-sel options
   if(_dtov&&_dKnown.indexOf(_dtov)===-1){
     document.getElementById('d-timer-sel').value='custom';
     document.getElementById('d-timer-custom-wrap').style.display='flex';
     document.getElementById('d-timer-hh').value=Math.floor(_dtov/3600);
     document.getElementById('d-timer-mm').value=Math.floor((_dtov%3600)/60);
   }else{
-    document.getElementById('d-timer-sel').value=String(_dtov);
+    // Legacy DID rows saved with no timer (timerOverride 0/null) have no "None" option anymore -> show the 1 Day default.
+    // The timer isn't marked dirty here, so saving without touching it preserves the original (see _didTimerDirty in saveDIDRecord).
+    document.getElementById('d-timer-sel').value=_dtov?String(_dtov):'86400';
     document.getElementById('d-timer-custom-wrap').style.display='none';
     document.getElementById('d-timer-hh').value='';
     document.getElementById('d-timer-mm').value='';
@@ -5387,7 +5404,7 @@ function toggleAutoPanel(){
 }
 
 function setModalTimerFields(secs){
-  var knownVals=[1800,3600,7200,86400,259200,604800];
+  var knownVals=[3600,7200,28800,86400,259200,432000,604800]; // must match #f-timer-sel options
   var known=knownVals.indexOf(secs)>-1;
   document.getElementById('f-timer-sel').value=known?String(secs):'custom';
   document.getElementById('f-timer-hh').value=known?'0':String(Math.floor(secs/3600));
@@ -6022,8 +6039,7 @@ function onPriorityChange(){
   if(editingId!==null) return;
   var pri=document.getElementById('f-pri-f').value;
   if(pri==='High'){
-    document.getElementById('f-timer-sel').value='1800'; // 30 minutes
-    document.getElementById('f-timer-custom-wrap').style.display='none';
+    setModalTimerFields(1800); // High => 30 min; shown via Custom (30 min is no longer a preset)
   }else{
     setModalTimerFields(SETTINGS.defaultTimer||3600);
     applyPaymentTimerRule();
@@ -6297,7 +6313,7 @@ function readModalTimerSecs(){
 }
 
 function timerDurLabel(secs){
-  var known={1800:'30 minutes',3600:'1 hour',7200:'2 hours',86400:'1 day',259200:'3 days',604800:'7 days'};
+  var known={1800:'30 minutes',3600:'1 hour',7200:'2 hours',14400:'4 hours',28800:'8 hours',86400:'1 day',259200:'3 days',432000:'5 days',604800:'7 days'};
   if(known[secs])return known[secs];
   var hh=Math.floor(secs/3600),mm=Math.floor((secs%3600)/60);
   return (hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;
