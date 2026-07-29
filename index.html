@@ -360,6 +360,26 @@ body.entry-compact .entry-comments .comment-bubble{padding:6px 10px;}
 body.entry-compact .entry-comments .comment-text{font-size:12px;line-height:1.42;}
 body.entry-compact .entry-comments .comment-new{gap:6px;}
 body.entry-compact .entry-comments .comment-empty{padding:20px 16px;}
+/* ── Entry window style: Center pop-up (default) / Side panel / Full window ──
+   Per-device (localStorage cyn_entry_style). Scoped to the 3 entry popups via
+   .entry-ov so every other modal (Settings, confirm, comments…) is untouched.
+   Only the panel/full geometry + entrance animation change — the backdrop keeps
+   the existing ovFadeIn — so it stays as smooth as the default centre pop-up. */
+.estyle-seg{display:inline-flex;gap:4px;padding:3px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;flex-wrap:wrap;}
+.estyle-opt{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text2);font-family:var(--sf);font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;}
+.estyle-opt svg{width:15px;height:15px;flex:0 0 auto;}
+.estyle-opt:hover{color:var(--text);background:var(--bg4);}
+.estyle-opt.is-active{background:var(--accent);border-color:var(--accent);color:#fff;}
+/* SIDE PANEL — dock a full-height sheet to the right, slide in from the edge */
+body.entry-style-panel .entry-ov{justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden;}
+body.entry-style-panel .entry-ov .entry-modal{width:min(780px,100vw);max-width:min(780px,100vw);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-24px 0 60px rgba(0,0,0,.45);}
+body.entry-style-panel .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
+/* FULL WINDOW — fill the whole browser window */
+body.entry-style-full .entry-ov{padding:0;}
+body.entry-style-full .entry-ov .entry-modal{width:100vw;max-width:100vw;height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0;}
+body.entry-style-full .entry-ov:not(.hidden) .entry-modal{animation:entryFullIn .2s cubic-bezier(.2,.8,.2,1);}
+@keyframes entryDrawerIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes entryFullIn{from{opacity:0;transform:scale(.99)}to{opacity:1;transform:scale(1)}}
 .timer-auto-toggle{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;width:max-content;max-width:100%;}
 .timer-auto-toggle:hover{background:var(--bg4);color:var(--text);}
 .timer-auto-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
@@ -769,6 +789,24 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
       <button class="btn btn-secondary btn-sm" id="notif-enable-btn" style="display:none" onclick="enableNotifs()">🔔 Turn on notifications</button>
       <span id="sound-status" style="font-size:12px;font-weight:600;margin-left:8px"></span>
       <span id="alert-status-hint" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+    </div>
+    <div class="settings-sec">
+    <div class="settings-sec-title">🪟 Entry Window Style</div>
+    <div class="auto-row">
+      <span class="auto-label">New / Edit popup opens as:</span>
+      <div class="estyle-seg" id="estyle-seg" role="group" aria-label="Entry window style">
+        <button type="button" class="estyle-opt" data-style="center" onclick="setEntryStyle('center')" title="Classic pop-up centred on screen (default)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="7" width="12" height="10" rx="1.5"/></svg><span>Center pop-up</span>
+        </button>
+        <button type="button" class="estyle-opt" data-style="panel" onclick="setEntryStyle('panel')" title="Slides in as a tall panel docked to the right edge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="13" y1="5" x2="13" y2="19"/></svg><span>Side panel</span>
+        </button>
+        <button type="button" class="estyle-opt" data-style="full" onclick="setEntryStyle('full')" title="Fills the whole browser window">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Full window</span>
+        </button>
+      </div>
+      <span class="auto-label" style="color:var(--text3)">applies to New &amp; Edit in every tab — saved on this device only, not shared</span>
     </div>
     </div>
     <div class="settings-sec">
@@ -1460,7 +1498,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
   </div>
 </div>
 
-<div class="modal-ov hidden" id="record-modal">
+<div class="modal-ov entry-ov hidden" id="record-modal">
   <div class="modal entry-modal">
     <div class="modal-hdr"><h3 id="modal-title">New Endorsement</h3><div class="modal-hdr-actions"><button class="compact-toggle" onclick="toggleEntryCompact()" title="Toggle compact view — tighter spacing &amp; smaller popup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Compact</span></button><button class="modal-cls" onclick="closeModal()">x</button></div></div>
     <div class="modal-body entry-details">
@@ -1566,7 +1604,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
 </div>
 
 <!-- RR / RO MODAL -->
-<div class="modal-ov hidden" id="rr-modal">
+<div class="modal-ov entry-ov hidden" id="rr-modal">
   <div class="modal entry-modal">
     <div class="modal-hdr"><h3 id="rr-modal-title">New RR / RO Entry</h3><div class="modal-hdr-actions"><button class="compact-toggle" onclick="toggleEntryCompact()" title="Toggle compact view — tighter spacing &amp; smaller popup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Compact</span></button><button class="modal-cls" onclick="closeRRModal()">x</button></div></div>
     <div class="modal-body entry-details">
@@ -1688,7 +1726,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
 </div>
 
 <!-- DID ORDER MODAL -->
-<div class="modal-ov hidden" id="did-modal">
+<div class="modal-ov entry-ov hidden" id="did-modal">
   <div class="modal entry-modal">
     <div class="modal-hdr"><h3 id="did-modal-title">New DID Order / Cancel</h3><div class="modal-hdr-actions"><button class="compact-toggle" onclick="toggleEntryCompact()" title="Toggle compact view — tighter spacing &amp; smaller popup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Compact</span></button><button class="modal-cls" onclick="closeDIDModal()">x</button></div></div>
     <div class="modal-body entry-details">
@@ -2475,6 +2513,29 @@ function toggleEntryCompact(){
   applyEntryCompact();
 }
 applyEntryCompact();
+
+// ─── ENTRY MODAL WINDOW STYLE (per-device: center / side panel / full) ───
+// Same per-device idea as compact: one choice shared by the Endorsement / RR-RO /
+// DID add-or-edit popups. Toggles a body class the scoped CSS reacts to. Only the
+// geometry + entrance animation change; the backdrop keeps its fade so it stays
+// smooth. Default — or any unknown value — falls back to the centre pop-up.
+function applyEntryStyle(){
+  var s=localStorage.getItem('cyn_entry_style')||'center';
+  if(s!=='panel'&&s!=='full')s='center';
+  document.body.classList.toggle('entry-style-panel',s==='panel');
+  document.body.classList.toggle('entry-style-full',s==='full');
+  document.querySelectorAll('#estyle-seg .estyle-opt').forEach(function(b){
+    var on=b.getAttribute('data-style')===s;
+    b.classList.toggle('is-active',on);
+    b.setAttribute('aria-pressed',on?'true':'false');
+  });
+}
+function setEntryStyle(s){
+  if(s!=='panel'&&s!=='full')s='center';
+  localStorage.setItem('cyn_entry_style',s);
+  applyEntryStyle();
+}
+applyEntryStyle();
 
 // ─── COLLAPSIBLE SETTINGS SECTIONS ───────────────────────────
 // Make each Settings section header toggle its content (default expanded; state per-section in localStorage).
@@ -8724,6 +8785,7 @@ window.clearAllFilters=clearAllFilters;
 window.renderFilterChips=renderFilterChips;
 window.toggleDensity=toggleDensity;
 window.toggleEntryCompact=toggleEntryCompact;
+window.setEntryStyle=setEntryStyle;
 window.bulkDelete=bulkDelete;
 window.clampDIDTimerHH=clampDIDTimerHH;
 window.clampTimerHH=clampTimerHH;
