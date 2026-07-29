@@ -4662,7 +4662,7 @@ function openNewRRModal(){
   document.getElementById('rr-subject').value='';
   document.getElementById('rr-priority').value='';
   document.getElementById('rr-eff-date').value=today;
-  document.getElementById('rr-remarks').value='';
+  document.getElementById('rr-remarks').value='';autoResizeId('rr-remarks');
   document.getElementById('rr-date').value=today;
   document.getElementById('rr-by').value='';
   document.getElementById('ro-by').value='';
@@ -4677,7 +4677,7 @@ function openNewRRModal(){
   document.getElementById('rr-timer-sel').value='28800';
   document.getElementById('rr-timer-custom-wrap').style.display='none';
   setReminderFields('rr',null);
-  document.getElementById('rr-comment-text').value='';
+  var _rct0=document.getElementById('rr-comment-text');_rct0.value='';_rct0.style.height='';
   _pendingAttachments['rr-attach-pending']=[];
   _pendingRRComments=[];
   renderPendingPreviews('rr-attach-pending');
@@ -4718,7 +4718,7 @@ function openEditRR(id){
     document.getElementById('rr-timer-custom-wrap').style.display='none';
   }
   setReminderFields('rr',r.reminderAt||null);
-  document.getElementById('rr-comment-text').value='';
+  var _rct1=document.getElementById('rr-comment-text');_rct1.value='';_rct1.style.height='';
   _pendingAttachments['rr-attach-pending']=[];
   renderPendingPreviews('rr-attach-pending');
   renderRRModalComments(r.comments||[]);
@@ -5413,7 +5413,7 @@ function openNewModal(){
   // Pre-fill timer from Settings > Default timer (priority starts as Normal)
   setModalTimerFields(SETTINGS.defaultTimer||3600);
   setReminderFields('f',null);
-  document.getElementById('f-comment-text').value='';
+  var _fct0=document.getElementById('f-comment-text');_fct0.value='';_fct0.style.height='';
   _pendingAttachments['endorse-attach-pending']=[];
   _pendingComments=[];
   renderPendingPreviews('endorse-attach-pending');
@@ -5445,7 +5445,7 @@ function openEdit(id){
   // Show the entry's own timer, or the Settings default if it has none
   setModalTimerFields(r.timerOverride||SETTINGS.defaultTimer||3600);
   setReminderFields('f',r.reminderAt||null);
-  document.getElementById('f-comment-text').value='';
+  var _fct1=document.getElementById('f-comment-text');_fct1.value='';_fct1.style.height='';
   _pendingAttachments['endorse-attach-pending']=[];
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments(r.comments||[]);
