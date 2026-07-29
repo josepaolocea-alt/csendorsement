@@ -1617,9 +1617,8 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
             <option value="Urgent">⚠️ Urgent</option>
           </select>
         </div>
-        <div class="fgrp"><label>Effective Date</label><input class="fc" id="rr-eff-date" type="date"></div>
         <div class="fgrp full"><label>Description</label><textarea class="fc" id="rr-remarks" placeholder="Instructions, references, notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
-        <div class="fgrp"><label>RR Date</label><input class="fc" id="rr-date" type="date"></div>
+        <div class="fgrp"><label>RR Date</label><input class="fc" id="rr-date" type="datetime-local"></div>
         <div class="fgrp"><label>RR by</label>
           <select class="fc" id="rr-by">
             <option value="">— Select —</option>
@@ -2769,7 +2768,7 @@ function rrRoAlertBadge(r){
 function rrDoneAnchorMs(r){
   if(!r||r._type!=='rr')return null;
   if(r.rrStatusDoneAt)return r.rrStatusDoneAt;
-  if(r.rrDate){var t=new Date(r.rrDate+'T00:00:00').getTime();if(!isNaN(t))return t;}
+  if(r.rrDate){var t=rrDateToMs(r.rrDate);if(!isNaN(t))return t;}
   return null;
 }
 function calendarDaysBetween(fromMs,toMs){
@@ -2918,7 +2917,12 @@ function copyRowField(e,id,field){
   writeClipboardText(text).then(function(){toast('Copied','success');}).catch(function(){toast('Copy failed','error');});
 }
 function priBadge(p){var cls={High:'pri-high',Normal:'pri-med'}[p]||'pri-med';return '<span class="badge '+cls+'">'+(p||'Normal')+'</span>';}
-function fmtDate(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function fmtDate(d){if(!d)return '';var s=String(d);if(s.indexOf('T')<0)s=s+'T00:00:00';var dt=new Date(s);if(isNaN(dt.getTime()))return '';return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+// Local "YYYY-MM-DDTHH:MM" for <input type="datetime-local"> value (used to stamp RR Date on creation).
+function _nowLocalDT(){var n=new Date();return new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+// RR Date may be a date only ("YYYY-MM-DD", older rows) or a date+time ("YYYY-MM-DDTHH:MM", newer rows).
+function rrDateToMs(d){if(!d)return NaN;var s=String(d);return new Date(s.indexOf('T')>=0?s:s+'T00:00:00').getTime();}
+function fmtRRDate(d){if(!d)return '';var s=String(d);if(s.indexOf('T')<0)return fmtDate(d);var dt=new Date(s);return isNaN(dt.getTime())?fmtDate(d):dt.toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}
 
 function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.defaultTimer;}
 
@@ -3376,7 +3380,7 @@ function recordSearchText(r){
   return [
     r.client,r.service,r.concern,r.remarks,r.platform,r.status,r.priority,r.am,r.startDate,r.resolvedDate,
     r.desc,
-    r.rrSubject,r.rrRemarks,r.rrPriority,r.rrEffDate,r.rrDate,r.rrBy,r.roBy,r.rrStatus,r.rrAdvised,r.rrPosted,r.rrInv
+    r.rrSubject,r.rrRemarks,r.rrPriority,r.rrDate,r.rrBy,r.roBy,r.rrStatus,r.rrAdvised,r.rrPosted,r.rrInv
   ].join(' ').toLowerCase();
 }
 function matchesSearch(r,q){
@@ -4457,9 +4461,8 @@ var RR_THEAD='<tr>'
   +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
   +'<th style="width:70px">Priority</th>'
   +'<th style="min-width:200px">Subject</th>'
-  +'<th style="width:110px">Eff. Date</th>'
   +'<th style="min-width:180px">Remarks</th>'
-  +'<th style="width:105px">RR Date</th>'
+  +'<th style="width:150px">RR Date</th>'
   +'<th style="width:130px">RR by</th>'
   +'<th style="width:120px">RO by</th>'
   +'<th style="width:90px">Status</th>'
@@ -4503,7 +4506,7 @@ function renderRRRows(){
   if(_rrPage<0) _rrPage=0;
   var displayData=filteredData.slice(_rrPage*_rrPageSize,(_rrPage+1)*_rrPageSize);
   renderRRPagination(filteredData.length);
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="15" class="empty">No RR/RO records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="14" class="empty">No RR/RO records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
     var _fx=rowFxParts(r);
@@ -4516,9 +4519,8 @@ function renderRRRows(){
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
       +'<td class="copyable-cell" style="font-weight:600;max-width:220px;white-space:normal" title="'+(r.rrSubject||'')+'">'+(r.rrSubject||'')+copyCellButton(r.id,'rrSubject')+'</td>'
-      +'<td>'+fmtDate(r.rrEffDate)+'</td>'
       +'<td class="rr-remarks-cell" title="'+(r.rrRemarks||'').replace(/"/g,'&quot;')+'"><div class="rr-remarks-inner">'+(r.rrRemarks||'')+'</div></td>'
-      +'<td>'+fmtDate(r.rrDate)+'</td>'
+      +'<td>'+fmtRRDate(r.rrDate)+'</td>'
       +'<td>'+rrBadge(r.rrBy||'','rrby')+'</td>'
       +'<td>'+rrBadge(r.roBy||'','roby')+rrRoAlertBadge(r)+'</td>'
       +'<td>'+rrBadge(r.rrStatus||'Not Yet','status')+rrDoneAgingBadge(r)+'</td>'
@@ -4736,13 +4738,11 @@ function openNewRRModal(){
   editingRRId=null;
   _rrTimerDirty=false;
   _rrAutoClient=null;
-  var today=new Date().toISOString().split('T')[0];
   document.getElementById('rr-modal-title').textContent='New RR / RO Entry';
   document.getElementById('rr-subject').value='';
   document.getElementById('rr-priority').value='';
-  document.getElementById('rr-eff-date').value=today;
   document.getElementById('rr-remarks').value='';autoResizeId('rr-remarks');
-  document.getElementById('rr-date').value=today;
+  document.getElementById('rr-date').value=_nowLocalDT();
   document.getElementById('rr-by').value='';
   document.getElementById('ro-by').value='';
   document.getElementById('rr-status').value='Not Yet';
@@ -4772,9 +4772,10 @@ function openEditRR(id){
   document.getElementById('rr-modal-title').textContent='Edit RR / RO Entry';
   document.getElementById('rr-subject').value=r.rrSubject||'';
   document.getElementById('rr-priority').value=r.rrPriority||'';
-  document.getElementById('rr-eff-date').value=r.rrEffDate||'';
   document.getElementById('rr-remarks').value=r.rrRemarks||'';setTimeout(function(){autoResizeId('rr-remarks');},0);
-  document.getElementById('rr-date').value=r.rrDate||'';
+  // datetime-local needs "YYYY-MM-DDTHH:MM"; older rows stored date only, so pad them to midnight.
+  var _rrd=r.rrDate||'';if(_rrd&&_rrd.indexOf('T')<0)_rrd=_rrd+'T00:00';
+  document.getElementById('rr-date').value=_rrd;
   document.getElementById('rr-by').value=r.rrBy||'';
   document.getElementById('ro-by').value=r.roBy||'';
   document.getElementById('rr-status').value=r.rrStatus||'Not Yet';
@@ -4823,7 +4824,6 @@ function saveRRRecord(){
     _type:'rr',
     rrSubject:subject,
     rrPriority:document.getElementById('rr-priority').value,
-    rrEffDate:document.getElementById('rr-eff-date').value,
     rrRemarks:document.getElementById('rr-remarks').value,
     rrDate:document.getElementById('rr-date').value,
     rrBy:document.getElementById('rr-by').value,
@@ -5665,12 +5665,12 @@ function doExportRows(rows,mode){
   var isRR=currentTab==='mine';
   var headers,csvRows;
   if(isRR){
-    headers=['Subject','Priority','Effective Date','Description','RR Date','RR By','RO By','Status','Advised to Client','Posted','Updated Inventory','Comments'];
+    headers=['Subject','Priority','Description','RR Date','RR By','RO By','Status','Advised to Client','Posted','Updated Inventory','Comments'];
     csvRows=rows.map(function(r){
       var commentsTxt=(r.comments||[]).map(function(cm){
         return '['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||'');
       }).join(' | ');
-      return [r.rrSubject,r.rrPriority||'',r.rrEffDate||'',r.rrRemarks||'',r.rrDate||'',r.rrBy||'',r.roBy||'',r.rrStatus||'',r.rrAdvised||'',r.rrPosted||'',r.rrInv||'',commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+      return [r.rrSubject,r.rrPriority||'',r.rrRemarks||'',fmtRRDate(r.rrDate),r.rrBy||'',r.roBy||'',r.rrStatus||'',r.rrAdvised||'',r.rrPosted||'',r.rrInv||'',commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
     });
   }else{
     headers=['Client/Vendor','Service','Concern','Description','Platform','Status','Start Date','Resolved Date','Priority','Comments'];
@@ -5745,11 +5745,10 @@ function _trelloDesc(r){
   if(r._type==='rr'){
     d.push('**Subject:** '+(r.rrSubject||'—'));
     d.push('**Priority:** '+(r.rrPriority||'—'));
-    d.push('**RR Date:** '+(fmtDate(r.rrDate)||'—'));
+    d.push('**RR Date:** '+(fmtRRDate(r.rrDate)||'—'));
     d.push('**RR By:** '+(r.rrBy||'—'));
     d.push('**RO By:** '+(r.roBy||'—'));
     d.push('**Status:** '+(r.rrStatus||'—'));
-    d.push('**Effectivity:** '+(fmtDate(r.rrEffDate)||'—'));
     d.push('**Advised to Client:** '+(r.rrAdvised||'—'));
     d.push('**Posted:** '+(r.rrPosted||'—'));
     d.push('**Updated Inventory:** '+(r.rrInv||'—'));
@@ -5823,7 +5822,7 @@ function _trelloSaveMap(boardId,map){try{localStorage.setItem('trello_map_'+boar
 // stable: adding a new entry never shifts anyone else's position.
 function _trelloPos(r){
   var ds=r._type==='rr'?r.rrDate:r.startDate;            // date the app sorts this row by
-  var dayMs=ds?Date.parse(String(ds)+'T00:00:00'):NaN;
+  var dayMs=ds?rrDateToMs(ds):NaN;                       // tolerates date-only and date+time RR values
   if(isNaN(dayMs))dayMs=Number(r.createdAt)||0;          // no date set -> fall back to when it was added
   var day=Math.floor(dayMs/86400000);                    // whole days since epoch
   var created=Math.floor((Number(r.createdAt)||0)/1000); // seconds since epoch (tiebreaker)
@@ -7980,7 +7979,7 @@ function buildDailyReport(){
     rrs.forEach(function(r,i){
       out.push('');
       out.push((i+1)+'. '+(r.rrPriority?'['+r.rrPriority+'] ':'')+(r.rrSubject||'(untitled RR)'));
-      out.push('   RR Date: '+(fmtDate(r.rrDate)||'—')+' | RR by: '+(r.rrBy||'—')+' | RO by: '+(r.roBy||'—')+' | Status: '+(r.rrStatus||'Not Yet'));
+      out.push('   RR Date: '+(fmtRRDate(r.rrDate)||'—')+' | RR by: '+(r.rrBy||'—')+' | RO by: '+(r.roBy||'—')+' | Status: '+(r.rrStatus||'Not Yet'));
       if(r.rrRemarks) out.push('   Remarks: '+String(r.rrRemarks).replace(/\s+/g,' ').trim());
       var lc=_drCommentLine(r,300);
       if(lc) out.push('   Last comment: '+lc);
@@ -8077,7 +8076,7 @@ function generateReportSheet(){
     _drAddSheet(wb,'Pending RR-RO',
       ['Priority','Subject','Remarks','RR Date','RR by','RO by','Status','Comment'],
       rrs.map(function(r){
-        return [r.rrPriority||'',r.rrSubject||'',r.rrRemarks||'',fmtDate(r.rrDate),r.rrBy||'',r.roBy||'',r.rrStatus||'Not Yet',_drCommentCell(r)];
+        return [r.rrPriority||'',r.rrSubject||'',r.rrRemarks||'',fmtRRDate(r.rrDate),r.rrBy||'',r.roBy||'',r.rrStatus||'Not Yet',_drCommentCell(r)];
       }),
       [3,8]); // Remarks + Comment wrap
 
