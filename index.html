@@ -48,6 +48,9 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .btn-sm{padding:4px 10px;font-size:12px;}
 .btn-icon{width:30px;height:30px;padding:0;border-radius:7px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:.15s;}
 .btn-icon:hover{background:var(--bg4);color:var(--text);}
+/* Row action icons (reset/stop/start/comment/pin/delete): no resting background box; keep hover lift + subtle highlight */
+.btn-icon.btn-sm{background:transparent;border-color:transparent;}
+.btn-icon.btn-sm:hover{background:var(--bg4);border-color:transparent;}
 .btn:hover,.btn-icon:hover,.tab-btn:hover{transform:translateY(-1px);}
 .btn:active,.btn-icon:active,.tab-btn:active{transform:translateY(0);}
 .main{padding:14px 20px;}
