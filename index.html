@@ -183,6 +183,11 @@ tr.fx-shimmer>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
 [data-theme="light"] .rr-notyet{background:rgba(239,68,68,.12);color:#c81e1e;}
 [data-theme="light"] .rr-gray,[data-theme="light"] .st-gray{color:#4b5563;}
 [data-theme="light"] tr.rr-completed-row td{color:#15803d!important;}
+/* Timer auto-restart badge + floating "Restarted" chip: the dark-tuned greens (#4ade80 / #86efac) wash out on a light background, so darken text & wash like the other green badges above. */
+[data-theme="light"] .tbadge.trestart{background:rgba(22,163,74,.14);color:#15803d;}
+[data-theme="light"] .tbadge.trestart::after{background:rgba(22,163,74,.16);border-color:rgba(22,163,74,.45);color:#15803d;}
+/* SLA "Text in Concern" tier badge (e.g. L2): text color is the user-picked, dark-tuned --fx-color; darken it toward black on light bg while keeping the chosen hue. */
+[data-theme="light"] .sla-text-badge{color:color-mix(in srgb,var(--fx-color,#facc15) 55%,#000);}
 .timer-cell{display:flex;align-items:center;gap:5px;}
 tr.pinned-row>td{background:rgba(251,191,36,.07);}
 tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
