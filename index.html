@@ -1306,8 +1306,15 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
     <!-- CLIENT LIST -->
     <div class="admin-section">
       <div class="admin-toolbar">
-        <span class="admin-ctitle">Client / Vendor List</span>
-        <button onclick="toggleClientGrid()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:12px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+          <span class="admin-ctitle" style="flex-shrink:0">Client / Vendor List</span>
+          <div class="search-wrap" style="min-width:140px;max-width:240px;padding:5px 10px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="client-search" placeholder="Search clients..." oninput="filterClientGrid()" onkeydown="if(event.key==='Escape'){clearClientSearch();this.blur();}">
+            <button id="client-search-clear" onclick="clearClientSearch()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:0 2px;line-height:1" title="Clear search">✕</button>
+          </div>
+        </div>
+        <button onclick="toggleClientGrid()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:12px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0">
           <span id="client-grid-count" style="color:var(--text3)"></span>
           <span id="client-grid-arrow">▼</span>
         </button>
@@ -5331,7 +5338,17 @@ document.addEventListener('mousemove',function(e){
 });
 document.addEventListener('mouseup',function(){_dragging=false;});
 document.addEventListener('keydown',function(e){
-  if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();document.getElementById('search-input').focus();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='f'){
+    e.preventDefault();
+    if(currentTab==='admin'){
+      // In the Admin tab, Ctrl+F searches the Client / Vendor list instead
+      var cs=document.getElementById('client-search');
+      if(cs){ if(!_clientGridExpanded) toggleClientGrid(); cs.focus(); cs.select(); }
+      else { var si0=document.getElementById('search-input'); if(si0) si0.focus(); }
+    } else {
+      var si=document.getElementById('search-input'); if(si) si.focus();
+    }
+  }
   if((e.ctrlKey||e.metaKey)&&e.key==='c'&&_selCells.size>0&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement&&document.activeElement.tagName)&&!document.activeElement.isContentEditable&&!window.getSelection().toString()){
     var rows=Array.from(document.getElementById('main-table').querySelectorAll('tbody tr'));
     var allRows=rows.map(function(r){return Array.from(r.cells);});
@@ -7329,11 +7346,51 @@ function renderClientGrid(){
         +(link.priority?((link.rrBy?' · ':'')+escHtml(link.priority)):'')
         +'</span>';
     }
-    return '<div class="client-tag">'+escHtml(c)+badge
+    return '<div class="client-tag" data-name="'+escAttr(c)+'">'+escHtml(c)+badge
       +'<button class="tag-edit" data-name="'+escAttr(c)+'" onclick="openClientLink(this)" title="Link AM / RR by + Priority to this client">Link</button>'
       +'<button data-name="'+escAttr(c)+'" onclick="removeClient(this.dataset.name)" title="Remove">×</button>'
       +'</div>';
   }).join('');
+  filterClientGrid();
+}
+
+// Live-filter the Client / Vendor tags as you type in the admin search box.
+function filterClientGrid(){
+  var box=document.getElementById('client-search');
+  var grid=document.getElementById('client-grid');
+  var clr=document.getElementById('client-search-clear');
+  var q=box?box.value.trim().toLowerCase():'';
+  if(clr) clr.style.display=q?'':'none';
+  // Typing a search auto-expands the collapsed grid so matches are visible
+  if(q && !_clientGridExpanded) toggleClientGrid();
+  if(!grid) return;
+  var tags=grid.querySelectorAll('.client-tag');
+  var shown=0;
+  tags.forEach(function(t){
+    var match=!q || (t.getAttribute('data-name')||'').toLowerCase().indexOf(q)!==-1;
+    t.style.display=match?'':'none';
+    if(match) shown++;
+  });
+  // Show a "no matches" note when a search hides every client
+  var note=document.getElementById('client-search-none');
+  if(q && shown===0 && tags.length){
+    if(!note){
+      note=document.createElement('span');
+      note.id='client-search-none';
+      note.style.cssText='color:var(--text3);font-size:12px';
+      grid.appendChild(note);
+    }
+    note.textContent='No clients match "'+q+'"';
+    note.style.display='';
+  } else if(note){
+    note.style.display='none';
+  }
+}
+function clearClientSearch(){
+  var box=document.getElementById('client-search');
+  if(box) box.value='';
+  filterClientGrid();
+  if(box) box.focus();
 }
 
 function setClientDropdown(selId, inputId, value){
@@ -8790,6 +8847,8 @@ function applyRemoteNote(data){
 window.loadDashboard=loadDashboard;
 window.renderDashboard=renderDashboard;
 window.addClientName=addClientName;
+window.filterClientGrid=filterClientGrid;
+window.clearClientSearch=clearClientSearch;
 window.addComment=addComment;
 window.restoreRec=restoreRec;
 window.purgeRec=purgeRec;
