@@ -393,12 +393,12 @@ body.entry-style-full .entry-ov .entry-modal{width:100vw;max-width:100vw;height:
 body.entry-style-full .entry-ov:not(.hidden) .entry-modal{animation:entryFullIn .2s cubic-bezier(.2,.8,.2,1);}
 /* …but on real desktops keep the form in a centred, comfortably-capped column so
    it never stretches edge-to-edge on wide monitors. The modal still fills the
-   screen (slightly darker --bg gutters left/right); the content sits centred as a
-   --bg2 "sheet" the same width as the normal pop-up. Below 920px the modal stacks
-   (see the max-width:920px block), so this only applies where the 2-col grid lives. */
+   screen; the content sits centred the same width as the normal pop-up, and the
+   left/right space keeps the SAME --bg2 as the entry so it's one seamless surface
+   (no darker gutters). Below 920px the modal stacks (see the max-width:920px
+   block), so this only applies where the 2-col grid lives. */
 @media (min-width:921px){
-  body.entry-style-full .entry-ov .entry-modal{background:var(--bg);justify-content:center;grid-template-columns:minmax(0,650px) minmax(330px,470px);}
-  body.entry-style-full .entry-ov .entry-details{background:var(--bg2);}
+  body.entry-style-full .entry-ov .entry-modal{justify-content:center;grid-template-columns:minmax(0,650px) minmax(330px,470px);}
 }
 @keyframes entryDrawerIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
 @keyframes entryFullIn{from{opacity:0;transform:scale(.99)}to{opacity:1;transform:scale(1)}}
