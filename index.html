@@ -373,10 +373,10 @@ body.entry-compact .entry-comments .comment-bubble{padding:6px 10px;}
 body.entry-compact .entry-comments .comment-text{font-size:12px;line-height:1.42;}
 body.entry-compact .entry-comments .comment-new{gap:6px;}
 body.entry-compact .entry-comments .comment-empty{padding:20px 16px;}
-/* ── Entry window style: Center pop-up (default) / Side panel / Full window ──
+/* ── Entry window style: Center pop-up (default) / Side panel ──
    Per-device (localStorage cyn_entry_style). Scoped to the 3 entry popups via
    .entry-ov so every other modal (Settings, confirm, comments…) is untouched.
-   Only the panel/full geometry + entrance animation change — the backdrop keeps
+   Only the panel geometry + entrance animation change — the backdrop keeps
    the existing ovFadeIn — so it stays as smooth as the default centre pop-up. */
 .estyle-seg{display:inline-flex;gap:4px;padding:3px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;flex-wrap:wrap;}
 .estyle-opt{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text2);font-family:var(--sf);font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;}
@@ -387,21 +387,7 @@ body.entry-compact .entry-comments .comment-empty{padding:20px 16px;}
 body.entry-style-panel .entry-ov{justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden;}
 body.entry-style-panel .entry-ov .entry-modal{width:min(780px,100vw);max-width:min(780px,100vw);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-24px 0 60px rgba(0,0,0,.45);}
 body.entry-style-panel .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
-/* FULL WINDOW — fill the whole browser window */
-body.entry-style-full .entry-ov{padding:0;}
-body.entry-style-full .entry-ov .entry-modal{width:100vw;max-width:100vw;height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0;}
-body.entry-style-full .entry-ov:not(.hidden) .entry-modal{animation:entryFullIn .2s cubic-bezier(.2,.8,.2,1);}
-/* …but on real desktops keep the form in a centred, comfortably-capped column so
-   it never stretches edge-to-edge on wide monitors. The modal still fills the
-   screen; the content sits centred the same width as the normal pop-up, and the
-   left/right space keeps the SAME --bg2 as the entry so it's one seamless surface
-   (no darker gutters). Below 920px the modal stacks (see the max-width:920px
-   block), so this only applies where the 2-col grid lives. */
-@media (min-width:921px){
-  body.entry-style-full .entry-ov .entry-modal{justify-content:center;grid-template-columns:minmax(0,650px) minmax(330px,470px);}
-}
 @keyframes entryDrawerIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
-@keyframes entryFullIn{from{opacity:0;transform:scale(.99)}to{opacity:1;transform:scale(1)}}
 .timer-auto-toggle{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;width:max-content;max-width:100%;}
 .timer-auto-toggle:hover{background:var(--bg4);color:var(--text);}
 .timer-auto-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
@@ -823,9 +809,6 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         </button>
         <button type="button" class="estyle-opt" data-style="panel" onclick="setEntryStyle('panel')" title="Slides in as a tall panel docked to the right edge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="13" y1="5" x2="13" y2="19"/></svg><span>Side panel</span>
-        </button>
-        <button type="button" class="estyle-opt" data-style="full" onclick="setEntryStyle('full')" title="Fills the whole browser window">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg><span>Full window</span>
         </button>
       </div>
       <span class="auto-label" style="color:var(--text3)">applies to New &amp; Edit in every tab — saved on this device only, not shared</span>
@@ -1364,6 +1347,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
             <option value="csv_import">CSV Import</option>
             <option value="exported">Exported</option>
             <option value="login">Login</option>
+            <option value="timer_restart">Timer Restart</option>
           </select>
           <input type="date" class="fc" id="log-date-filter" onchange="renderLogs()" style="width:140px;font-size:12px" title="Filter by date">
           <button class="btn btn-secondary btn-sm" onclick="clearLogFilters()">Clear</button>
@@ -2542,16 +2526,16 @@ function toggleEntryCompact(){
 }
 applyEntryCompact();
 
-// ─── ENTRY MODAL WINDOW STYLE (per-device: center / side panel / full) ───
+// ─── ENTRY MODAL WINDOW STYLE (per-device: center / side panel) ───
 // Same per-device idea as compact: one choice shared by the Endorsement / RR-RO /
 // DID add-or-edit popups. Toggles a body class the scoped CSS reacts to. Only the
 // geometry + entrance animation change; the backdrop keeps its fade so it stays
 // smooth. Default — or any unknown value — falls back to the centre pop-up.
+// ('full' / Full window was retired, so any device still holding it lands on centre.)
 function applyEntryStyle(){
   var s=localStorage.getItem('cyn_entry_style')||'center';
-  if(s!=='panel'&&s!=='full')s='center';
+  if(s!=='panel')s='center';
   document.body.classList.toggle('entry-style-panel',s==='panel');
-  document.body.classList.toggle('entry-style-full',s==='full');
   document.querySelectorAll('#estyle-seg .estyle-opt').forEach(function(b){
     var on=b.getAttribute('data-style')===s;
     b.classList.toggle('is-active',on);
@@ -2559,7 +2543,7 @@ function applyEntryStyle(){
   });
 }
 function setEntryStyle(s){
-  if(s!=='panel'&&s!=='full')s='center';
+  if(s!=='panel')s='center';
   localStorage.setItem('cyn_entry_style',s);
   applyEntryStyle();
 }
@@ -3100,7 +3084,7 @@ function timerBlockedToast(r){
   toast(r&&r.status==='Advised Client'?'Timer is disabled while status is Advised Client':'Timer is disabled for this status','info');
 }
 function startTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;if(recordStatusStopsTimer(r)){timerBlockedToast(r);return;}r.timerStart=Date.now();r.timerAlerted=false;r.autoRestartedAt=null;saveOne(r);applyFilters();}
-function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;if(recordStatusStopsTimer(r)){timerBlockedToast(r);return;}r.timerStart=Date.now();r.timerAlerted=false;r.autoRestartedAt=Date.now();saveOne(r);}
+function resetTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;if(recordStatusStopsTimer(r)){timerBlockedToast(r);return;}var wasRem=r.timerStart?calcRem(r):null;r.timerStart=Date.now();r.timerAlerted=false;r.autoRestartedAt=Date.now();saveOne(r);try{writeLog('timer_restart',r.client||r.rrSubject||r.desc||'record','Timer manually restarted'+(wasRem!==null?' — was '+fmtTime(wasRem)+' left':''));}catch(le){}}
 function stopTmr(id){if(!window._canEdit)return;var r=DATA.find(function(d){return d.id===id;});if(!r)return;r.timerStart=null;r.timerAlerted=false;r.autoRestartedAt=null;saveOne(r);applyFilters();}
 
 function markEndorsementTimerDirty(){if(editingId!==null)_endorsementTimerDirty=true;}
@@ -5369,7 +5353,7 @@ document.addEventListener('keydown',function(e){
     e.preventDefault();
   }
   if(e.key==='Escape'){
-    // Esc closes an open Add/Edit entry popup — any style (centre pop-up / side panel / full window).
+    // Esc closes an open Add/Edit entry popup — any style (centre pop-up / side panel).
     // Uses the real close fns so cleanup runs (same as clicking ✕); only one entry popup is ever open.
     var entryClosers=[['record-modal',closeModal],['rr-modal',closeRRModal],['did-modal',closeDIDModal]];
     for(var _i=0;_i<entryClosers.length;_i++){
@@ -7759,8 +7743,8 @@ function renderLogs(){
   var tbody=document.getElementById('log-tbody');
   if(!tbody)return;
   if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">No logs found</td></tr>';return;}
-  var actionLabels={login:'🔑 Login',created:'➕ Added',updated:'✏️ Updated',deleted:'🗑️ Deleted',csv_import:'📤 CSV Import',exported:'⬇️ Exported'};
-  var actionCls={login:'log-login',created:'log-created',updated:'log-updated',deleted:'log-deleted',csv_import:'log-updated',exported:'log-created'};
+  var actionLabels={login:'🔑 Login',created:'➕ Added',updated:'✏️ Updated',deleted:'🗑️ Deleted',csv_import:'📤 CSV Import',exported:'⬇️ Exported',timer_restart:'🔄 Timer Restart'};
+  var actionCls={login:'log-login',created:'log-created',updated:'log-updated',deleted:'log-deleted',csv_import:'log-updated',exported:'log-created',timer_restart:'log-updated'};
   tbody.innerHTML=pageData.map(function(l,i){
     var d=new Date(l.ts);
     var dt=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
