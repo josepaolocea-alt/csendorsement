@@ -1038,6 +1038,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
     <select class="fsel" id="f-st" onchange="applyFilters()">
       <option value="">All Statuses</option>
       <option value="__inprogress__">⏳ All In Progress</option>
+      <option value="__pending_ours__">⏳ All Pending - Our Side</option>
       <option value="__completed__">✅ All Completed</option>
       <optgroup label="In Progress">
         <option>Pending at CS</option><option>Pending at NOC</option><option>Pending at TSE</option><option>Pending at L2</option><option>Pending at CTO</option><option>Pending at AM</option><option>Pending at Product</option><option>Pending at Accounting</option><option>Pending at Vendor</option><option>Pending at Developer</option><option>Advised Client</option>
@@ -1237,7 +1238,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
       <div style="height:1px;background:var(--border);margin:12px 0"></div>
 
       <!-- 2) LIVE API SYNC -->
-      <p style="font-size:11px;color:var(--text3);margin:2px 0 10px">Or <strong>live-sync</strong>: pushes your records to a Trello board as cards, laid out in <strong>four columns</strong> — ALL TASK, DID Order/Cancel, Done / Resolved, Pending RR / RO — one card per entry. Re-syncing <strong>updates the same card</strong> (and moves it to the right column if its status changed) instead of creating duplicates. Your key &amp; token are saved only on <strong>this device</strong>, never in the shared app — the token is like a password to your Trello, so keep it private.</p>
+      <p style="font-size:11px;color:var(--text3);margin:2px 0 10px">Or <strong>live-sync</strong>: pushes your records to a Trello board as cards, laid out in <strong>four columns</strong> — ALL TASK, DID Order/Cancel, Done / Resolved, Pending RR / RO — one card per entry. Re-syncing <strong>updates the same card</strong> (and moves it to the right column if its status changed) instead of creating duplicates. Records moved to Trash are archived in Trello on the next sync; restoring a record reopens its card. Your key &amp; token are saved only on <strong>this device</strong>, never in the shared app — the token is like a password to your Trello, so keep it private.</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
         <input class="fc" id="trello-key" type="text" placeholder="Trello API Key" style="width:230px" autocomplete="off" spellcheck="false">
         <input class="fc" id="trello-token" type="password" placeholder="Trello Token" style="width:230px" autocomplete="off" spellcheck="false">
@@ -2618,7 +2619,19 @@ function _doSwitchTab(tab,el){
   document.getElementById('new-btn').style.display=(hideMain||isTrash)?'none':'';
   document.getElementById('trash-info').style.display=isTrash?'':'none';
   document.getElementById('trash-empty-btn').style.display=(isTrash&&window._canEdit)?'':'none';
-  if(isAdmin){try{trelloRestoreUI();}catch(e){}loadAdminData();return;}
+  if(isAdmin){
+    try{trelloRestoreUI();}catch(e){}
+    // Require an explicit load on every Admin entry so merely opening the tab
+    // never consumes Firestore reads for the activity-log collection.
+    _logsViewed=false;
+    _logPage=0;
+    var logActionFilter=document.getElementById('log-action-filter');
+    var logDateFilter=document.getElementById('log-date-filter');
+    if(logActionFilter)logActionFilter.value='';
+    if(logDateFilter)logDateFilter.value='';
+    loadAdminData();
+    return;
+  }
   if(isDash){loadDashboard(true);return;}
   if(isCal){renderCalendar();return;}
   if(isNote){renderNotepad();return;}
@@ -4291,6 +4304,12 @@ function calSnoozeAlert(){
 }
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){try{checkCalendarEvents();}catch(e){}try{updateCalBadge(true);}catch(e){}}});
 
+function isPendingOnOurSideStatus(status){
+  var normalized=String(status||'').trim().toLowerCase();
+  var excluded=['pending at vendor','pending at developer','advised client'];
+  return normalized.indexOf('pending at ')===0&&excluded.indexOf(normalized)===-1;
+}
+
 function applyFilters(){
   try{updatePendingBadges();}catch(e){}
   if(currentTab==='did'){applyDIDFilters();return;}
@@ -4311,6 +4330,7 @@ function applyFilters(){
       var didStatusMatch=!fst||(
         fst==='__completed__'?didDone:
         fst==='__inprogress__'?false:
+        fst==='__pending_ours__'?false:
         r.status===fst
       );
       return didDone&&matchesSearch(r,q)&&didStatusMatch&&(!fs||r.service===fs)&&(!fp||r.priority===fp)&&(!fpl||false)&&matchesAM(r,fam)&&matchesDateRange(r);
@@ -4321,6 +4341,7 @@ function applyFilters(){
     if(currentTab==='all'&&isDone)return false;
     var mq=matchesSearch(r,q);
     var stMatch=!fst||(
+      fst==='__pending_ours__'?isPendingOnOurSideStatus(r.status):
       fst==='__inprogress__'?IN_PROGRESS_ST.indexOf(r.status)>-1:
       fst==='__completed__'?COMPLETED_ST.indexOf(r.status)>-1:
       r.status===fst
@@ -5965,19 +5986,32 @@ async function trelloSync(){
   if(btn){btn.disabled=true;btn.textContent='Syncing…';}
   try{
     var tasks=DATA.filter(function(r){return !!_trelloCatFor(r);});
-    log('Found '+tasks.length+' record'+(tasks.length!==1?'s':'')+' to sync into 4 columns.');
-    if(tasks.length===0){log('Nothing to sync.');return;}
-
-    // Make sure the four category columns exist, in display order
-    var lists=await _trelloApi('GET','/boards/'+c.boardId+'/lists',{fields:'name',filter:'open'});
-    var listMap={};lists.forEach(function(l){listMap[l.name]=l.id;});
-    for(var li=0;li<TRELLO_LISTS.length;li++){
-      var ln=TRELLO_LISTS[li];
-      if(!listMap[ln]){var nl=await _trelloApi('POST','/lists',null,{name:ln,idBoard:c.boardId,pos:'bottom'});listMap[ln]=nl.id;log('Created column "'+ln+'".');}
-    }
-    var labels=await _trelloApi('GET','/boards/'+c.boardId+'/labels',{fields:'name',limit:1000});
-    var labelMap={};labels.forEach(function(l){if(l.name)labelMap[l.name]=l.id;});
     var map=_trelloGetMap(c.boardId);
+    var fpMap=_trelloGetFp(c.boardId);
+    var activeIds={};
+    tasks.forEach(function(r){activeIds[String(r.id)]=true;});
+    // A mapped card whose record is no longer live has been moved to Trash (or
+    // permanently removed). Archive it in Trello so it disappears from the board.
+    // The map is retained so restoring the record can reopen the same card later.
+    var toArchive=[];
+    Object.keys(map).forEach(function(id){
+      if(!activeIds[id]&&fpMap[id]!=='__trashed__')toArchive.push({recordId:id,cardId:map[id]});
+    });
+    log('Found '+tasks.length+' record'+(tasks.length!==1?'s':'')+' to sync into 4 columns.');
+    if(tasks.length===0&&toArchive.length===0){log('Nothing to sync.');return;}
+
+    var listMap={},labelMap={};
+    if(tasks.length){
+      // Make sure the four category columns exist, in display order.
+      var lists=await _trelloApi('GET','/boards/'+c.boardId+'/lists',{fields:'name',filter:'open'});
+      lists.forEach(function(l){listMap[l.name]=l.id;});
+      for(var li=0;li<TRELLO_LISTS.length;li++){
+        var ln=TRELLO_LISTS[li];
+        if(!listMap[ln]){var nl=await _trelloApi('POST','/lists',null,{name:ln,idBoard:c.boardId,pos:'bottom'});listMap[ln]=nl.id;log('Created column "'+ln+'".');}
+      }
+      var labels=await _trelloApi('GET','/boards/'+c.boardId+'/labels',{fields:'name',limit:1000});
+      labels.forEach(function(l){if(l.name)labelMap[l.name]=l.id;});
+    }
     var priColors={High:'red',Normal:'blue',Critical:'orange',Urgent:'red'};
 
     async function ensureLabel(name,color){
@@ -5988,8 +6022,10 @@ async function trelloSync(){
     }
 
     // Skip cards that are already up to date: only sync records whose fingerprint changed.
-    var fpMap=_trelloGetFp(c.boardId);
     var newFp={};
+    Object.keys(map).forEach(function(id){
+      if(!activeIds[id]&&fpMap[id]==='__trashed__')newFp[id]='__trashed__';
+    });
     var toSync=[],skipped=0;
     for(var t=0;t<tasks.length;t++){
       var tr=tasks[t],tfp=_trelloFp(tr);
@@ -6010,14 +6046,36 @@ async function trelloSync(){
     var gateAt=0;
     function gate(){var now=Date.now(),at=now>gateAt?now:gateAt;gateAt=at+110;return new Promise(function(res){setTimeout(res,at-now);});}
 
-    var created=0,updated=0,failed=0,done=0,next=0,failedList=[];
+    var created=0,updated=0,archived=0,failed=0,done=0,next=0,failedList=[];
+    if(toArchive.length)log(toArchive.length+' trashed Trello card'+(toArchive.length!==1?'s':'')+' to archive.');
+    for(var ai=0;ai<toArchive.length;ai++){
+      var archivedItem=toArchive[ai];
+      if(btn)btn.textContent='Archiving… '+(ai+1)+'/'+toArchive.length;
+      try{
+        await gate();
+        await _trelloApi('PUT','/cards/'+archivedItem.cardId,null,{closed:'true'});
+        newFp[archivedItem.recordId]='__trashed__';
+        archived++;
+      }catch(ae){
+        if(String(ae.message).indexOf(' 404')>-1){
+          // The card was already deleted directly in Trello; forget the stale mapping.
+          delete map[archivedItem.recordId];
+          delete newFp[archivedItem.recordId];
+        }else{
+          failed++;
+          failedList.push('Archive card '+archivedItem.recordId+' — '+ae.message);
+        }
+      }
+    }
+
     async function worker(){
       while(next<toSync.length){
         var r=toSync[next++],fp=_trelloFp(r);
         try{
           var idLabels=[],lbls=_trelloLabels(r);
           for(var li2=0;li2<lbls.length;li2++){if(labelMap[lbls[li2]])idLabels.push(labelMap[lbls[li2]]);}
-          var fields={pos:_trelloPos(r),name:_trelloTitle(r),desc:_trelloDesc(r),idList:listMap[_trelloCatFor(r)],idLabels:idLabels.join(',')};
+          // closed=false reopens the same mapped card if its record was restored from Trash.
+          var fields={closed:'false',pos:_trelloPos(r),name:_trelloTitle(r),desc:_trelloDesc(r),idList:listMap[_trelloCatFor(r)],idLabels:idLabels.join(',')};
           var existingId=map[r.id];
           await gate();
           if(existingId){
@@ -6043,10 +6101,10 @@ async function trelloSync(){
 
     _trelloSaveMap(c.boardId,map);
     _trelloSaveFp(c.boardId,newFp);
-    log('✅ Done. Created '+created+', updated '+updated+(skipped?(', skipped '+skipped):'')+(failed?(', failed '+failed):'')+'.');
+    log('✅ Done. Created '+created+', updated '+updated+', archived '+archived+(skipped?(', skipped '+skipped):'')+(failed?(', failed '+failed):'')+'.');
     if(failedList.length){log('   ✗ Failed entr'+(failedList.length>1?'ies':'y')+' (fix and re-sync):');failedList.forEach(function(f){log('      • '+f);});}
-    try{writeLog('exported','Trello sync','Trello board sync — created '+created+', updated '+updated+', skipped '+skipped+', failed '+failed);}catch(e){}
-    toast('Trello sync complete — '+created+' new, '+updated+' updated'+(skipped?(', '+skipped+' unchanged'):'')+(failed?(', '+failed+' failed'):''),failed?'info':'success');
+    try{writeLog('exported','Trello sync','Trello board sync — created '+created+', updated '+updated+', archived '+archived+', skipped '+skipped+', failed '+failed);}catch(e){}
+    toast('Trello sync complete — '+created+' new, '+updated+' updated'+(archived?(', '+archived+' archived'):'')+(skipped?(', '+skipped+' unchanged'):'')+(failed?(', '+failed+' failed'):''),failed?'info':'success');
   }catch(e){
     log('❌ Sync failed: '+e.message);
     toast('Trello sync failed — '+e.message,'error');
@@ -6943,6 +7001,7 @@ function applyDropdownsToForms(){
     var curSt=fst.value;
     fst.innerHTML='<option value="">All Statuses</option>'
       +'<option value="__inprogress__">⏳ All In Progress</option>'
+      +'<option value="__pending_ours__">⏳ All Pending - Our Side</option>'
       +'<option value="__completed__">✅ All Completed</option>'
       +'<optgroup label="In Progress">'+ipItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>'
       +'<optgroup label="Completed">'+doneItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>';
@@ -7214,17 +7273,15 @@ function loadAdminData(force){
   if(_adminLoaded && !force){
     renderClientGrid();
     renderDropdownOptionsPanel();
-    renderLogsSection();   // show logs only if the user explicitly loaded them here (a Dashboard fetch must NOT reveal them)
+    renderLogsSection();
     return;
   }
   _adminLoaded = true;
   loadAdminUsers();
   renderClientGrid();
-  // Activity logs load lazily (see renderLogsSection) so opening Admin for user/dropdown
-  // work no longer reads the logs collection. Re-read from Firebase only on a forced
-  // refresh of logs already in view; otherwise just render whatever is cached (or the
-  // "Load activity logs" placeholder if nothing has been loaded yet).
-  if(force && _logsViewed) loadLogs(); else renderLogsSection();
+  // Activity logs stay lazy to control Firestore reads. A forced Admin refresh only
+  // reloads them if the user already chose to view them during this Admin visit.
+  if(force&&_logsViewed)loadLogs();else renderLogsSection();
   if(!Object.keys(_dropdownData).length){
     Object.keys(DROPDOWN_OPTS).forEach(function(key){_dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();});
   }
@@ -7689,8 +7746,24 @@ function loadNicknames(){
 // ─── LOGS ────────────────────────────────────────────────────
 var LOGS = [];
 var _logsLoaded=false;      // TRUE once the LOGS array has been fetched from Firebase (by the Admin button OR the Dashboard). Data-cache flag only.
-var _logsViewed=false;      // TRUE only when the user explicitly opens logs in the Admin section. Controls whether Admin SHOWS them, so a Dashboard fetch never reveals them here.
+var _logsViewed=false;      // TRUE only after the user explicitly loads logs during the current Admin visit.
+var _logsLoading=false;     // blocks duplicate clicks/reads while an Admin log request is active
+var _sessionLogEntries={};  // successful writes from this tab; merged into reads to prevent refresh races
 var LOG_READ_LIMIT=3000;    // reads are capped to the most recent N entries so the read can never grow unbounded
+
+function cacheLogsSnapshot(snap){
+  var merged={};
+  snap.forEach(function(d){
+    var item=d.data();
+    if(!item.id)item.id=d.id;
+    merged[item.id]=item;
+  });
+  Object.keys(_sessionLogEntries).forEach(function(id){merged[id]=_sessionLogEntries[id];});
+  LOGS=Object.keys(merged).map(function(id){return merged[id];});
+  LOGS.sort(function(a,b){return b.ts-a.ts;});
+  if(LOGS.length>LOG_READ_LIMIT)LOGS.length=LOG_READ_LIMIT;
+  _logsLoaded=true;
+}
 
 function writeLog(action, record, details, extra){
   var entry={
@@ -7702,34 +7775,42 @@ function writeLog(action, record, details, extra){
     id:'log_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)
   };
   setDoc(doc(db,'logs',entry.id),entry).then(function(){
+    _sessionLogEntries[entry.id]=entry;
     if(_logsLoaded&&!LOGS.some(function(l){return l.id===entry.id;})){
       LOGS.unshift(entry);
       if(LOGS.length>LOG_READ_LIMIT) LOGS.length=LOG_READ_LIMIT;
     }
+    if(currentTab==='admin'&&_logsViewed&&_logsLoaded) renderLogs();
     if(currentTab==='dashboard'&&_dashLoaded) renderDashboard();
   }).catch(function(e){console.error('writeLog failed:',e);});
 }
 
 
 function loadLogs(){
-  document.getElementById('log-count-label').textContent='Loading...';
+  if(_logsLoading)return;
+  _logsLoading=true;
+  var countLabel=document.getElementById('log-count-label');
+  var logBody=document.getElementById('log-tbody');
+  if(countLabel)countLabel.textContent='Loading...';
+  if(logBody)logBody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:28px">Loading activity logs...</td></tr>';
+  var pagination=document.getElementById('log-pagination');
+  if(pagination)pagination.innerHTML='';
   // Read only the most recent LOG_READ_LIMIT entries (newest first) instead of the whole
   // ever-growing collection — this is the main Firebase-read saving for Admin.
   getDocs(query(collection(db,'logs'),orderBy('ts','desc'),limit(LOG_READ_LIMIT))).then(function(snap){
-    LOGS=[];
-    snap.forEach(function(d){LOGS.push(d.data());});
-    LOGS.sort(function(a,b){return b.ts-a.ts;});
-    _logsLoaded=true;
-    _logsViewed=true;   // the user explicitly clicked "Load activity logs", so Admin may now show them
+    _logsLoading=false;
+    cacheLogsSnapshot(snap);
+    _logsViewed=true;
     _logPage=0;
     renderLogs();
   }).catch(function(e){
-    document.getElementById('log-count-label').textContent='Error loading logs';
+    _logsLoading=false;
+    if(countLabel)countLabel.textContent='Error loading logs';
+    if(logBody)logBody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#f87171;padding:28px">Could not load activity logs.<br><br><button class="btn btn-primary btn-sm" onclick="loadLogs()">Try again</button></td></tr>';
   });
 }
 
-// Lazy placeholder for the Activity Logs section: nothing is read from Firebase until
-// the Admin actually clicks "Load activity logs" (or opens the Dashboard, which needs them).
+// Fallback placeholder used before the Admin activity-log load has begun.
 function renderLogsSection(){
   if(_logsViewed){renderLogs();return;}
   var lbl=document.getElementById('log-count-label');
@@ -7838,7 +7919,7 @@ function clearAllLogs(){
       var promises=[];snap.forEach(function(d){promises.push(deleteDoc(doc(db,'logs',d.id)));});
       return Promise.all(promises);
     }).then(function(){
-      LOGS=[];_logsLoaded=true;_logsViewed=true;renderLogs();toast('All logs cleared','info');
+      LOGS=[];_sessionLogEntries={};_logsLoaded=true;_logsViewed=true;renderLogs();toast('All logs cleared','info');
     });
   });
 }
@@ -8371,10 +8452,7 @@ function loadDashboard(force){
   }));
   if(!_logsLoaded||force){
     jobs.push(getDocs(query(collection(db,'logs'),orderBy('ts','desc'),limit(LOG_READ_LIMIT))).then(function(snap){
-      LOGS=[];
-      snap.forEach(function(d){LOGS.push(d.data());});
-      LOGS.sort(function(a,b){return b.ts-a.ts;});
-      _logsLoaded=true;
+      cacheLogsSnapshot(snap);
     }));
   }
   jobs.push(getDocs(collection(db,TRASH_COLL)).then(function(snap){
