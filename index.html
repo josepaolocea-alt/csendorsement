@@ -98,6 +98,8 @@ select.fsel option,select.fc option{background:var(--bg2);color:var(--text);}
 select::-ms-expand{display:none;}
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
 .table-scroll{overflow:auto;max-height:calc(100vh - 230px);}
+.instant-table-tooltip{position:fixed;display:none;z-index:10050;max-width:min(420px,calc(100vw - 20px));padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg5);color:var(--text);box-shadow:var(--shadow-elevated);font-family:var(--sf);font-size:12px;font-weight:500;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;}
+.instant-table-tooltip.visible{display:block;}
 table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.4;}
 thead tr{background:var(--bg3);}
 th{padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.45px;border-bottom:1px solid var(--border2);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--bg3);z-index:10;}
@@ -2593,6 +2595,76 @@ function initNavLabels(){
   });
 }
 initNavLabels();
+
+// Native title tooltips wait before appearing. Inside every table, temporarily
+// replace them with one immediate app tooltip while the pointer is over the item.
+var _instantTableTip=null;
+var _instantTableTipTarget=null;
+function ensureInstantTableTip(){
+  if(_instantTableTip)return _instantTableTip;
+  _instantTableTip=document.createElement('div');
+  _instantTableTip.className='instant-table-tooltip';
+  _instantTableTip.setAttribute('role','tooltip');
+  document.body.appendChild(_instantTableTip);
+  return _instantTableTip;
+}
+function instantTableTipCandidate(node){
+  if(!node||node.nodeType!==1||!node.closest)return null;
+  return node.closest('table [title],table [data-instant-table-tip]');
+}
+function positionInstantTableTip(e){
+  if(!_instantTableTip||!_instantTableTip.classList.contains('visible'))return;
+  var gap=14,pad=8,rect=_instantTableTip.getBoundingClientRect();
+  var left=e.clientX+gap,top=e.clientY+gap;
+  if(left+rect.width>window.innerWidth-pad)left=e.clientX-rect.width-gap;
+  if(top+rect.height>window.innerHeight-pad)top=e.clientY-rect.height-gap;
+  _instantTableTip.style.left=Math.max(pad,left)+'px';
+  _instantTableTip.style.top=Math.max(pad,top)+'px';
+}
+function hideInstantTableTip(){
+  if(_instantTableTipTarget){
+    var saved=_instantTableTipTarget.getAttribute('data-instant-table-tip');
+    if(saved!==null){
+      _instantTableTipTarget.setAttribute('title',saved);
+      _instantTableTipTarget.removeAttribute('data-instant-table-tip');
+    }
+  }
+  _instantTableTipTarget=null;
+  if(_instantTableTip){_instantTableTip.classList.remove('visible');_instantTableTip.textContent='';}
+}
+function showInstantTableTip(target,e){
+  if(!target)return;
+  if(_instantTableTipTarget!==target)hideInstantTableTip();
+  var text=target.getAttribute('data-instant-table-tip');
+  if(text===null){
+    text=target.getAttribute('title');
+    if(!text)return;
+    target.setAttribute('data-instant-table-tip',text);
+    target.removeAttribute('title');
+  }
+  _instantTableTipTarget=target;
+  var tip=ensureInstantTableTip();
+  tip.textContent=text;
+  tip.classList.add('visible');
+  positionInstantTableTip(e);
+}
+document.addEventListener('mouseover',function(e){
+  var target=instantTableTipCandidate(e.target);
+  if(target)showInstantTableTip(target,e);
+});
+document.addEventListener('mousemove',function(e){
+  if(_instantTableTipTarget)positionInstantTableTip(e);
+});
+document.addEventListener('mouseout',function(e){
+  if(!_instantTableTipTarget)return;
+  if(e.relatedTarget&&_instantTableTipTarget.contains(e.relatedTarget))return;
+  var next=instantTableTipCandidate(e.relatedTarget);
+  if(next===_instantTableTipTarget)return;
+  hideInstantTableTip();
+});
+document.addEventListener('mousedown',hideInstantTableTip,true);
+document.addEventListener('scroll',hideInstantTableTip,true);
+window.addEventListener('blur',hideInstantTableTip);
 
 function switchTab(tab,el){
   if(tab==='admin'){
