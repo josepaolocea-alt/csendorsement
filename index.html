@@ -378,7 +378,7 @@ body.entry-compact .entry-comments .comment-bubble{padding:6px 10px;}
 body.entry-compact .entry-comments .comment-text{font-size:12px;line-height:1.42;}
 body.entry-compact .entry-comments .comment-new{gap:6px;}
 body.entry-compact .entry-comments .comment-empty{padding:20px 16px;}
-/* ── Entry window style: Center pop-up (default) / Side panel ──
+/* ── Entry window style: Center pop-up (default) / Side panel / Split view ──
    Per-device (localStorage cyn_entry_style). Scoped to the 3 entry popups via
    .entry-ov so every other modal (Settings, confirm, comments…) is untouched.
    Only the panel geometry + entrance animation change — the backdrop keeps
@@ -393,6 +393,25 @@ body.entry-style-panel .entry-ov{justify-content:flex-end;align-items:stretch;pa
 body.entry-style-panel .entry-ov .entry-modal{width:min(780px,100vw);max-width:min(780px,100vw);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-24px 0 60px rgba(0,0,0,.45);}
 body.entry-style-panel .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
 @keyframes entryDrawerIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+/* SPLIT VIEW — preserve the task workspace on the left and dock the editor on
+   the right. The full-screen, nearly transparent overlay still protects row
+   actions and lets a click on the left workspace close the editor safely. */
+body.entry-style-split{--entry-split-width:clamp(560px,46vw,780px);}
+body.entry-style-split .topbar,body.entry-style-split .main{transition:width .25s cubic-bezier(.22,.75,.3,1);}
+@media (min-width:1100px){
+  body.entry-style-split.entry-split-open .topbar,body.entry-style-split.entry-split-open .main{width:calc(100% - var(--entry-split-width));}
+  body.entry-style-split .entry-ov{justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden;background:rgba(0,0,0,.1);backdrop-filter:none;}
+  body.entry-style-split .entry-ov .entry-modal{width:var(--entry-split-width);max-width:var(--entry-split-width);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-14px 0 34px rgba(0,0,0,.24);}
+  body.entry-style-split .entry-ov:not(.hidden) .entry-modal{animation:entrySplitIn .25s cubic-bezier(.22,.75,.3,1);}
+  @keyframes entrySplitIn{from{transform:translateX(36px);opacity:.75}to{transform:translateX(0);opacity:1}}
+}
+/* A split would leave too little table space below desktop width, so retain
+   the user's Split View choice but present it as a conventional side panel. */
+@media (max-width:1099px){
+  body.entry-style-split .entry-ov{justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden;}
+  body.entry-style-split .entry-ov .entry-modal{width:min(780px,100vw);max-width:min(780px,100vw);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-24px 0 60px rgba(0,0,0,.45);}
+  body.entry-style-split .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
+}
 .timer-auto-toggle{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;width:max-content;max-width:100%;}
 .timer-auto-toggle:hover{background:var(--bg4);color:var(--text);}
 .timer-auto-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
@@ -815,6 +834,9 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         </button>
         <button type="button" class="estyle-opt" data-style="panel" onclick="setEntryStyle('panel')" title="Slides in as a tall panel docked to the right edge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="13" y1="5" x2="13" y2="19"/></svg><span>Side panel</span>
+        </button>
+        <button type="button" class="estyle-opt" data-style="split" onclick="setEntryStyle('split')" title="Keeps the task workspace visible beside a docked editor; uses a side panel on smaller screens">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="11" y1="5" x2="11" y2="19"/><path d="M6 9h2M6 12h2M6 15h2"/></svg><span>Split view</span>
         </button>
       </div>
       <span class="auto-label" style="color:var(--text3)">applies to New &amp; Edit in every tab — saved on this device only, not shared</span>
@@ -2534,7 +2556,7 @@ function toggleEntryCompact(){
 }
 applyEntryCompact();
 
-// ─── ENTRY MODAL WINDOW STYLE (per-device: center / side panel) ───
+// ─── ENTRY MODAL WINDOW STYLE (per-device: center / side panel / split view) ───
 // Same per-device idea as compact: one choice shared by the Endorsement / RR-RO /
 // DID add-or-edit popups. Toggles a body class the scoped CSS reacts to. Only the
 // geometry + entrance animation change; the backdrop keeps its fade so it stays
@@ -2542,8 +2564,10 @@ applyEntryCompact();
 // ('full' / Full window was retired, so any device still holding it lands on centre.)
 function applyEntryStyle(){
   var s=localStorage.getItem('cyn_entry_style')||'center';
-  if(s!=='panel')s='center';
+  if(s!=='panel'&&s!=='split')s='center';
   document.body.classList.toggle('entry-style-panel',s==='panel');
+  document.body.classList.toggle('entry-style-split',s==='split');
+  syncEntrySplitOpen();
   document.querySelectorAll('#estyle-seg .estyle-opt').forEach(function(b){
     var on=b.getAttribute('data-style')===s;
     b.classList.toggle('is-active',on);
@@ -2551,11 +2575,37 @@ function applyEntryStyle(){
   });
 }
 function setEntryStyle(s){
-  if(s!=='panel')s='center';
+  if(s!=='panel'&&s!=='split')s='center';
   localStorage.setItem('cyn_entry_style',s);
   applyEntryStyle();
 }
 applyEntryStyle();
+
+// Close Add/Edit entry views when the user clicks the backdrop. Requiring the
+// overlay itself as the click target protects every control inside all layouts.
+function syncEntrySplitOpen(){
+  var open=Array.prototype.some.call(document.querySelectorAll('.entry-ov'),function(overlay){
+    return !overlay.classList.contains('hidden');
+  });
+  document.body.classList.toggle('entry-split-open',document.body.classList.contains('entry-style-split')&&open);
+}
+function initEntryBackdropClose(){
+  [
+    {id:'record-modal',close:closeModal},
+    {id:'rr-modal',close:closeRRModal},
+    {id:'did-modal',close:closeDIDModal}
+  ].forEach(function(item){
+    var overlay=document.getElementById(item.id);
+    if(!overlay||overlay._backdropCloseBound)return;
+    overlay._backdropCloseBound=true;
+    overlay.addEventListener('click',function(e){
+      if(e.target===overlay)item.close();
+    });
+    new MutationObserver(syncEntrySplitOpen).observe(overlay,{attributes:true,attributeFilter:['class']});
+  });
+  syncEntrySplitOpen();
+}
+initEntryBackdropClose();
 
 // ─── COLLAPSIBLE SETTINGS SECTIONS ───────────────────────────
 // Make each Settings section header toggle its content (default expanded; state per-section in localStorage).
