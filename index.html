@@ -101,6 +101,21 @@ select::-ms-expand{display:none;}
 .instant-table-tooltip{position:fixed;display:none;z-index:10050;max-width:min(420px,calc(100vw - 20px));padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg5);color:var(--text);box-shadow:var(--shadow-elevated);font-family:var(--sf);font-size:12px;font-weight:500;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;}
 .instant-table-tooltip.visible{display:block;}
 table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.4;}
+/* Keep All Tasks columns anchored when filters replace the tbody. With the
+   browser's default auto layout, a shorter filtered result recalculates every
+   column and makes the table appear to zoom or slide horizontally. */
+#main-table.all-task-layout{table-layout:fixed;min-width:1340px;}
+#main-table.all-task-layout th:nth-child(1){width:38px;}
+#main-table.all-task-layout th:nth-child(2){width:42px;}
+#main-table.all-task-layout th:nth-child(3){width:150px;}
+#main-table.all-task-layout th:nth-child(4){width:90px;}
+#main-table.all-task-layout th:nth-child(5){width:250px;}
+#main-table.all-task-layout th:nth-child(6){width:105px;}
+#main-table.all-task-layout th:nth-child(7){width:185px;}
+#main-table.all-task-layout th:nth-child(8){width:130px;}
+#main-table.all-task-layout th:nth-child(9){width:110px;}
+#main-table.all-task-layout th:nth-child(10){width:95px;}
+#main-table.all-task-layout th:nth-child(11){width:145px;}
 thead tr{background:var(--bg3);}
 th{padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.45px;border-bottom:1px solid var(--border2);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--bg3);z-index:10;}
 th:hover{color:var(--text);}
@@ -1131,7 +1146,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
 
   <div class="table-wrap" id="main-table-wrap">
     <div class="table-scroll">
-      <table id="main-table">
+      <table id="main-table" class="all-task-layout">
         <thead id="main-thead"><tr>
           <th style="width:30px;color:var(--text3);font-size:11px">#</th>
           <th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>
@@ -4851,6 +4866,11 @@ function rowCommentClass(r){
   return getUnreadCount(r)>0?' has-new-comment':'';
 }
 
+function setMainTableLayout(mode){
+  var table=document.getElementById('main-table');
+  if(table)table.classList.toggle('all-task-layout',mode==='all');
+}
+
 // ─── RR / RO ────────────────────────────────────────────────
 var RR_BM=['Ma\'am Kath','Sir Jason','Ma\'am Shayne'];
 var RR_AM=['Jem Santos','Robert Pinote'];
@@ -4938,6 +4958,7 @@ function goRRPage(p){_rrPage=p;renderRRRows();}
 function changeRRPageSize(v){_rrPageSize=parseInt(v,10);_rrPage=0;renderRRRows();}
 
 function renderRRRows(){
+  setMainTableLayout('rr');
   document.getElementById('main-thead').innerHTML=RR_THEAD;
   var tbody=document.getElementById('main-tbody');
   var totalPages=Math.max(1,Math.ceil(filteredData.length/_rrPageSize));
@@ -5020,6 +5041,7 @@ var TRASH_THEAD='<tr>'
 
 // Fetch trashed records from the separate trash collection (only when Trash tab opens)
 async function loadTrash(){
+  setMainTableLayout('trash');
   var tbody=document.getElementById('main-tbody');
   document.getElementById('main-thead').innerHTML=TRASH_THEAD;
   if(tbody) tbody.innerHTML='<tr><td colspan="8" class="empty">Loading trash...</td></tr>';
@@ -5052,6 +5074,7 @@ function updateTrashStats(){
 }
 
 function renderTrashRows(){
+  setMainTableLayout('trash');
   document.getElementById('main-thead').innerHTML=TRASH_THEAD;
   var tbody=document.getElementById('main-tbody');
   var pgDiv=document.getElementById('main-pagination');
@@ -5346,6 +5369,7 @@ function goDonePage(p){_donePage=p;renderRows();}
 function changeDonePageSize(v){_donePageSize=parseInt(v,10);_donePage=0;renderRows();}
 
 function renderRows(){
+  setMainTableLayout(currentTab==='all'?'all':'done');
   document.getElementById('main-thead').innerHTML=currentTab==='done'?DONE_THEAD:ALL_THEAD;
   var tbody=document.getElementById('main-tbody');
   var pgDiv=document.getElementById('main-pagination');
@@ -5454,6 +5478,7 @@ var DONE_THEAD='<tr>'
   +'</tr>';
 
 function renderDIDRows(){
+  setMainTableLayout('did');
   document.getElementById('main-thead').innerHTML=DID_THEAD;
   var tbody=document.getElementById('main-tbody');
   var pgDiv=document.getElementById('main-pagination');
