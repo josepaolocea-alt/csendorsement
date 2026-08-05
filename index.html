@@ -1225,7 +1225,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         <span class="admin-ctitle">User Engagement — Interactions per User</span>
         <span id="dash-eng-period" style="font-size:11px;color:var(--text3)"></span>
       </div>
-      <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Created and Comments are counted from saved records, with Activity Logs covering deleted history. Updated / Deleted / Exports / Sign-ins are counted from Activity Logs (clearing logs resets those counts). Last Active is all-time.</p>
+      <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Counts are stored in persistent analytics summaries. Clearing Activity Logs does not reset these figures. Last Active is all-time.</p>
       <div class="admin-tbl-wrap">
         <div class="admin-tbl-scroll" style="max-height:420px">
           <table class="admin-table">
@@ -1255,7 +1255,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
     <div class="admin-section">
       <div class="admin-toolbar" style="margin-bottom:14px">
         <span class="admin-ctitle">Daily Activity — Last 14 Days</span>
-        <span style="font-size:11px;color:var(--text3)">Entries created + updates + comments per day</span>
+        <span style="font-size:11px;color:var(--text3)">Tracked app activity per day</span>
       </div>
       <div class="dash-chart" id="dash-chart"></div>
     </div>
@@ -2140,7 +2140,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
 <script type="module">
 // ─── FIREBASE CONFIG ────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, runTransaction, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -2162,6 +2162,9 @@ const auth = getAuth(app);
 const COLL = 'endorsements';
 const TRASH_COLL = 'endorsements_trash';
 const SETTINGS_DOC = 'app_settings/main';
+const ANALYTICS_DAILY_COLL = 'analytics_daily';
+const ANALYTICS_SUMMARY_DOC = 'analytics_summary/main';
+const ANALYTICS_META_DOC = 'analytics_meta/dashboard_v1';
 
 // ─── GLOBALS ────────────────────────────────────────────────
 var DATA = [];
@@ -5308,7 +5311,7 @@ function saveRRRecord(){
     if(rec.rrCompleted||rec.rrDisregard) rec.autoRestartTimer=false;
     if(rec.rrStatus==='Done')rec.rrStatusDoneAt=Date.now();
     var nr=Object.assign({id:allocId(),_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
-    if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();_pendingRRComments=[];}
+    if(_pendingRRComments.length){nr.comments=_pendingRRComments.slice();recordAnalyticsComments(_pendingRRComments);_pendingRRComments=[];}
     DATA.push(nr);saveOne(nr);
     writeLog('created',nr.rrSubject||'RR record','Created RR entry');
     toast('Added!','success');
@@ -5652,7 +5655,7 @@ function saveDIDRecord(){
     else{rec.timerStart=null;rec.timerAlerted=false;}
     var nd=Object.assign({id:allocId(),_sel:false,comments:[],createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     // Merge any buffered DID comments
-    if(_pendingDIDComments.length){nd.comments=_pendingDIDComments.slice();_pendingDIDComments=[];}
+    if(_pendingDIDComments.length){nd.comments=_pendingDIDComments.slice();recordAnalyticsComments(_pendingDIDComments);_pendingDIDComments=[];}
     DATA.push(nd);saveOne(nd);
     writeLog('created',nd.client||'DID record','Created DID entry');
     toast('Added!','success');
@@ -5675,6 +5678,7 @@ function addDIDComment(){
     if(r){
       if(!r.comments)r.comments=[];
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+      recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
       markRead(r.id);
       var _dct=document.getElementById('d-comment-text');_dct.value='';_dct.style.height='';
@@ -6053,7 +6057,7 @@ function saveRecord(){
     if(noTimer){rec.timerStart=null;rec.timerAlerted=false;}
     var ne=Object.assign({id:allocId(),_sel:false,timerStart:noTimer?null:Date.now(),timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
     // Merge any buffered comments
-    if(_pendingComments.length){ne.comments=_pendingComments.slice();_pendingComments=[];}
+    if(_pendingComments.length){ne.comments=_pendingComments.slice();recordAnalyticsComments(_pendingComments);_pendingComments=[];}
     DATA.push(ne);saveOne(ne);
     try{writeLog('created',ne.client||'new record','Created new endorsement');}catch(le){}
     toast('Added'+(noTimer?'':' & timer started!'),'success');
@@ -6818,6 +6822,7 @@ function addRRComment(){
     if(r){
       if(!r.comments)r.comments=[];
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+      recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
       markRead(r.id);
       document.getElementById('rr-comment-text').value='';
@@ -6895,6 +6900,7 @@ function addComment(){
     if(r){
       if(!r.comments)r.comments=[];
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+      recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
       markRead(r.id);
       document.getElementById('f-comment-text').value='';
@@ -6948,6 +6954,7 @@ function addCommentFromModal(){
   if(!r)return;
   if(!r.comments)r.comments=[];
   r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
+  recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
   saveOne(r);
   markRead(r.id);
   document.getElementById('cm-comment-text').value='';
@@ -8164,6 +8171,179 @@ function cacheLogsSnapshot(snap){
   _logsLoaded=true;
 }
 
+// ─── PERSISTENT DASHBOARD ANALYTICS ─────────────────────────
+// Each tracked interaction updates one daily summary and one all-time summary.
+// Dashboard reads stay bounded, and deleting the human-readable logs no longer
+// deletes the statistics that were derived from them.
+var ANALYTICS_METRICS=['created','updated','deleted','exports','logins','comments'];
+var _analyticsReady=false;
+var _analyticsMigrationRunning=false;
+var _dashAnalyticsDays=[];
+var _dashAnalyticsSummary={totals:{},users:{}};
+
+function analyticsMetricForAction(action){
+  if(action==='created')return 'created';
+  if(action==='updated')return 'updated';
+  if(action==='deleted')return 'deleted';
+  if(action==='exported'||action==='csv_import')return 'exports';
+  if(action==='login')return 'logins';
+  if(action==='comment')return 'comments';
+  return '';
+}
+function analyticsUserKey(email){
+  email=normalizeEmail(email);
+  return email?email.replace(/[^a-z0-9]/g,'_'):'';
+}
+function analyticsDayParts(ts){
+  var d=new Date(dashTimestamp(ts)||Date.now());
+  d.setHours(0,0,0,0);
+  var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return {key:key,start:d.getTime()};
+}
+function analyticsNum(v){v=Number(v);return isFinite(v)?v:0;}
+function analyticsEmptyDoc(){return {totals:{},users:{}};}
+function analyticsApplyRaw(target,action,user,ts){
+  if(!target.totals)target.totals={};
+  if(!target.users)target.users={};
+  var metric=analyticsMetricForAction(action);
+  var activity=action!=='login'&&action!=='timer_auto_restart';
+  if(metric)target.totals[metric]=analyticsNum(target.totals[metric])+1;
+  if(activity)target.totals.activity=analyticsNum(target.totals.activity)+1;
+  var email=normalizeEmail(user);
+  var key=analyticsUserKey(email);
+  if(!key||email==='system'||email==='unknown')return;
+  var u=target.users[key]||(target.users[key]={email:email});
+  if(metric)u[metric]=analyticsNum(u[metric])+1;
+  if(activity)u.activity=analyticsNum(u.activity)+1;
+  ts=dashTimestamp(ts);
+  if(ts>analyticsNum(u.lastActive))u.lastActive=ts;
+}
+function analyticsIncrementPayload(action,user,ts,day){
+  var metric=analyticsMetricForAction(action);
+  var activity=action!=='login'&&action!=='timer_auto_restart';
+  var totals={};
+  if(metric)totals[metric]=increment(1);
+  if(activity)totals.activity=increment(1);
+  var payload={updatedAt:ts,totals:totals};
+  if(day){payload.date=day.key;payload.dayStart=day.start;}
+  var email=normalizeEmail(user);
+  var key=analyticsUserKey(email);
+  if(key&&email!=='system'&&email!=='unknown'){
+    var u={email:email,lastActive:ts};
+    if(metric)u[metric]=increment(1);
+    if(activity)u.activity=increment(1);
+    payload.users={};payload.users[key]=u;
+  }
+  return payload;
+}
+function analyticsApplyLocal(action,user,ts){
+  analyticsApplyRaw(_dashAnalyticsSummary,action,user,ts);
+  var day=analyticsDayParts(ts);
+  var d=_dashAnalyticsDays.find(function(x){return x.date===day.key;});
+  if(!d){d={date:day.key,dayStart:day.start,totals:{},users:{}};_dashAnalyticsDays.push(d);}
+  analyticsApplyRaw(d,action,user,ts);
+}
+function recordAnalyticsEvent(action,user,ts){
+  if(action==='timer_auto_restart')return Promise.resolve();
+  ts=dashTimestamp(ts)||Date.now();
+  var day=analyticsDayParts(ts);
+  var batch=writeBatch(db);
+  batch.set(doc(db,ANALYTICS_DAILY_COLL,day.key),analyticsIncrementPayload(action,user,ts,day),{merge:true});
+  batch.set(doc(db,ANALYTICS_SUMMARY_DOC),analyticsIncrementPayload(action,user,ts,null),{merge:true});
+  return batch.commit().then(function(){
+    if(_analyticsReady){
+      analyticsApplyLocal(action,user,ts);
+      if(currentTab==='dashboard'&&_dashLoaded)renderDashboard();
+    }
+  }).catch(function(e){console.error('Analytics write failed:',e);});
+}
+function recordAnalyticsComments(list){
+  (list||[]).forEach(function(c){if(c&&c.ts)recordAnalyticsEvent('comment',c.user||'',c.ts);});
+}
+
+async function analyticsCommitDeletes(refs){
+  for(var i=0;i<refs.length;i+=400){
+    var batch=writeBatch(db);
+    refs.slice(i,i+400).forEach(function(ref){batch.delete(ref);});
+    await batch.commit();
+  }
+}
+async function analyticsCommitSets(items){
+  for(var i=0;i<items.length;i+=400){
+    var batch=writeBatch(db);
+    items.slice(i,i+400).forEach(function(item){batch.set(item.ref,item.data);});
+    await batch.commit();
+  }
+}
+async function backfillAnalytics(){
+  if(_analyticsMigrationRunning)throw new Error('Analytics initialization is still running.');
+  if(_currentUserRole!=='Admin')throw new Error('Only Admin can initialize analytics history.');
+  _analyticsMigrationRunning=true;
+  var metaRef=doc(db,ANALYTICS_META_DOC);
+  try{
+    var metaSnap=await getDoc(metaRef);
+    if(metaSnap.exists()&&metaSnap.data().status==='complete'){
+      _analyticsReady=true;return true;
+    }
+    await setDoc(metaRef,{status:'running',version:1,startedAt:Date.now(),startedBy:_currentUser?_currentUser.email:''});
+    var results=await Promise.all([
+      getDocs(query(collection(db,'logs'),orderBy('ts','desc'),limit(LOG_READ_LIMIT))),
+      getDocs(collection(db,TRASH_COLL)),
+      getDocs(collection(db,ANALYTICS_DAILY_COLL))
+    ]);
+    cacheLogsSnapshot(results[0]);
+    _dashTrash=[];results[1].forEach(function(d){_dashTrash.push(d.data());});
+    var oldRefs=[];results[2].forEach(function(d){oldRefs.push(d.ref);});
+
+    var summary=analyticsEmptyDoc(),days={};
+    function add(action,user,ts){
+      ts=dashTimestamp(ts);if(!ts)return;
+      analyticsApplyRaw(summary,action,user,ts);
+      var dp=analyticsDayParts(ts);
+      var day=days[dp.key]||(days[dp.key]={date:dp.key,dayStart:dp.start,totals:{},users:{}});
+      analyticsApplyRaw(day,action,user,ts);
+    }
+    var createdLogs=[];
+    LOGS.forEach(function(l){
+      if(l.action==='created')createdLogs.push({log:l,ts:dashTimestamp(l.ts),matched:false});
+      else add(l.action,l.user,l.ts);
+    });
+    var allRecs=DATA.concat(_dashTrash);
+    allRecs.forEach(function(r){
+      var createdTs=dashTimestamp(r.createdAt),createdBy=normalizeEmail(r.createdBy),label=dashRecordLabel(r);
+      if(createdTs&&createdBy){
+        var match=createdLogs.find(function(item){
+          if(item.matched||normalizeEmail(item.log.user)!==createdBy)return false;
+          var logLabel=String(item.log.record||'').trim();
+          return (label&&logLabel===label)||Math.abs(item.ts-createdTs)<=60000;
+        });
+        if(match)match.matched=true;
+        add('created',createdBy,createdTs);
+      }
+      (r.comments||[]).forEach(function(c){if(c&&c.ts)add('comment',c.user||'',c.ts);});
+    });
+    createdLogs.forEach(function(item){if(!item.matched)add('created',item.log.user,item.ts);});
+
+    if(oldRefs.length)await analyticsCommitDeletes(oldRefs);
+    var items=Object.keys(days).map(function(key){return {ref:doc(db,ANALYTICS_DAILY_COLL,key),data:days[key]};});
+    items.push({ref:doc(db,ANALYTICS_SUMMARY_DOC),data:summary});
+    await analyticsCommitSets(items);
+    await setDoc(metaRef,{status:'complete',version:1,completedAt:Date.now(),completedBy:_currentUser?_currentUser.email:'',logLimit:LOG_READ_LIMIT});
+    _analyticsReady=true;
+    _dashAnalyticsSummary=summary;
+    _dashAnalyticsDays=Object.keys(days).map(function(k){return days[k];});
+    return true;
+  }catch(e){
+    try{await setDoc(metaRef,{status:'error',version:1,error:String(e.message||e),failedAt:Date.now()},{merge:true});}catch(_e){}
+    throw e;
+  }finally{_analyticsMigrationRunning=false;}
+}
+async function ensureAnalyticsReady(){
+  var snap=await getDoc(doc(db,ANALYTICS_META_DOC));
+  if(snap.exists()&&snap.data().status==='complete'){_analyticsReady=true;return true;}
+  return backfillAnalytics();
+}
+
 function writeLog(action, record, details, extra){
   var entry={
     ts:Date.now(),
@@ -8173,6 +8353,7 @@ function writeLog(action, record, details, extra){
     details:String(details||''),
     id:'log_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)
   };
+  recordAnalyticsEvent(action,entry.user,entry.ts);
   setDoc(doc(db,'logs',entry.id),entry).then(function(){
     _sessionLogEntries[entry.id]=entry;
     if(_logsLoaded&&!LOGS.some(function(l){return l.id===entry.id;})){
@@ -8312,13 +8493,22 @@ function exportLogs(){
 }
 
 function clearAllLogs(){
-  appConfirm('Delete ALL activity logs? This cannot be undone.','Clear All Logs').then(function(ok){
+  appConfirm('Delete ALL activity logs? Dashboard analytics will be preserved. This cannot be undone.','Clear All Logs').then(async function(ok){
     if(!ok)return;
+    try{
+      await ensureAnalyticsReady();
+    }catch(e){
+      console.error('Analytics preservation failed:',e);
+      toast('Logs were not cleared because analytics could not be preserved','error');
+      return;
+    }
     getDocs(collection(db,'logs')).then(function(snap){
       var promises=[];snap.forEach(function(d){promises.push(deleteDoc(doc(db,'logs',d.id)));});
       return Promise.all(promises);
     }).then(function(){
-      LOGS=[];_sessionLogEntries={};_logsLoaded=true;_logsViewed=true;renderLogs();toast('All logs cleared','info');
+      LOGS=[];_sessionLogEntries={};_logsLoaded=true;_logsViewed=true;renderLogs();
+      if(_dashLoaded)renderDashboard();
+      toast('All logs cleared — Dashboard analytics preserved','info');
     });
   });
 }
@@ -8845,30 +9035,50 @@ var _dashLoaded=false;
 var _dashUsers=[];   // users collection snapshot
 var _dashTrash=[];   // trash records (so deleted entries still count toward engagement)
 
-function loadDashboard(force){
+async function loadAnalyticsSummaries(){
+  var results=await Promise.all([
+    getDocs(query(collection(db,ANALYTICS_DAILY_COLL),orderBy('date','desc'),limit(45))),
+    getDoc(doc(db,ANALYTICS_SUMMARY_DOC))
+  ]);
+  _dashAnalyticsDays=[];
+  results[0].forEach(function(d){var x=d.data();if(!x.date)x.date=d.id;_dashAnalyticsDays.push(x);});
+  _dashAnalyticsSummary=results[1].exists()?results[1].data():analyticsEmptyDoc();
+}
+
+async function loadDashboard(force){
   if(_dashLoaded&&!force){renderDashboard();return;}
   var tbody=document.getElementById('dash-users-tbody');
   if(tbody) tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px">Loading...</td></tr>';
-  var jobs=[];
-  jobs.push(getDocs(collection(db,'users')).then(function(snap){
-    _dashUsers=[];
-    snap.forEach(function(d){_dashUsers.push(d.data());});
-  }));
-  if(!_logsLoaded||force){
-    jobs.push(getDocs(query(collection(db,'logs'),orderBy('ts','desc'),limit(LOG_READ_LIMIT))).then(function(snap){
-      cacheLogsSnapshot(snap);
-    }));
-  }
-  jobs.push(getDocs(collection(db,TRASH_COLL)).then(function(snap){
-    _dashTrash=[];
-    snap.forEach(function(d){_dashTrash.push(d.data());});
-  }).catch(function(){_dashTrash=[];}));
-  Promise.all(jobs).then(function(){
+  try{
+    var base=await Promise.all([
+      getDocs(collection(db,'users')),
+      getDocs(collection(db,TRASH_COLL)).catch(function(){return null;}),
+      getDoc(doc(db,ANALYTICS_META_DOC)).catch(function(){return null;})
+    ]);
+    _dashUsers=[];base[0].forEach(function(d){_dashUsers.push(d.data());});
+    _dashTrash=[];if(base[1])base[1].forEach(function(d){_dashTrash.push(d.data());});
+    var analyticsComplete=!!(base[2]&&base[2].exists()&&base[2].data().status==='complete');
+    if(!analyticsComplete&&_currentUserRole==='Admin'){
+      try{
+        await backfillAnalytics();
+        analyticsComplete=true;
+      }catch(migrationError){
+        console.error('Analytics initialization failed:',migrationError);
+        toast('Dashboard is using Activity Logs until analytics initialization succeeds','error');
+      }
+    }
+    _analyticsReady=analyticsComplete;
+    if(_analyticsReady){
+      await loadAnalyticsSummaries();
+    }else if(!_logsLoaded||force){
+      var logSnap=await getDocs(query(collection(db,'logs'),orderBy('ts','desc'),limit(LOG_READ_LIMIT)));
+      cacheLogsSnapshot(logSnap);
+    }
     _dashLoaded=true;
     renderDashboard();
-  }).catch(function(e){
+  }catch(e){
     if(tbody) tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:#f87171;padding:20px">Error loading dashboard: '+escHtml(e.message)+'</td></tr>';
-  });
+  }
 }
 
 function dashPeriodStart(){
@@ -8878,7 +9088,9 @@ function dashPeriodStart(){
   if(v==='all') return 0;
   if(v==='today') return new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
   if(v==='month') return new Date(now.getFullYear(),now.getMonth(),1).getTime();
-  return Date.now()-parseInt(v,10)*86400000;
+  now.setHours(0,0,0,0);
+  now.setDate(now.getDate()-Math.max(0,(parseInt(v,10)||1)-1));
+  return now.getTime();
 }
 
 function dashRelTime(ts){
@@ -8905,6 +9117,41 @@ function dashRecordLabel(r){
   return String(r.client||r.rrSubject||r.desc||'').trim();
 }
 
+function dashMergeAnalytics(target,source){
+  source=source||{};
+  var totals=source.totals||{};
+  Object.keys(totals).forEach(function(k){target.totals[k]=analyticsNum(target.totals[k])+analyticsNum(totals[k]);});
+  var users=source.users||{};
+  Object.keys(users).forEach(function(key){
+    var src=users[key]||{};
+    var dst=target.users[key]||(target.users[key]={email:src.email||''});
+    if(src.email)dst.email=src.email;
+    ANALYTICS_METRICS.forEach(function(metric){dst[metric]=analyticsNum(dst[metric])+analyticsNum(src[metric]);});
+    dst.activity=analyticsNum(dst.activity)+analyticsNum(src.activity);
+    if(analyticsNum(src.lastActive)>analyticsNum(dst.lastActive))dst.lastActive=analyticsNum(src.lastActive);
+  });
+}
+function dashAnalyticsForPeriod(startTs){
+  var out=analyticsEmptyDoc();
+  if(startTs===0){
+    dashMergeAnalytics(out,_dashAnalyticsSummary);
+  }else{
+    _dashAnalyticsDays.forEach(function(day){
+      var dayStart=dashTimestamp(day.dayStart);
+      if(dayStart+86400000>startTs)dashMergeAnalytics(out,day);
+    });
+  }
+  // Period counts are filtered, while Last Active remains all-time.
+  var allUsers=(_dashAnalyticsSummary&&_dashAnalyticsSummary.users)||{};
+  Object.keys(allUsers).forEach(function(key){
+    var src=allUsers[key]||{};
+    var dst=out.users[key]||(out.users[key]={email:src.email||''});
+    if(src.email)dst.email=src.email;
+    dst.lastActive=analyticsNum(src.lastActive);
+  });
+  return out;
+}
+
 function renderDashboard(){
   var startTs=dashPeriodStart();
   var sel=document.getElementById('dash-period');
@@ -8923,6 +9170,7 @@ function renderDashboard(){
 
   // ── per-user interaction counts
   var stats={};
+  var analyticsView=_analyticsReady?dashAnalyticsForPeriod(startTs):null;
   function bump(email,key,ts){
     email=normalizeEmail(email);
     if(!email||email==='system'||email==='unknown') return;
@@ -8932,45 +9180,48 @@ function renderDashboard(){
     if(key) s[key]++;
     if(ts&&ts>s.lastActive) s.lastActive=ts;
   }
-  var createdLogs=[];
-  LOGS.forEach(function(l){
-    var logTs=dashTimestamp(l.ts);
-    bump(l.user,null,logTs); // Last Active is all-time
-    if(logTs<startTs) return;
-    if(l.action==='created') createdLogs.push({log:l,ts:logTs,matched:false});
-    else if(l.action==='updated') bump(l.user,'updated');
-    else if(l.action==='deleted') bump(l.user,'deleted');
-    else if(l.action==='login') bump(l.user,'logins');
-    else if(l.action==='exported'||l.action==='csv_import') bump(l.user,'exports');
-  });
-
-  // Saved records are the source of truth for creation ownership. Match each one
-  // to its activity log so retained entries are not counted twice; unmatched logs
-  // still preserve creation history for records that were permanently deleted.
-  allRecs.forEach(function(r){
-    var createdTs=dashTimestamp(r.createdAt);
-    var createdBy=normalizeEmail(r.createdBy);
-    if(!createdBy||!createdTs) return;
-    bump(createdBy,null,createdTs);
-    if(createdTs<startTs) return;
-    var label=dashRecordLabel(r);
-    var match=createdLogs.find(function(item){
-      if(item.matched||normalizeEmail(item.log.user)!==createdBy) return false;
-      var logLabel=String(item.log.record||'').trim();
-      return (label&&logLabel===label)||Math.abs(item.ts-createdTs)<=60000;
+  if(_analyticsReady){
+    Object.keys(analyticsView.users||{}).forEach(function(key){
+      var src=analyticsView.users[key]||{},email=normalizeEmail(src.email);
+      if(!email)return;
+      stats[email]={created:analyticsNum(src.created),updated:analyticsNum(src.updated),deleted:analyticsNum(src.deleted),exports:analyticsNum(src.exports),logins:analyticsNum(src.logins),comments:analyticsNum(src.comments),lastActive:analyticsNum(src.lastActive)};
     });
-    if(match) match.matched=true;
-    bump(createdBy,'created');
-  });
-  createdLogs.forEach(function(item){
-    if(!item.matched) bump(item.log.user,'created');
-  });
+  }else{
+    var createdLogs=[];
+    LOGS.forEach(function(l){
+      var logTs=dashTimestamp(l.ts);
+      bump(l.user,null,logTs); // Last Active is all-time
+      if(logTs<startTs) return;
+      if(l.action==='created') createdLogs.push({log:l,ts:logTs,matched:false});
+      else if(l.action==='updated') bump(l.user,'updated');
+      else if(l.action==='deleted') bump(l.user,'deleted');
+      else if(l.action==='login') bump(l.user,'logins');
+      else if(l.action==='exported'||l.action==='csv_import') bump(l.user,'exports');
+    });
 
-  comments.forEach(function(c){
-    var commentTs=dashTimestamp(c.ts);
-    bump(c.user,null,commentTs);
-    if(commentTs>=startTs) bump(c.user,'comments');
-  });
+    // Legacy fallback used only until the one-time aggregate backfill succeeds.
+    allRecs.forEach(function(r){
+      var createdTs=dashTimestamp(r.createdAt);
+      var createdBy=normalizeEmail(r.createdBy);
+      if(!createdBy||!createdTs) return;
+      bump(createdBy,null,createdTs);
+      if(createdTs<startTs) return;
+      var label=dashRecordLabel(r);
+      var match=createdLogs.find(function(item){
+        if(item.matched||normalizeEmail(item.log.user)!==createdBy) return false;
+        var logLabel=String(item.log.record||'').trim();
+        return (label&&logLabel===label)||Math.abs(item.ts-createdTs)<=60000;
+      });
+      if(match) match.matched=true;
+      bump(createdBy,'created');
+    });
+    createdLogs.forEach(function(item){if(!item.matched)bump(item.log.user,'created');});
+    comments.forEach(function(c){
+      var commentTs=dashTimestamp(c.ts);
+      bump(c.user,null,commentTs);
+      if(commentTs>=startTs)bump(c.user,'comments');
+    });
+  }
 
   // ── roster: every registered user + anyone else seen in logs/comments
   var roster={};
@@ -9041,10 +9292,9 @@ function renderDashboard(){
     if(lastTouch&&(now-lastTouch)>WEEK) stale++;
   });
   var newInPeriod=0;
-  LOGS.forEach(function(l){
-    if(l.ts>=startTs&&l.action==='created') newInPeriod++;
-  });
-  var cmInPeriod=comments.filter(function(c){return c.ts>=startTs;}).length;
+  if(_analyticsReady)newInPeriod=analyticsNum(analyticsView.totals.created);
+  else LOGS.forEach(function(l){if(l.ts>=startTs&&l.action==='created')newInPeriod++;});
+  var cmInPeriod=_analyticsReady?analyticsNum(analyticsView.totals.comments):comments.filter(function(c){return c.ts>=startTs;}).length;
   var activeUsers=rows.filter(function(r){return r.total>0;}).length;
   var cards=[
     {n:openEnd,l:'Open Tasks'},
@@ -9073,8 +9323,18 @@ function renderDashboard(){
       if(ts>=days[j].start&&ts<days[j].end){days[j].count++;return;}
     }
   }
-  LOGS.forEach(function(l){if(l.action!=='login')bumpDay(l.ts);});
-  comments.forEach(function(c){bumpDay(c.ts);});
+  if(_analyticsReady){
+    _dashAnalyticsDays.forEach(function(day){
+      var ts=dashTimestamp(day.dayStart),count=analyticsNum(day.totals&&day.totals.activity);
+      if(!count)return;
+      for(var j=0;j<days.length;j++){
+        if(ts>=days[j].start&&ts<days[j].end){days[j].count+=count;break;}
+      }
+    });
+  }else{
+    LOGS.forEach(function(l){if(l.action!=='login')bumpDay(l.ts);});
+    comments.forEach(function(c){bumpDay(c.ts);});
+  }
   var maxDay=1;
   days.forEach(function(d){if(d.count>maxDay)maxDay=d.count;});
   var chart=document.getElementById('dash-chart');
