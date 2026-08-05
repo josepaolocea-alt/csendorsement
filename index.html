@@ -324,6 +324,22 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 .modal-ov:not(.hidden) .modal{animation:modalIn .18s cubic-bezier(.2,.8,.2,1);}
 .timer-alert-box{max-width:380px;border:1px solid rgba(248,113,113,.35);}
 .modal-ov:not(.hidden) .timer-alert-box{animation:modalIn .18s cubic-bezier(.2,.8,.2,1);}
+.timer-center-btn{position:relative;}
+.timer-center-count{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:10px;background:#ef4444;color:#fff;border:2px solid var(--bg2);font-size:10px;font-weight:800;line-height:14px;text-align:center;pointer-events:none;}
+.timer-center-box{max-width:720px;overflow:hidden;}
+.timer-center-summary{display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:12px;border:1px solid rgba(248,113,113,.28);border-radius:10px;background:rgba(248,113,113,.08);}
+.timer-center-summary-icon{width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;border-radius:9px;background:rgba(248,113,113,.15);font-size:19px;}
+.timer-center-summary strong{display:block;font-size:13px;color:var(--text);}
+.timer-center-summary span{display:block;font-size:11.5px;color:var(--text3);margin-top:2px;}
+.timer-center-list{display:flex;flex-direction:column;gap:8px;max-height:min(54vh,480px);overflow:auto;}
+.timer-center-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);}
+.timer-center-item.is-snoozed{opacity:.68;}
+.timer-center-item-name{font-size:13px;font-weight:700;color:var(--text);overflow-wrap:anywhere;}
+.timer-center-item-detail{font-size:11.5px;color:var(--text3);margin-top:3px;overflow-wrap:anywhere;}
+.timer-center-item-age{font-size:10.5px;color:#f87171;margin-top:5px;font-weight:600;}
+.timer-center-item.is-snoozed .timer-center-item-age{color:var(--accent);}
+.timer-center-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+@media (max-width:600px){.timer-center-item{grid-template-columns:1fr}.timer-center-actions{justify-content:flex-start}.timer-center-box .modal-ftr{justify-content:flex-start}.timer-center-box .modal-ftr .btn:last-child{margin-left:auto}}
 .modal-hdr{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1;}
 .modal-hdr h3{font-size:15px;font-weight:600;}
 .modal-cls{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:2px 7px;border-radius:6px;font-family:var(--sf);}
@@ -412,6 +428,17 @@ body.entry-style-split .topbar,body.entry-style-split .main{transition:width .25
   body.entry-style-split .entry-ov .entry-modal{width:min(780px,100vw);max-width:min(780px,100vw);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-24px 0 60px rgba(0,0,0,.45);}
   body.entry-style-split .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
 }
+/* Entry exit animations. The overlay remains mounted until the modal animation
+   finishes, so Escape, X, Cancel, Save, and backdrop clicks all close smoothly. */
+.entry-ov.is-closing{animation:entryOverlayOut .22s ease forwards;pointer-events:none;}
+.entry-ov.is-closing .entry-modal{animation:entryModalOut .18s cubic-bezier(.4,0,1,1) forwards;}
+body.entry-style-panel .entry-ov.is-closing .entry-modal{animation:entryDrawerOut .24s cubic-bezier(.55,.05,.9,.45) forwards;}
+@media (min-width:1100px){body.entry-style-split .entry-ov.is-closing .entry-modal{animation:entrySplitOut .2s cubic-bezier(.4,0,1,1) forwards;}}
+@media (max-width:1099px){body.entry-style-split .entry-ov.is-closing .entry-modal{animation:entryDrawerOut .24s cubic-bezier(.55,.05,.9,.45) forwards;}}
+@keyframes entryOverlayOut{from{opacity:1}to{opacity:0}}
+@keyframes entryModalOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(7px) scale(.975)}}
+@keyframes entryDrawerOut{from{transform:translateX(0)}to{transform:translateX(100%)}}
+@keyframes entrySplitOut{from{opacity:1;transform:translateX(0)}to{opacity:.7;transform:translateX(42px)}}
 .timer-auto-toggle{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;width:max-content;max-width:100%;}
 .timer-auto-toggle:hover{background:var(--bg4);color:var(--text);}
 .timer-auto-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
@@ -740,6 +767,10 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <button class="tab-btn" id="notepad-tab-btn" style="display:none" data-tip="Notepad" aria-label="Notepad" onclick="switchTab('notepad',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9.5 8h5"/><path d="M9.5 12H16"/><path d="M9.5 16H14"/></svg></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
+    <button class="tab-btn timer-center-btn" id="timer-center-btn" data-tip="Timer Alerts" aria-label="Open timer alerts" onclick="openTaskAlertCenter()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+      <span class="timer-center-count" id="timer-center-count">0</span>
+    </button>
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar">?</div>
     </div>
@@ -1895,7 +1926,29 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
   </div>
 </div>
 
-<!-- TIMER ALERT MODAL -->
+<!-- BATCHED TIMER ALERT CENTER -->
+<div class="modal-ov hidden" id="task-alert-center-modal" style="z-index:9490" onclick="if(event.target===this)closeTaskAlertCenter()">
+  <div class="modal timer-center-box">
+    <div class="modal-hdr" style="background:rgba(239,68,68,.1)">
+      <h3 style="color:#f87171">⏰ Timer Alerts <span id="task-alert-title-count" style="color:var(--text3);font-size:12px"></span></h3>
+      <button class="modal-cls" onclick="closeTaskAlertCenter()">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="timer-center-summary">
+        <div class="timer-center-summary-icon">🔔</div>
+        <div><strong id="task-alert-summary-title">No timer alerts need attention</strong><span>Closing this window does not clear unhandled alerts.</span></div>
+      </div>
+      <div class="timer-center-list" id="task-alert-center-list"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" id="task-alert-snooze-all" onclick="snoozeAllTaskAlerts(10)">Snooze all 10m</button>
+      <button class="btn btn-secondary" id="task-alert-handle-all" onclick="handleAllTaskAlerts()">Mark all handled</button>
+      <button class="btn btn-primary" onclick="closeTaskAlertCenter()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- SINGLE REMINDER ALERT MODAL (timer expirations use the batched center above) -->
 <div class="modal-ov hidden" id="timer-alert-modal" style="z-index:9500;background:rgba(0,0,0,.7)">
   <div class="modal timer-alert-box">
     <div class="modal-hdr" style="background:rgba(239,68,68,.15)">
@@ -2138,6 +2191,7 @@ function showLoginScreen(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('user-chip').style.display='none';
   document.getElementById('logout-btn').style.display='none';
+  resetTaskAlertCenterSession();
 }
 function hideLoginScreen(){
   document.getElementById('login-screen').style.display='none';
@@ -2209,6 +2263,7 @@ function setUserDisplay(user){
   var userChip=document.getElementById('user-chip');
   userChip.title=email;
   userChip.setAttribute('aria-label',email?'Signed in as '+email:'Signed in user');
+  loadTaskAlertQueue();
 
   // Check/create user record in Firestore
   var uid=email.replace(/[^a-z0-9]/g,'_');
@@ -2588,6 +2643,35 @@ function syncEntrySplitOpen(){
     return !overlay.classList.contains('hidden');
   });
   document.body.classList.toggle('entry-split-open',document.body.classList.contains('entry-style-split')&&open);
+}
+function openEntryOverlay(id){
+  var overlay=document.getElementById(id);if(!overlay)return;
+  if(overlay._entryCloseCancel)overlay._entryCloseCancel();
+  overlay.classList.remove('is-closing','hidden');
+  overlay.setAttribute('aria-hidden','false');
+}
+function closeEntryOverlay(id){
+  var overlay=document.getElementById(id);
+  if(!overlay||overlay.classList.contains('hidden')||overlay.classList.contains('is-closing'))return;
+  var modal=overlay.querySelector('.entry-modal'),finished=false,timer=null;
+  function detach(){
+    clearTimeout(timer);
+    if(modal)modal.removeEventListener('animationend',onAnimationEnd);
+    overlay._entryCloseCancel=null;
+  }
+  function finish(){
+    if(finished)return;finished=true;detach();
+    overlay.classList.add('hidden');
+    overlay.classList.remove('is-closing');
+    overlay.setAttribute('aria-hidden','true');
+  }
+  function onAnimationEnd(e){if(e.target===modal)finish();}
+  overlay._entryCloseCancel=function(){
+    if(finished)return;finished=true;detach();overlay.classList.remove('is-closing');
+  };
+  overlay.classList.add('is-closing');
+  if(modal)modal.addEventListener('animationend',onAnimationEnd);
+  timer=setTimeout(finish,360);
 }
 function initEntryBackdropClose(){
   [
@@ -3626,6 +3710,181 @@ function scheduleAutoRestartTimer(r){
 // a second of the restart syncing over), and visibilitychange (when the user returns).
 var EXPIRY_CATCHUP_MS=180000; // only "catch up" on expiries from the last 3 minutes
 var _timerAlertSince=0;       // set when data first loads; ignore expiries older than this
+var TASK_ALERT_BATCH_MS=1800;
+var TASK_ALERT_REMINDER_MS=900000;
+var _taskAlertQueue=[];
+var _taskAlertBatchKeys={};
+var _taskAlertBatchTimer=null;
+var _taskAlertLastReminderAt=Date.now();
+function taskAlertStorageKey(){return 'cyn_timer_alert_queue_'+currentAlertUserKey();}
+function resetTaskAlertCenterSession(){
+  clearTimeout(_taskAlertBatchTimer);
+  _taskAlertBatchTimer=null;
+  _taskAlertBatchKeys={};
+  _taskAlertQueue=[];
+  _taskAlertLastReminderAt=Date.now();
+  updateTaskAlertBadge();
+  var modal=document.getElementById('task-alert-center-modal');
+  if(modal)modal.classList.add('hidden');
+}
+function loadTaskAlertQueue(){
+  var saved=[];
+  try{saved=JSON.parse(localStorage.getItem(taskAlertStorageKey())||'[]');}catch(e){saved=[];}
+  _taskAlertQueue=Array.isArray(saved)?saved.filter(function(item){return item&&item.key&&item.id!==undefined;}):[];
+  _taskAlertLastReminderAt=Date.now();
+  updateTaskAlertBadge();
+  renderTaskAlertCenter();
+}
+function persistTaskAlertQueue(){
+  try{localStorage.setItem(taskAlertStorageKey(),JSON.stringify(_taskAlertQueue));}catch(e){}
+  updateTaskAlertBadge();
+}
+function taskAlertByKey(key){return _taskAlertQueue.find(function(item){return item.key===key;});}
+function taskAlertKeyArg(key){return encodeURIComponent(String(key)).replace(/'/g,'%27');}
+function taskAlertAgeText(item){
+  if(item.snoozedUntil&&item.snoozedUntil>Date.now()){
+    return 'Snoozed until '+new Date(item.snoozedUntil).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  }
+  var mins=Math.max(0,Math.floor((Date.now()-(Number(item.firedAt)||Date.now()))/60000));
+  if(mins<1)return 'Just expired';
+  if(mins<60)return mins+'m overdue';
+  var hrs=Math.floor(mins/60),rest=mins%60;
+  return hrs+'h'+(rest?' '+rest+'m':'')+' overdue';
+}
+function updateTaskAlertBadge(){
+  var btn=document.getElementById('timer-center-btn');
+  var count=document.getElementById('timer-center-count');
+  if(!btn||!count)return;
+  var total=_taskAlertQueue.length;
+  btn.style.display=total?'':'none';
+  count.textContent=total>99?'99+':String(total);
+  btn.setAttribute('aria-label',total+' unhandled timer '+(total===1?'alert':'alerts'));
+  btn.setAttribute('data-tip',total?total+' Timer '+(total===1?'Alert':'Alerts'):'Timer Alerts');
+}
+function renderTaskAlertCenter(){
+  var list=document.getElementById('task-alert-center-list');
+  if(!list)return;
+  var total=_taskAlertQueue.length;
+  var active=_taskAlertQueue.filter(function(item){return !item.snoozedUntil||item.snoozedUntil<=Date.now();}).length;
+  var title=document.getElementById('task-alert-title-count');
+  var summary=document.getElementById('task-alert-summary-title');
+  var snoozeAll=document.getElementById('task-alert-snooze-all');
+  var handleAll=document.getElementById('task-alert-handle-all');
+  if(title)title.textContent=total?'('+total+')':'';
+  if(summary)summary.textContent=total?(active+' need attention'+(total-active?' · '+(total-active)+' snoozed':'')):'No timer alerts need attention';
+  if(snoozeAll)snoozeAll.disabled=!active;
+  if(handleAll)handleAll.disabled=!total;
+  if(!total){list.innerHTML='<div class="empty" style="padding:28px 12px">All timer alerts have been handled.</div>';return;}
+  var items=_taskAlertQueue.slice().sort(function(a,b){
+    var as=a.snoozedUntil&&a.snoozedUntil>Date.now()?1:0,bs=b.snoozedUntil&&b.snoozedUntil>Date.now()?1:0;
+    return as-bs||(Number(b.firedAt)||0)-(Number(a.firedAt)||0);
+  });
+  list.innerHTML=items.map(function(item){
+    var snoozed=item.snoozedUntil&&item.snoozedUntil>Date.now();
+    var arg=taskAlertKeyArg(item.key);
+    return '<div class="timer-center-item'+(snoozed?' is-snoozed':'')+'">'
+      +'<div><div class="timer-center-item-name">'+escHtml(item.name||'Timer entry')+'</div>'
+      +(item.detail&&item.detail!==item.name?'<div class="timer-center-item-detail">'+escHtml(item.detail)+'</div>':'')
+      +'<div class="timer-center-item-age">'+escHtml(taskAlertAgeText(item))+'</div></div>'
+      +'<div class="timer-center-actions">'
+      +'<button class="btn btn-secondary btn-sm" onclick="openTaskAlertEntry(\''+arg+'\')">Open</button>'
+      +'<button class="btn btn-secondary btn-sm" onclick="snoozeTaskAlert(\''+arg+'\',10)">'+(snoozed?'Snooze +10m':'Snooze 10m')+'</button>'
+      +'<button class="btn btn-primary btn-sm" onclick="handleTaskAlert(\''+arg+'\')">Handled</button>'
+      +'</div></div>';
+  }).join('');
+}
+function openTaskAlertCenter(){
+  renderTaskAlertCenter();
+  document.getElementById('task-alert-center-modal').classList.remove('hidden');
+}
+function closeTaskAlertCenter(){document.getElementById('task-alert-center-modal').classList.add('hidden');}
+function handleTaskAlert(encodedKey){
+  var key=decodeURIComponent(encodedKey);
+  _taskAlertQueue=_taskAlertQueue.filter(function(item){return item.key!==key;});
+  persistTaskAlertQueue();renderTaskAlertCenter();
+  if(!_taskAlertQueue.length)closeTaskAlertCenter();
+}
+function handleAllTaskAlerts(){
+  if(!_taskAlertQueue.length)return;
+  appConfirm('Mark all '+_taskAlertQueue.length+' timer alerts as handled?','Mark all handled').then(function(ok){
+    if(!ok)return;
+    _taskAlertQueue=[];persistTaskAlertQueue();renderTaskAlertCenter();closeTaskAlertCenter();
+  });
+}
+function snoozeTaskAlert(encodedKey,mins){
+  var item=taskAlertByKey(decodeURIComponent(encodedKey));if(!item)return;
+  item.snoozedUntil=Date.now()+Math.max(1,Number(mins)||10)*60000;
+  persistTaskAlertQueue();renderTaskAlertCenter();
+}
+function snoozeAllTaskAlerts(mins){
+  if(!_taskAlertQueue.length)return;
+  var until=Date.now()+Math.max(1,Number(mins)||10)*60000;
+  _taskAlertQueue.forEach(function(item){item.snoozedUntil=until;});
+  _taskAlertLastReminderAt=Date.now();
+  persistTaskAlertQueue();renderTaskAlertCenter();closeTaskAlertCenter();
+  toast('Timer alerts snoozed for '+mins+' minutes','info');
+}
+function openTaskAlertEntry(encodedKey){
+  var item=taskAlertByKey(decodeURIComponent(encodedKey));if(!item)return;
+  var r=DATA.find(function(rec){return String(rec.id)===String(item.id);});
+  if(!r){toast('This entry is no longer available. You can mark the alert handled.','error');return;}
+  closeTaskAlertCenter();
+  if(r._type==='rr'){
+    switchTab('mine',document.getElementById('tab-btn-mine'));
+    setTimeout(function(){openEditRR(r.id);},0);
+  }else if(r._type==='did'){
+    switchTab('did',document.getElementById('tab-btn-did'));
+    setTimeout(function(){openEditDID(r.id);},0);
+  }else{
+    switchTab('all',document.getElementById('tab-btn-all'));
+    setTimeout(function(){openEdit(r.id);},0);
+  }
+}
+function scheduleTaskAlertBatch(key){
+  _taskAlertBatchKeys[key]=true;
+  if(_taskAlertBatchTimer)return;
+  _taskAlertBatchTimer=setTimeout(flushTaskAlertBatch,TASK_ALERT_BATCH_MS);
+}
+function flushTaskAlertBatch(){
+  clearTimeout(_taskAlertBatchTimer);_taskAlertBatchTimer=null;
+  var keys=Object.keys(_taskAlertBatchKeys);_taskAlertBatchKeys={};
+  var items=keys.map(taskAlertByKey).filter(function(item){return item&&(!item.snoozedUntil||item.snoozedUntil<=Date.now());});
+  if(!items.length)return;
+  try{playAlert(SETTINGS.alarmTone||'beep');}catch(e){}
+  var count=items.length;
+  var body=count===1
+    ?items[0].name+' — timer has expired.'
+    :count+' task timers expired:\n• '+items.slice(0,5).map(function(item){return item.name;}).join('\n• ')+(count>5?'\n…and '+(count-5)+' more':'');
+  toast('⏰ '+count+' '+(count===1?'timer has':'timers have')+' expired — review Timer Alerts','error');
+  sendBrowserNotif('⏰ '+count+' Timer '+(count===1?'Alert':'Alerts'),body,'timer_alert_batch_'+currentAlertUserKey(),true);
+  _taskAlertLastReminderAt=Date.now();
+  renderTaskAlertCenter();
+  document.getElementById('task-alert-center-modal').classList.remove('hidden');
+}
+function enqueueTimerAlert(r,basis){
+  var type=r._type||'endorsement';
+  var key='timer_'+type+'_'+String(r.id)+'_'+String(basis);
+  var existing=taskAlertByKey(key);
+  if(!existing){
+    existing={key:key,id:r.id,type:type,name:timerAlertName(r),detail:timerAlertDetail(r),firedAt:Date.now(),snoozedUntil:0};
+    _taskAlertQueue.push(existing);
+    persistTaskAlertQueue();
+  }
+  scheduleTaskAlertBatch(key);
+}
+function checkTaskAlertCenter(){
+  if(!_taskAlertQueue.length){_taskAlertLastReminderAt=Date.now();return;}
+  var now=Date.now(),woke=[];
+  _taskAlertQueue.forEach(function(item){if(item.snoozedUntil&&item.snoozedUntil<=now){item.snoozedUntil=0;woke.push(item.key);}});
+  if(woke.length){persistTaskAlertQueue();renderTaskAlertCenter();woke.forEach(scheduleTaskAlertBatch);return;}
+  var active=_taskAlertQueue.filter(function(item){return !item.snoozedUntil;});
+  if(active.length&&now-_taskAlertLastReminderAt>=TASK_ALERT_REMINDER_MS){
+    _taskAlertLastReminderAt=now;
+    var body=active.length===1?active[0].name+' still needs review.':active.length+' unhandled timer alerts still need review.';
+    toast('⏰ '+active.length+' timer '+(active.length===1?'alert still needs':'alerts still need')+' review','error');
+    sendBrowserNotif('⏰ Timer alerts still need review',body,'timer_alert_batch_'+currentAlertUserKey(),true);
+  }
+}
 function timerExpiryBasis(r){
   if(!r||!r.timerStart)return null;
   if(calcRem(r)===0)return r.timerStart; // the timer is sitting at 0 right now
@@ -3642,16 +3901,7 @@ function maybeAlertTimerExpiry(r){
   var basis=timerExpiryBasis(r);
   if(basis===null||hasLocalAlerted('timer',r,basis))return;
   markLocalAlerted('timer',r,basis);
-  try{playAlert(SETTINGS.alarmTone||'beep');}catch(e){
-    try{
-      var a=new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2ozNWCfz+OxbDE0X5XK3ataLC9bkL/UrFcqMFqIssiqUycvWYOotaFQJTBYfqGtl0olMVh5mKOLQCQzWHSQmX87IjVXb4iRdTYkN1dmf4lsMinBXl16f2JeJzLGXlp5eVpkJzHJW1l4eFpgJi');
-      a.volume=0.8;
-      a.play().catch(function(){});
-    }catch(e2){}
-  }
-  toast('⏰ Timer expired: '+timerAlertSummary(r),'error');
-  sendBrowserNotif('⏰ Timer Expired!',timerAlertSummary(r)+' — timer has expired.',String(r.id)+'_'+currentAlertUserKey()+'_timer',true);
-  showTimerAlert(r);
+  enqueueTimerAlert(r,basis);
 }
 function maybeAlertReminder(r){
   if(!(r.reminderAt&&Date.now()>=r.reminderAt&&!hasLocalAlerted('reminder',r)&&!isRecordCompleted(r)))return;
@@ -3738,6 +3988,7 @@ setInterval(function(){
     }
     maybeAlertReminder(r);
   });
+  try{checkTaskAlertCenter();}catch(e){}
   try{checkCalendarEvents();}catch(e){}
   try{updateCalBadge();}catch(e){}
   var rrRoActive=SETTINGS.rrRoAlertEnabled!==false&&isRRRoAlertWindowActive();
@@ -3795,21 +4046,6 @@ function scheduleAlertAutoDismiss(modal){
     modal.classList.add('hidden');
   },10000);
 }
-function showTimerAlert(r){
-  var name=timerAlertName(r);
-  var detail=timerAlertDetail(r);
-  var modal=document.getElementById('timer-alert-modal');
-  var title=document.getElementById('timer-alert-title');
-  var icon=document.getElementById('timer-alert-icon');
-  var msg=document.getElementById('timer-alert-msg');
-  if(!modal||!msg)return;
-  if(title)title.textContent='⏰ Timer Expired!';
-  if(icon)icon.textContent='🚨';
-  msg.innerHTML='<strong>'+escHtml(name)+'</strong>'
-    +(detail&&detail!==name?'<br><span style="font-size:12px;color:var(--text3)">'+escHtml(detail)+'</span>':'');
-  modal.classList.remove('hidden');
-  scheduleAlertAutoDismiss(modal);
-}
 function showReminderAlert(r){
   var name=timerAlertName(r);
   var detail=timerAlertDetail(r);
@@ -3831,6 +4067,13 @@ function closeTimerAlert(){
   clearTimeout(window._timerAlertTimeout);
 }
 window.closeTimerAlert=closeTimerAlert;
+window.openTaskAlertCenter=openTaskAlertCenter;
+window.closeTaskAlertCenter=closeTaskAlertCenter;
+window.handleTaskAlert=handleTaskAlert;
+window.handleAllTaskAlerts=handleAllTaskAlerts;
+window.snoozeTaskAlert=snoozeTaskAlert;
+window.snoozeAllTaskAlerts=snoozeAllTaskAlerts;
+window.openTaskAlertEntry=openTaskAlertEntry;
 
 // ─── CALENDAR (personal events + alarms) ─────────────────────
 // Events live in Firestore 'calendar_events' and sync to every device the
@@ -4939,7 +5182,7 @@ function openNewRRModal(){
   renderPendingPreviews('rr-attach-pending');
   renderRRModalComments([]);
   clearModalMeta('rr-modal');
-  document.getElementById('rr-modal').classList.remove('hidden');
+  openEntryOverlay('rr-modal');
 }
 function openEditRR(id){
   editingRRId=id;
@@ -4981,9 +5224,9 @@ function openEditRR(id){
   renderRRModalComments(r.comments||[]);
   markRead(id);renderRRRows();
   setModalMeta('rr-modal',r);
-  document.getElementById('rr-modal').classList.remove('hidden');
+  openEntryOverlay('rr-modal');
 }
-function closeRRModal(){document.getElementById('rr-modal').classList.add('hidden');editingRRId=null;_rrTimerDirty=false;_pendingRRComments=[];}
+function closeRRModal(){closeEntryOverlay('rr-modal');editingRRId=null;_rrTimerDirty=false;_pendingRRComments=[];}
 function saveRRRecord(){
   var subject=document.getElementById('rr-subject').value.trim();
   if(!subject){toast('Subject is required','error');return;}
@@ -5283,7 +5526,7 @@ function openNewDIDModal(){
   renderPendingPreviews('did-attach-pending');
   renderDIDModalComments([]);
   clearModalMeta('did-modal');
-  document.getElementById('did-modal').classList.remove('hidden');
+  openEntryOverlay('did-modal');
 }
 
 function openEditDID(id){
@@ -5327,10 +5570,10 @@ function openEditDID(id){
   renderDIDModalComments(r.comments||[]);
   setModalMeta('did-modal',r);
   markRead(id);renderDIDRows();
-  document.getElementById('did-modal').classList.remove('hidden');
+  openEntryOverlay('did-modal');
 }
 
-function closeDIDModal(){if(_skipModalClose)return;document.getElementById('did-modal').classList.add('hidden');editingDIDId=null;_didTimerDirty=false;_pendingDIDComments=[];}
+function closeDIDModal(){if(_skipModalClose)return;closeEntryOverlay('did-modal');editingDIDId=null;_didTimerDirty=false;_pendingDIDComments=[];}
 
 function onDIDPriorityChange(){}
 
@@ -5698,7 +5941,7 @@ function openNewModal(){
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments([]);
   clearModalMeta('modal');
-  document.getElementById('record-modal').classList.remove('hidden');
+  openEntryOverlay('record-modal');
 }
 function openEdit(id){
   editingId=id;
@@ -5730,9 +5973,9 @@ function openEdit(id){
   renderModalComments(r.comments||[]);
   setModalMeta('modal',r);
   markRead(id);renderRows();
-  document.getElementById('record-modal').classList.remove('hidden');
+  openEntryOverlay('record-modal');
 }
-function closeModal(){if(_skipModalClose)return;document.getElementById('record-modal').classList.add('hidden');editingId=null;_endorsementTimerDirty=false;_pendingComments=[];}
+function closeModal(){if(_skipModalClose)return;closeEntryOverlay('record-modal');editingId=null;_endorsementTimerDirty=false;_pendingComments=[];}
 
 function saveRecord(){
   var sel=document.getElementById('f-client-sel');var client=(sel&&sel.style.display!=='none'?sel.value:document.getElementById('f-client').value).trim().toUpperCase();
@@ -6967,6 +7210,7 @@ window.showForgotPassword=showForgotPassword;
 
 // ─── BROWSER NOTIFICATIONS ───────────────────────────────────
 var _notifPermission='default';
+var _browserNotifByTag={};
 
 function requestNotifPermission(){
   if(!('Notification' in window)) return;
@@ -6976,13 +7220,17 @@ function requestNotifPermission(){
 function sendBrowserNotif(title,body,recordId,sticky){
   if(!('Notification' in window)||Notification.permission!=='granted') return;
   try{
+    var notifTag='cyn_'+recordId;
+    if(_browserNotifByTag[notifTag]){try{_browserNotifByTag[notifTag].close();}catch(closeErr){}}
     var n=new Notification(title,{
       body:body,
       icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%235B7CFF"/><text x="16" y="21" text-anchor="middle" font-size="16" fill="white">💬</text></svg>',
-      tag:'cyn_'+recordId,
+      tag:notifTag,
       requireInteraction:!!sticky
     });
+    _browserNotifByTag[notifTag]=n;
     n.onclick=function(){window.focus();n.close();};
+    n.onclose=function(){if(_browserNotifByTag[notifTag]===n)delete _browserNotifByTag[notifTag];};
   }catch(e){}
 }
 
