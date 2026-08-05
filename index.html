@@ -196,10 +196,10 @@ tr.fx-shimmer>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
 .timer-cell{display:flex;align-items:center;gap:5px;}
 tr.pinned-row>td{background:rgba(251,191,36,.07);}
 tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
-/* Comments live inside the entry popup. A slim accent at the far right keeps
-   commented rows visible without spending a whole table column on actions. */
-tr.has-comments>td:last-child{position:relative;}
-tr.has-comments>td:last-child::after{content:"";position:absolute;top:0;right:0;bottom:0;width:4px;background:var(--accent);}
+/* Comments live inside the entry popup. A slim accent at the far right marks
+   only rows with new comments from another user and clears after they are read. */
+tr.has-new-comment>td:last-child{position:relative;}
+tr.has-new-comment>td:last-child::after{content:"";position:absolute;top:0;right:0;bottom:0;width:4px;background:var(--accent);}
 .tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:70px;text-align:center;}
 .tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
@@ -4845,7 +4845,7 @@ function togglePin(id){
 window.togglePin=togglePin;
 
 function rowCommentClass(r){
-  return r&&Array.isArray(r.comments)&&r.comments.length?' has-comments':'';
+  return getUnreadCount(r)>0?' has-new-comment':'';
 }
 
 // ─── RR / RO ────────────────────────────────────────────────
@@ -8341,8 +8341,8 @@ function _rerenderComments(source,list){
   else if(source==='did') renderDIDModalComments(list);
   else if(source==='rr') renderRRModalComments(list);
   else renderCmModalComments(list);
-  // Keep the right-edge comment marker in sync immediately when the last
-  // comment is deleted (the Firestore listener will also reconcile later).
+  // Keep the right-edge new-comment marker in sync immediately when comments
+  // are edited or deleted (the Firestore listener will also reconcile later).
   if(currentTab==='did')renderDIDRows();
   else if(currentTab==='mine')renderRRRows();
   else if(currentTab!=='trash')renderRows();
