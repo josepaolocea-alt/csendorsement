@@ -2644,6 +2644,7 @@ function syncEntrySplitOpen(){
   });
   document.body.classList.toggle('entry-split-open',document.body.classList.contains('entry-style-split')&&open);
 }
+var _returnToTaskAlertCenterAfterEntry=false;
 function openEntryOverlay(id){
   var overlay=document.getElementById(id);if(!overlay)return;
   if(overlay._entryCloseCancel)overlay._entryCloseCancel();
@@ -2664,6 +2665,10 @@ function closeEntryOverlay(id){
     overlay.classList.add('hidden');
     overlay.classList.remove('is-closing');
     overlay.setAttribute('aria-hidden','true');
+    if(_returnToTaskAlertCenterAfterEntry){
+      _returnToTaskAlertCenterAfterEntry=false;
+      setTimeout(function(){if(_taskAlertQueue&&_taskAlertQueue.length)openTaskAlertCenter();},0);
+    }
   }
   function onAnimationEnd(e){if(e.target===modal)finish();}
   overlay._entryCloseCancel=function(){
@@ -3722,6 +3727,7 @@ function resetTaskAlertCenterSession(){
   _taskAlertBatchTimer=null;
   _taskAlertBatchKeys={};
   _taskAlertQueue=[];
+  _returnToTaskAlertCenterAfterEntry=false;
   _taskAlertLastReminderAt=Date.now();
   updateTaskAlertBadge();
   var modal=document.getElementById('task-alert-center-modal');
@@ -3828,6 +3834,7 @@ function openTaskAlertEntry(encodedKey){
   var item=taskAlertByKey(decodeURIComponent(encodedKey));if(!item)return;
   var r=DATA.find(function(rec){return String(rec.id)===String(item.id);});
   if(!r){toast('This entry is no longer available. You can mark the alert handled.','error');return;}
+  _returnToTaskAlertCenterAfterEntry=true;
   closeTaskAlertCenter();
   if(r._type==='rr'){
     switchTab('mine',document.getElementById('tab-btn-mine'));
