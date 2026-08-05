@@ -196,6 +196,10 @@ tr.fx-shimmer>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
 .timer-cell{display:flex;align-items:center;gap:5px;}
 tr.pinned-row>td{background:rgba(251,191,36,.07);}
 tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
+/* Comments live inside the entry popup. A slim accent at the far right keeps
+   commented rows visible without spending a whole table column on actions. */
+tr.has-comments>td:last-child{position:relative;}
+tr.has-comments>td:last-child::after{content:"";position:absolute;top:0;right:0;bottom:0;width:4px;background:var(--accent);}
 .tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:70px;text-align:center;}
 .tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
@@ -1140,7 +1144,6 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
           <th onclick="sortBy('startDate')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('priority')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>
-          <th style="width:100px">Actions</th>
         </tr></thead>
         <tbody id="main-tbody"></tbody>
       </table>
@@ -1668,6 +1671,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         <span id="modal-updated-row" style="display:none">✏️ Last updated by: <strong id="modal-updated-by">—</strong> <span id="modal-updated-at" style="color:var(--text3)"></span></span>
       </div>
       <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" id="modal-delete-btn" onclick="deleteOpenEntry('end')" style="display:none;color:#f87171;border-color:rgba(239,68,68,.35)">Delete</button>
         <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary" onclick="saveRecord()">Save</button>
       </div>
@@ -1789,6 +1793,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         <span id="rr-modal-updated-row" style="display:none">✏️ Last updated by: <strong id="rr-modal-updated-by">—</strong> <span id="rr-modal-updated-at" style="color:var(--text3)"></span></span>
       </div>
       <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" id="rr-modal-delete-btn" onclick="deleteOpenEntry('rr')" style="display:none;color:#f87171;border-color:rgba(239,68,68,.35)">Delete</button>
         <button class="btn btn-secondary" onclick="closeRRModal()">Cancel</button>
         <button class="btn btn-primary" onclick="saveRRRecord()">Save</button>
       </div>
@@ -1892,6 +1897,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         <span id="did-modal-updated-row" style="display:none">✏️ Last updated by: <strong id="did-modal-updated-by">—</strong> <span id="did-modal-updated-at" style="color:var(--text3)"></span></span>
       </div>
       <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" id="did-modal-delete-btn" onclick="deleteOpenEntry('did')" style="display:none;color:#f87171;border-color:rgba(239,68,68,.35)">Delete</button>
         <button class="btn btn-secondary" onclick="closeDIDModal()">Cancel</button>
         <button class="btn btn-primary" onclick="saveDIDRecord()">Save</button>
       </div>
@@ -4838,6 +4844,10 @@ function togglePin(id){
 }
 window.togglePin=togglePin;
 
+function rowCommentClass(r){
+  return r&&Array.isArray(r.comments)&&r.comments.length?' has-comments':'';
+}
+
 // ─── RR / RO ────────────────────────────────────────────────
 var RR_BM=['Ma\'am Kath','Sir Jason','Ma\'am Shayne'];
 var RR_AM=['Jem Santos','Robert Pinote'];
@@ -4897,7 +4907,6 @@ var RR_THEAD='<tr>'
   +'<th style="width:110px">Posted</th>'
   +'<th style="width:120px">Updated Inv.</th>'
   +'<th style="width:160px">Timer</th>'
-  +'<th style="width:100px">Actions</th>'
   +'</tr>';
 
 function renderRRPagination(total){
@@ -4933,14 +4942,14 @@ function renderRRRows(){
   if(_rrPage<0) _rrPage=0;
   var displayData=filteredData.slice(_rrPage*_rrPageSize,(_rrPage+1)*_rrPageSize);
   renderRRPagination(filteredData.length);
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="14" class="empty">No RR/RO records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">No RR/RO records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
     var _fx=rowFxParts(r);
     rowCls+=_fx.cls;
     var rowStyle='cursor:pointer'+_fx.style;
     if(r.pinned)rowCls=(rowCls?rowCls+' ':'')+'pinned-row';
-    var unreadBadge=(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})();
+    rowCls+=rowCommentClass(r);
     return '<tr class="'+rowCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'rr\')" style="'+rowStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
@@ -4955,11 +4964,6 @@ function renderRRRows(){
       +'<td>'+rrBadge(r.rrPosted||'None','posted')+'</td>'
       +'<td>'+rrBadge(r.rrInv||'None','inv')+'</td>'
       +'<td>'+rrTimerHTML(r)+'</td>'
-      +'<td><div class="row-acts">'
-      +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+unreadBadge+'</button>'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:'+pinColorHex():'opacity:.55')+'">📌</button>':'')
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
-      +'</div></td>'
       +'</tr>';
   }).join('');
   initResizers();
@@ -5165,6 +5169,7 @@ function openNewRRModal(){
   editingRRId=null;
   _rrTimerDirty=false;
   _rrAutoClient=null;
+  setEntryDeleteVisible('rr-modal-delete-btn',false);
   document.getElementById('rr-modal-title').textContent='New RR / RO Entry';
   document.getElementById('rr-subject').value='';
   document.getElementById('rr-priority').value='';
@@ -5196,6 +5201,7 @@ function openEditRR(id){
   _rrTimerDirty=false;
   _rrAutoClient=null;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  setEntryDeleteVisible('rr-modal-delete-btn',!!window._canEdit);
   document.getElementById('rr-modal-title').textContent='Edit RR / RO Entry';
   document.getElementById('rr-subject').value=r.rrSubject||'';
   document.getElementById('rr-priority').value=r.rrPriority||'';
@@ -5350,13 +5356,13 @@ function renderRows(){
   }else{
     if(pgDiv) pgDiv.innerHTML='';
   }
-  if(!displayData.length){tbody.innerHTML='<tr><td colspan="12" class="empty">No records found</td></tr>';return;}
+  if(!displayData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No records found</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
     var _fx=rowFxParts(r);
     var agingCls=_fx.cls;
     var agingStyle=_fx.style;
     if(r._type==='did'){
-      return '<tr class="'+(r.pinned?'pinned-row':'')+agingCls+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer'+agingStyle+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
+      return '<tr class="'+(r.pinned?'pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer'+agingStyle+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
@@ -5367,15 +5373,10 @@ function renderRows(){
         +'<td style="color:#4ade80">'+fmtDate(r.resolvedDate)+'</td>'
         +'<td>'+didPriBadge(r.priority)+'</td>'
         +'<td></td>'
-        +'<td><div class="row-acts">'
-        +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()+'</button>'
-        +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:'+pinColorHex():'opacity:.55')+'">📌</button>':'')
-        +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
-        +'</div></td>'
         +'</tr>';
     }
     var isDone=DONE_ST.indexOf(r.status)>-1;
-    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'end\')" style="cursor:pointer'+agingStyle+'">'
+    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'end\')" style="cursor:pointer'+agingStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
@@ -5390,13 +5391,6 @@ function renderRows(){
          +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>')
       +'<td>'+priBadge(r.priority)+'</td>'
       +'<td>'+timerHTML(r)+'</td>'
-      +'<td><div class="row-acts">'
-      +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
-      +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()
-      +'</button>'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:'+pinColorHex():'opacity:.55')+'">📌</button>':'')
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
-      +'</div></td>'
       +'</tr>';
   }).join('');
   initResizers();
@@ -5426,7 +5420,6 @@ var DID_THEAD='<tr>'
   +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'service\')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
-  +'<th style="width:100px">Actions</th>'
   +'</tr>';
 
 var ALL_THEAD='<tr>'
@@ -5441,7 +5434,6 @@ var ALL_THEAD='<tr>'
   +'<th onclick="sortBy(\'startDate\')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
-  +'<th style="width:100px">Actions</th>'
   +'</tr>';
 
 var DONE_THEAD='<tr>'
@@ -5456,7 +5448,6 @@ var DONE_THEAD='<tr>'
   +'<th onclick="sortBy(\'resolvedDate\')" id="th-resolvedDate">Resolved Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
-  +'<th style="width:100px">Actions</th>'
   +'</tr>';
 
 function renderDIDRows(){
@@ -5464,13 +5455,13 @@ function renderDIDRows(){
   var tbody=document.getElementById('main-tbody');
   var pgDiv=document.getElementById('main-pagination');
   if(pgDiv) pgDiv.innerHTML='';
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="10" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     var _fx=rowFxParts(r);
     var agingCls=_fx.cls;
     var agingStyle=_fx.style;
-    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer'+agingStyle+'">'
+    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer'+agingStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
@@ -5481,13 +5472,6 @@ function renderDIDRows(){
       +'<td>'+didPriBadge(r.priority)+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
       +'<td>'+didTimerHTML(r)+'</td>'
-      +'<td><div class="row-acts">'
-      +'<button class="btn-icon btn-sm" onclick="openCommentsModal('+r.id+')" title="Comments" style="position:relative">'
-      +'💬'+(function(){var u=getUnreadCount(r);return u>0?'<span style="position:absolute;top:-3px;right:-3px;background:#f87171;color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;line-height:14px">'+u+'</span>':'';})()
-      +'</button>'
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="togglePin('+r.id+')" title="'+(r.pinned?'Unpin from top':'Pin to top')+'" style="'+(r.pinned?'color:'+pinColorHex():'opacity:.55')+'">📌</button>':'')
-      +(window._canEdit?'<button class="btn-icon btn-sm" onclick="delRec('+r.id+')" title="Delete" style="color:#f87171">&#128465;</button>':'')
-      +'</div></td>'
       +'</tr>';
   }).join('');
   initResizers();
@@ -5508,6 +5492,7 @@ var editingDIDId=null;
 function openNewDIDModal(){
   editingDIDId=null;
   _didTimerDirty=false;
+  setEntryDeleteVisible('did-modal-delete-btn',false);
   document.getElementById('did-modal-title').textContent='New DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs){dcs.value='';}document.getElementById('d-client').value='';
   document.getElementById('d-svc').value='VOIP';
@@ -5540,6 +5525,7 @@ function openEditDID(id){
   editingDIDId=id;
   _didTimerDirty=false;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  setEntryDeleteVisible('did-modal-delete-btn',!!window._canEdit);
   document.getElementById('did-modal-title').textContent='Edit DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){setClientDropdown('d-client-sel','d-client',r.client||'');}else{document.getElementById('d-client').value=r.client||'';}
   document.getElementById('d-svc').value=r.service||'VOIP';
@@ -5924,6 +5910,7 @@ function setModalTimerFields(secs){
 function openNewModal(){
   editingId=null;
   _endorsementTimerDirty=false;
+  setEntryDeleteVisible('modal-delete-btn',false);
   document.getElementById('modal-title').textContent='New Endorsement';
   var fcs=document.getElementById('f-client-sel');if(fcs){fcs.value='';}document.getElementById('f-client').value='';
   document.getElementById('f-svc-f').value='VOIP';
@@ -5954,6 +5941,7 @@ function openEdit(id){
   editingId=id;
   _endorsementTimerDirty=false;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  setEntryDeleteVisible('modal-delete-btn',!!window._canEdit);
   document.getElementById('modal-title').textContent='Edit Endorsement';
   // Set client dropdown — add the current client as an option if not in list
   setClientDropdown('f-client-sel','f-client',r.client||'');
@@ -6072,6 +6060,25 @@ function saveRecord(){
   }
   try{closeModal();}catch(e){}
   applyFilters();
+}
+
+function setEntryDeleteVisible(buttonId,visible){
+  var btn=document.getElementById(buttonId);
+  if(btn)btn.style.display=visible?'':'none';
+}
+
+function deleteOpenEntry(type){
+  if(!window._canEdit){toast('You do not have permission to delete records','error');return;}
+  var id=type==='rr'?editingRRId:type==='did'?editingDIDId:editingId;
+  var dr=DATA.find(function(r){return r.id===id;});
+  if(!dr)return;
+  appConfirm('Delete '+deleteRecordLabel(dr)+'? You can still undo for 5 seconds after deleting.','Delete').then(function(ok){
+    if(!ok)return;
+    if(type==='rr')closeRRModal();
+    else if(type==='did')closeDIDModal();
+    else closeModal();
+    softDelete([dr]);
+  });
 }
 
 function delRec(id){
@@ -8334,6 +8341,11 @@ function _rerenderComments(source,list){
   else if(source==='did') renderDIDModalComments(list);
   else if(source==='rr') renderRRModalComments(list);
   else renderCmModalComments(list);
+  // Keep the right-edge comment marker in sync immediately when the last
+  // comment is deleted (the Firestore listener will also reconcile later).
+  if(currentTab==='did')renderDIDRows();
+  else if(currentTab==='mine')renderRRRows();
+  else if(currentTab!=='trash')renderRows();
 }
 
 function editComment(btn){
@@ -9439,6 +9451,7 @@ window.trelloConnect=trelloConnect;
 window.trelloSync=trelloSync;
 window.trelloDisconnect=trelloDisconnect;
 window.downloadBackup=downloadBackup;
+window.deleteOpenEntry=deleteOpenEntry;
 window.initResizers=initResizers;
 window.markDIDTimerDirty=markDIDTimerDirty;
 window.markEndorsementTimerDirty=markEndorsementTimerDirty;
