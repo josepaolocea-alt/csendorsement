@@ -96,7 +96,8 @@ select.fsel{background-color:var(--bg2);}
 select.fsel:hover,select.fc:hover{border-color:var(--border2);background-color:var(--bg2);}
 select.fsel option,select.fc option{background:var(--bg2);color:var(--text);}
 select::-ms-expand{display:none;}
-.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
+.table-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
+.table-wrap::after{content:"";position:absolute;top:1px;right:1px;width:6px;height:37px;background:var(--bg3);border-radius:0 8px 0 0;z-index:25;pointer-events:none;}
 .table-scroll{overflow:auto;max-height:calc(100vh - 230px);}
 .instant-table-tooltip{position:fixed;display:none;z-index:10050;max-width:min(420px,calc(100vw - 20px));padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg5);color:var(--text);box-shadow:var(--shadow-elevated);font-family:var(--sf);font-size:12px;font-weight:500;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;}
 .instant-table-tooltip.visible{display:block;}
@@ -325,7 +326,7 @@ tr.has-new-comment>td:last-child::after{content:"";position:absolute;top:0;right
 .note-status{font-size:12px;font-weight:600;color:var(--text3);padding:3px 11px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);transition:.15s;white-space:nowrap;}
 .note-status.saving{color:var(--accent);border-color:var(--accent);}
 .note-status.error{color:#f87171;border-color:#f87171;}
-.note-area{width:100%;min-height:62vh;resize:vertical;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;color:var(--text);font-family:var(--sf);font-size:14px;line-height:1.6;outline:none;box-shadow:var(--shadow);transition:border-color .15s;}
+.note-area{width:100%;min-height:62vh;resize:none;overflow:auto;background:var(--bg2);background-clip:padding-box;border:1px solid var(--border);border-radius:12px;padding:16px 18px;color:var(--text);font-family:var(--sf);font-size:14px;line-height:1.6;outline:none;box-shadow:var(--shadow);transition:border-color .15s;}
 .note-area:focus{border-color:var(--accent);}
 .note-area::placeholder{color:var(--text3);}
 .note-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:11px;color:var(--text3);flex-wrap:wrap;}
@@ -343,6 +344,9 @@ tr.has-new-comment>td:last-child::after{content:"";position:absolute;top:0;right
 .note-tab-input{background:var(--bg2);border:1px solid var(--accent);color:var(--text);font-family:var(--sf);font-size:12.5px;font-weight:600;border-radius:6px;padding:2px 6px;outline:none;width:130px;max-width:150px;}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-elevated);}
+.modal:not(.entry-modal){display:flex;flex-direction:column;overflow:hidden;}
+.modal:not(.entry-modal)>.modal-hdr,.modal:not(.entry-modal)>.modal-ftr{position:relative;flex:0 0 auto;}
+.modal:not(.entry-modal)>.modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
 .modal-ov:not(.hidden){animation:ovFadeIn .16s ease-out;}
 .modal-ov:not(.hidden) .modal{animation:modalIn .18s cubic-bezier(.2,.8,.2,1);}
 .timer-alert-box{max-width:380px;border:1px solid rgba(248,113,113,.35);}
@@ -504,25 +508,25 @@ textarea.fc{resize:vertical;min-height:70px;}
    The transparent resting thumb preserves its gutter, so content does not jump.
    Touch devices retain their normal platform scrollbar because they have no hover. */
 @media (hover:hover){
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc){
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc){
     scrollbar-width:thin;
     scrollbar-color:transparent transparent;
     scrollbar-gutter:stable;
   }
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover{
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover{
     scrollbar-color:var(--bg5) transparent;
   }
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc)::-webkit-scrollbar-thumb{
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc)::-webkit-scrollbar-thumb{
     background:transparent;
     border-radius:3px;
   }
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover::-webkit-scrollbar-thumb{
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover::-webkit-scrollbar-thumb{
     background:var(--bg5);
   }
   /* These containers own a sticky header. Keep the vertical track below it. */
   :where(.table-scroll,.admin-tbl-scroll,#log-section-body)::-webkit-scrollbar-track:vertical{margin-block-start:38px;}
   .cal-tg-scroll::-webkit-scrollbar-track:vertical{margin-block-start:68px;}
-  .modal:not(.entry-modal)::-webkit-scrollbar-track:vertical{margin-block:57px 55px;}
+  .note-area::-webkit-scrollbar-track:vertical{margin-block:10px;}
 }
 @media (hover:hover) and (max-width:920px){.modal.entry-modal::-webkit-scrollbar-track:vertical{margin-block:57px 55px;}}
 .empty{text-align:center;padding:50px;color:var(--text3);}
@@ -600,7 +604,8 @@ textarea.fc{resize:vertical;min-height:70px;}
 .admin-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow);}
 .admin-ctitle{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.55px;}
 .admin-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-.admin-tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.admin-tbl-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.admin-tbl-wrap::after{content:"";position:absolute;top:1px;right:1px;width:6px;height:34px;background:var(--bg3);border-radius:0 6px 0 0;z-index:25;pointer-events:none;}
 .admin-tbl-scroll{overflow:auto;max-height:calc(100vh - 230px);}
 .admin-table{width:100%;border-collapse:collapse;font-size:13px;}
 .admin-table thead{background:var(--bg3);border-bottom:2px solid var(--border);}
