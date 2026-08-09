@@ -499,6 +499,32 @@ textarea.fc{resize:vertical;min-height:70px;}
 .hidden{display:none!important;}
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px;}
+::-webkit-scrollbar-corner{background:transparent;}
+/* Keep nested scrollbars out of the way until their own section is hovered.
+   The transparent resting thumb preserves its gutter, so content does not jump.
+   Touch devices retain their normal platform scrollbar because they have no hover. */
+@media (hover:hover){
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc){
+    scrollbar-width:thin;
+    scrollbar-color:transparent transparent;
+    scrollbar-gutter:stable;
+  }
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover{
+    scrollbar-color:var(--bg5) transparent;
+  }
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc)::-webkit-scrollbar-thumb{
+    background:transparent;
+    border-radius:3px;
+  }
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover::-webkit-scrollbar-thumb{
+    background:var(--bg5);
+  }
+  /* These containers own a sticky header. Keep the vertical track below it. */
+  :where(.table-scroll,.admin-tbl-scroll,#log-section-body)::-webkit-scrollbar-track:vertical{margin-block-start:38px;}
+  .cal-tg-scroll::-webkit-scrollbar-track:vertical{margin-block-start:68px;}
+  .modal:not(.entry-modal)::-webkit-scrollbar-track:vertical{margin-block:57px 55px;}
+}
+@media (hover:hover) and (max-width:920px){.modal.entry-modal::-webkit-scrollbar-track:vertical{margin-block:57px 55px;}}
 .empty{text-align:center;padding:50px;color:var(--text3);}
 .comment-list{display:flex;flex-direction:column;gap:14px;margin-bottom:14px;}
 .comment-item{display:flex;gap:10px;align-items:flex-start;}
@@ -7371,9 +7397,11 @@ function customBadgeStyle(hex){
 function loadDropdownOptions(){
   onSnapshot(collection(db,'dropdown_options'), function(snap){
     var hasData=false;
+    var seen={};
     snap.forEach(function(d){
       _dropdownData[d.id]=d.data().items||[];
       _dropdownColors[d.id]=d.data().colors||{};
+      seen[d.id]=true;
       hasData=true;
     });
     if(!hasData){
@@ -7384,15 +7412,15 @@ function loadDropdownOptions(){
       });
       Promise.all(batch).catch(function(){});
     } else {
-      // Merge any newly added default statuses into existing Firestore data
-      ['status_done','status_ip'].forEach(function(key){
-        var existing=_dropdownData[key]||[];
-        var newItems=DROPDOWN_OPTS[key].defaults.filter(function(v){return existing.indexOf(v)===-1;});
-        if(newItems.length){
-          var merged=existing.concat(newItems);
-          _dropdownData[key]=merged;
-          setDoc(doc(db,'dropdown_options',key),{items:merged,colors:_dropdownColors[key]||{}}).catch(function(){});
-        }
+      // Seed only a genuinely missing dropdown document. Never merge missing
+      // defaults into an existing document: a missing item may have been
+      // intentionally deleted by an admin and must stay deleted after refresh.
+      Object.keys(DROPDOWN_OPTS).forEach(function(key){
+        if(seen[key])return;
+        var items=DROPDOWN_OPTS[key].defaults.slice();
+        _dropdownData[key]=items;
+        _dropdownColors[key]={};
+        setDoc(doc(db,'dropdown_options',key),{items:items,colors:{}}).catch(function(){});
       });
     }
     applyDropdownsToForms();
