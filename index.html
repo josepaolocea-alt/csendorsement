@@ -159,7 +159,7 @@ body.density-compact .tbadge.trestart::after{top:-8px;}
 .st-gray{background:var(--bg4);color:var(--text3);}
 .age-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(244,63,94,.16));color:var(--fx-color,#fb7185);border:1px solid var(--fx-border,rgba(244,63,94,.30));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
 .rr-ro-alert-badge{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(14,165,233,.16));color:var(--fx-color,#38bdf8);border:1px solid var(--fx-border,rgba(14,165,233,.32));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
-/* "Days since Done" aging chip for still-pending RR/RO (counts calendar days from when Status was set to Done). */
+/* "Days since Done" aging chip for still-pending RR/RO (counts PH working days only). */
 .rr-done-age{display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:2px 6px;border-radius:6px;background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.32);font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
 .sla-text-badge{display:inline-flex;align-items:center;margin-right:6px;padding:2px 6px;border-radius:6px;background:var(--fx-badge,rgba(250,204,21,.16));color:var(--fx-color,#facc15);border:1px solid var(--fx-border,rgba(250,204,21,.30));font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap;}
 /* Shared row alert effects (Advised Client aging + RR/RO missing RO by). Colors come from --fx-* vars set inline per row. Animated variants use non-!important backgrounds so keyframes can win. */
@@ -1033,10 +1033,10 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
     </div>
     <div class="auto-row">
       <span class="auto-label">Days since Done (Pending RR/RO):</span>
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Show a small ⏳ badge on each pending RR/RO counting the days since its Status was set to Done">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Show a small ⏳ badge on each pending RR/RO counting PH working days since its Status was set to Done (weekends and holidays excluded)">
         <input type="checkbox" id="rr-done-aging-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
       </label>
-      <span class="auto-label" style="color:var(--text3)">shows a ⏳ day count on the row once Status = Done, until it's completed</span>
+      <span class="auto-label" style="color:var(--text3)">shows a ⏳ working-day count once Status = Done, until it's completed</span>
     </div>
     </div>
     <div class="settings-sec">
@@ -3077,10 +3077,20 @@ function rrDoneAnchorMs(r){
   if(r.rrDate){var t=rrDateToMs(r.rrDate);if(!isNaN(t))return t;}
   return null;
 }
-function calendarDaysBetween(fromMs,toMs){
-  var a=new Date(fromMs);a.setHours(0,0,0,0);
-  var b=new Date(toMs);b.setHours(0,0,0,0);
-  return Math.max(0,Math.round((b-a)/86400000));
+function phWorkingDaysBetween(fromMs,toMs){
+  // Count PH calendar dates after the anchor through today. Weekends and dates
+  // in PH_HOLIDAYS contribute zero. Manila day boundaries keep this stable even
+  // if the browser/computer is temporarily using another timezone.
+  var from=_phParts(Number(fromMs));
+  var to=_phParts(Number(toMs));
+  var cursor=Date.UTC(from.y,from.mo,from.day)-PH_OFFSET_MS;
+  var end=Date.UTC(to.y,to.mo,to.day)-PH_OFFSET_MS;
+  var count=0;
+  while(cursor<end){
+    cursor+=86400000;
+    if(isPhWorkingDay(cursor))count++;
+  }
+  return count;
 }
 function rrDoneAgeDays(r){
   if(SETTINGS.rrDoneAgingEnabled===false)return null;          // feature toggled off in Settings
@@ -3088,14 +3098,14 @@ function rrDoneAgeDays(r){
   if(r.rrCompleted||r.rrDisregard)return null;                 // only while still pending
   var anchor=rrDoneAnchorMs(r);
   if(anchor===null)return null;
-  return calendarDaysBetween(anchor,Date.now());
+  return phWorkingDaysBetween(anchor,Date.now());
 }
 function rrDoneAgingBadge(r){
   var d=rrDoneAgeDays(r);
   if(d===null)return '';
   var src=r.rrStatusDoneAt?'Status was set to Done':'the RR Date';
-  var txt=d===0?'Today':d+'d';
-  var title=(d===0?'Marked Done today':d+' day'+(d===1?'':'s')+' since '+src)+' — pending RR/RO';
+  var txt=d+'d';
+  var title=(d===0?'No working day elapsed':d+' working day'+(d===1?'':'s')+' since '+src)+' — weekends and PH holidays excluded; pending RR/RO';
   return '<span class="rr-done-age" title="'+title+'">⏳ '+txt+'</span>';
 }
 function entryAgeHours(r){
@@ -4101,7 +4111,7 @@ setInterval(function(){
   }else{
     _pbTickSig=null;
   }
-  // Advance the "days since Done" badges when the calendar day rolls over
+  // Re-evaluate the "days since Done" working-day badges when the date rolls over
   var _todayStr=new Date().toDateString();
   if(_dayTickSig!==null&&_todayStr!==_dayTickSig&&currentTab==='mine')renderRRRows();
   _dayTickSig=_todayStr;
