@@ -500,32 +500,10 @@ textarea.fc{resize:vertical;min-height:70px;}
 .reveal-panel.is-closing{animation:panelReveal .16s ease-in reverse forwards;}
 #timer-alert-msg{line-height:1.45;overflow-wrap:anywhere;}
 .hidden{display:none!important;}
-::-webkit-scrollbar{width:6px;height:6px;}
-::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px;}
-::-webkit-scrollbar-corner{background:transparent;}
-/* Keep nested scrollbars out of the way until their own section is hovered.
-   The transparent resting thumb preserves its gutter, so content does not jump.
-   Touch devices retain their normal platform scrollbar because they have no hover. */
-@media (hover:hover){
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc){
-    scrollbar-width:thin;
-    scrollbar-color:transparent transparent;
-    scrollbar-gutter:stable;
-  }
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover{
-    scrollbar-color:var(--bg5) transparent;
-  }
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc)::-webkit-scrollbar-thumb{
-    background:transparent;
-    border-radius:3px;
-  }
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover::-webkit-scrollbar-thumb{
-    background:var(--bg5);
-  }
-  .cal-tg-scroll::-webkit-scrollbar-track:vertical{margin-block-start:68px;}
-  .note-area::-webkit-scrollbar-track:vertical{margin-block:10px;}
-}
-@media (hover:hover) and (max-width:920px){.modal.entry-modal::-webkit-scrollbar-track:vertical{margin-block:57px 55px;}}
+/* Hide scrollbar chrome everywhere without disabling scrolling. Overflow,
+   wheel, trackpad, touch, and keyboard scrolling continue to work normally. */
+*{scrollbar-width:none;-ms-overflow-style:none;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
 .empty{text-align:center;padding:50px;color:var(--text3);}
 .comment-list{display:flex;flex-direction:column;gap:14px;margin-bottom:14px;}
 .comment-item{display:flex;gap:10px;align-items:flex-start;}
