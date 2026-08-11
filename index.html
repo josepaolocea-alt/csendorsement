@@ -1873,6 +1873,9 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
         <div class="fgrp"><label>Service</label>
           <select class="fc" id="d-svc"><option>VOIP</option><option>SMS</option></select>
         </div>
+        <div class="fgrp"><label>Platform</label>
+          <select class="fc" id="d-platform"><option value="">-- Select --</option></select>
+        </div>
         <div class="fgrp full"><label>Concern</label><textarea class="fc" id="d-desc" placeholder="e.g. #9954130700: DID Disconnection Notice — AM" style="min-height:55px"></textarea></div>
         <div class="fgrp full"><label>Description</label><textarea class="fc" id="d-remarks" placeholder="Additional description / notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
         <div class="fgrp"><label>Status</label>
@@ -3741,7 +3744,7 @@ function configureTaskFilterToolbar(tab){
   _showTaskFilter('f-svc',isTasks||isDID);
   _showTaskFilter('f-st',isTasks||isDID||isRR);
   _showTaskFilter('f-pri',isTasks||isDID||isRR);
-  _showTaskFilter('f-plt',isTasks);
+  _showTaskFilter('f-plt',isTasks||isDID);
   _showTaskFilter('f-am-filter',isTasks||isDID||isRR);
 
   if(isDID){
@@ -3749,6 +3752,7 @@ function configureTaskFilterToolbar(tab){
     _setTaskFilterOptions('f-svc','All Services',svcItems.filter(function(v){return v!=='Payment';}));
     _setTaskFilterOptions('f-st','All DID Statuses',DID_IN_PROGRESS_ST);
     _setTaskFilterOptions('f-pri','All Priorities',['High','Normal']);
+    _setTaskFilterOptions('f-plt','All Platforms',platformItems);
     _setTaskFilterOptions('f-am-filter','All AM',rrByItems);
   }else if(isRR){
     if(search)search.placeholder='Search subject, remarks, RR/RO by, status...';
@@ -4897,7 +4901,7 @@ function _filterChipDefs(){
   if(currentTab==='all'||currentTab==='done'){
     add('svc','f-svc','Service');add('st','f-st','Status');add('pri','f-pri','Priority');add('plt','f-plt','Platform');add('am','f-am-filter','AM');
   }else if(currentTab==='did'){
-    add('svc','f-svc','Service');add('st','f-st','Status');add('pri','f-pri','Priority');add('am','f-am-filter','AM');
+    add('svc','f-svc','Service');add('st','f-st','Status');add('pri','f-pri','Priority');add('plt','f-plt','Platform');add('am','f-am-filter','AM');
   }else if(currentTab==='mine'){
     add('st','f-st','RR Status');add('pri','f-pri','Priority');add('am','f-am-filter','RR / RO By');
   }
@@ -4939,12 +4943,13 @@ function applyDIDFilters(){
   var fs=document.getElementById('f-svc').value;
   var fst=document.getElementById('f-st').value;
   var fp=document.getElementById('f-pri').value;
+  var fpl=document.getElementById('f-plt').value;
   var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
     if(r._type!=='did')return false;
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     if(isDone)return false;
-    return matchesSearch(r,q)&&(!fs||r.service===fs)&&(!fst||r.status===fst)&&(!fp||r.priority===fp)&&matchesAM(r,fam)&&matchesDateRange(r);
+    return matchesSearch(r,q)&&(!fs||r.service===fs)&&(!fst||r.status===fst)&&(!fp||r.priority===fp)&&(!fpl||r.platform===fpl)&&matchesAM(r,fam)&&matchesDateRange(r);
   });
   // Sort by startDate descending, createdAt as tiebreaker
   filteredData.sort(function(a,b){
@@ -5582,6 +5587,7 @@ var DID_THEAD='<tr>'
   +'<th onclick="sortBy(\'startDate\')" id="th-startDate">Start Date<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'priority\')" id="th-priority">Priority<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th onclick="sortBy(\'service\')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
+  +'<th onclick="sortBy(\'platform\')" id="th-platform">Platform<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'</tr>';
 
@@ -5619,7 +5625,7 @@ function renderDIDRows(){
   var tbody=document.getElementById('main-tbody');
   var pgDiv=document.getElementById('main-pagination');
   if(pgDiv) pgDiv.innerHTML='';
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="10" class="empty">No DID records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
   tbody.innerHTML=filteredData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     var _fx=rowFxParts(r);
@@ -5635,6 +5641,7 @@ function renderDIDRows(){
       +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
       +'<td>'+didPriBadge(r.priority)+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
+      +'<td>'+pltBadge(r.platform)+'</td>'
       +'<td>'+didTimerHTML(r)+'</td>'
       +'</tr>';
   }).join('');
@@ -5660,6 +5667,7 @@ function openNewDIDModal(){
   document.getElementById('did-modal-title').textContent='New DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs){dcs.value='';}document.getElementById('d-client').value='';
   document.getElementById('d-svc').value='VOIP';
+  document.getElementById('d-platform').value='';
   document.getElementById('d-desc').value='';
   document.getElementById('d-remarks').value='';autoResizeId('d-remarks');
   document.getElementById('d-status').value='Pending AM';
@@ -5693,6 +5701,7 @@ function openEditDID(id){
   document.getElementById('did-modal-title').textContent='Edit DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){setClientDropdown('d-client-sel','d-client',r.client||'');}else{document.getElementById('d-client').value=r.client||'';}
   document.getElementById('d-svc').value=r.service||'VOIP';
+  document.getElementById('d-platform').value=r.platform||'';
   document.getElementById('d-desc').value=r.desc||'';
   document.getElementById('d-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('d-remarks');},0);
   document.getElementById('d-status').value=r.status||'Pending AM';
@@ -5756,6 +5765,7 @@ function saveDIDRecord(){
     _type:'did',
     client:client,
     service:document.getElementById('d-svc').value,
+    platform:document.getElementById('d-platform').value,
     desc:document.getElementById('d-desc').value,
     remarks:document.getElementById('d-remarks').value,
     status:newStatus,
@@ -6274,6 +6284,7 @@ function doExportRows(rows,mode){
   var suffix=mode==='selected'?'_selected':'';
   var today=new Date().toISOString().split('T')[0];
   var isRR=currentTab==='mine';
+  var isDID=currentTab==='did';
   var headers,csvRows;
   if(isRR){
     headers=['Subject','Priority','Description','RR Date','RR By','RO By','Status','Advised to Client','Posted','Updated Inventory','Comments'];
@@ -6289,15 +6300,15 @@ function doExportRows(rows,mode){
       var commentsTxt=(r.comments||[]).map(function(cm){
         return '['+fmtCommentTime(cm.ts)+'] '+(getUserDisplay(cm.user)||'?')+': '+(cm.text||'');
       }).join(' | ');
-      return [r.client,r.service,r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
+      return [r.client,r.service,r._type==='did'?r.desc:r.concern,r.remarks||'',r.platform,r.status,r.startDate,r.resolvedDate||'',r.priority,commentsTxt].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
     });
   }
   var data=[headers.join(',')].concat(csvRows);
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([data.join('\n')],{type:'text/csv'}));
-  a.download=(isRR?'pending_rr_ro':'endorsements')+suffix+'_'+today+'.csv';
+  a.download=(isRR?'pending_rr_ro':isDID?'did_order_cancel':'endorsements')+suffix+'_'+today+'.csv';
   a.click();
-  writeLog('exported',(isRR?'Pending RR/RO CSV':'Endorsements CSV'),'Exported '+rows.length+' records ('+(mode==='selected'?'selected':'all visible')+')');
+  writeLog('exported',(isRR?'Pending RR/RO CSV':isDID?'DID Order/Cancel CSV':'Endorsements CSV'),'Exported '+rows.length+' records ('+(mode==='selected'?'selected':'all visible')+')');
   toast('Exported '+rows.length+' record'+(rows.length!==1?'s':''),'success');
 }
 
@@ -6367,6 +6378,7 @@ function _trelloDesc(r){
   }else if(r._type==='did'){
     d.push('**Client / Vendor:** '+(r.client||'—'));
     d.push('**Service:** '+(r.service||'—'));
+    d.push('**Platform:** '+(r.platform||'—'));
     d.push('**Priority:** '+(r.priority||'—'));
     d.push('**Status:** '+(r.status||'—'));
     d.push('**AM:** '+(r.am||'—'));
@@ -6413,7 +6425,7 @@ function _trelloTitle(r){
 // Label names per record type.
 function _trelloLabels(r){
   if(r._type==='rr') return [r.rrPriority];
-  if(r._type==='did') return [r.priority];
+  if(r._type==='did') return [r.priority,r.platform];
   return [r.priority,r.platform];
 }
 
@@ -7567,7 +7579,7 @@ function applyDropdownsToForms(){
   });
   // Platform dropdowns
   var pltItems=_dropdownData['platform']||DROPDOWN_OPTS.platform.defaults;
-  ['f-plt-f','f-plt'].forEach(function(id){
+  ['f-plt-f','d-platform','f-plt'].forEach(function(id){
     var el=document.getElementById(id);if(!el)return;
     var cur=el.value;
     var isFilter=id==='f-plt';
