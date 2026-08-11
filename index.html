@@ -2928,6 +2928,7 @@ function _doSwitchTab(tab,el){
   document.getElementById('f-pri').value='';
   document.getElementById('f-plt').value='';
   var amFilter=document.getElementById('f-am-filter');if(amFilter)amFilter.value='';
+  configureTaskFilterToolbar(tab);
   if(tab==='done') _donePage=0;
   if(tab==='mine') _rrPage=0;
   if(tab==='trash') loadTrash(); else applyFilters();
@@ -3705,6 +3706,76 @@ function matchesSearch(r,q){
 function matchesAM(r,fam){
   if(!fam)return true;
   return [r.am,r.rrBy,r.roBy].indexOf(fam)>-1;
+}
+
+// The main toolbar is shared, but each task tab has different columns. Rebuild
+// its dropdowns for the active tab so every visible filter actually applies to
+// the records being shown.
+function _setTaskFilterOptions(id,allLabel,items){
+  var el=document.getElementById(id);if(!el)return;
+  var current=el.value;
+  var normalized=(items||[]).map(function(item){
+    return typeof item==='string'?{value:item,label:item}:item;
+  });
+  el.innerHTML='<option value="">'+escHtml(allLabel)+'</option>'+normalized.map(function(item){
+    return '<option value="'+escHtml(item.value)+'">'+escHtml(item.label)+'</option>';
+  }).join('');
+  if(normalized.some(function(item){return item.value===current;}))el.value=current;
+}
+function _showTaskFilter(id,show){
+  var el=document.getElementById(id);if(el)el.style.display=show?'':'none';
+}
+function _uniqueFilterItems(items){
+  var seen={};return (items||[]).filter(function(item){var key=String(item||'');if(!key||seen[key])return false;seen[key]=1;return true;});
+}
+function configureTaskFilterToolbar(tab){
+  var search=document.getElementById('search-input');
+  var svcItems=(_dropdownData&&_dropdownData.service)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.service.defaults)||['VOIP','SMS','Payment'];
+  var ipItems=(_dropdownData&&_dropdownData.status_ip)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.status_ip.defaults)||[];
+  var doneItems=(_dropdownData&&_dropdownData.status_done)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.status_done.defaults)||[];
+  var rrByItems=(_dropdownData&&_dropdownData.rr_by)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.rr_by.defaults)||[];
+  var roByItems=(_dropdownData&&_dropdownData.ro_by)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.ro_by.defaults)||[];
+  var platformItems=(_dropdownData&&_dropdownData.platform)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.platform.defaults)||[];
+  var isDID=tab==='did',isRR=tab==='mine',isTasks=tab==='all'||tab==='done';
+
+  _showTaskFilter('f-svc',isTasks||isDID);
+  _showTaskFilter('f-st',isTasks||isDID||isRR);
+  _showTaskFilter('f-pri',isTasks||isDID||isRR);
+  _showTaskFilter('f-plt',isTasks);
+  _showTaskFilter('f-am-filter',isTasks||isDID||isRR);
+
+  if(isDID){
+    if(search)search.placeholder='Search client, description, status, AM...';
+    _setTaskFilterOptions('f-svc','All Services',svcItems.filter(function(v){return v!=='Payment';}));
+    _setTaskFilterOptions('f-st','All DID Statuses',DID_IN_PROGRESS_ST);
+    _setTaskFilterOptions('f-pri','All Priorities',['High','Normal']);
+    _setTaskFilterOptions('f-am-filter','All AM',rrByItems);
+  }else if(isRR){
+    if(search)search.placeholder='Search subject, remarks, RR/RO by, status...';
+    _setTaskFilterOptions('f-st','All RR Statuses',[
+      {value:'__rr_pending__',label:'Pending RR/RO'},
+      {value:'__rr_completed__',label:'Completed'},
+      {value:'__rr_disregard__',label:'Disregarded'},
+      'Not Yet','Done'
+    ]);
+    _setTaskFilterOptions('f-pri','All Priorities',['Critical','Urgent']);
+    _setTaskFilterOptions('f-am-filter','All RR / RO By',_uniqueFilterItems(rrByItems.concat(roByItems)));
+  }else if(isTasks){
+    if(search)search.placeholder='Search client, concern, description, status...';
+    _setTaskFilterOptions('f-svc','All Services',svcItems);
+    _setTaskFilterOptions('f-st','All Statuses',[
+      {value:'__inprogress__',label:'All In Progress'},
+      {value:'__pending_ours__',label:'All Pending - Our Side'},
+      {value:'__advised_aging__',label:'Advised Client Aging Due'},
+      {value:'__completed__',label:'All Completed'}
+    ].concat(ipItems,doneItems));
+    _setTaskFilterOptions('f-pri','All Priorities',['High','Normal']);
+    _setTaskFilterOptions('f-plt','All Platforms',platformItems);
+    _setTaskFilterOptions('f-am-filter','All AM',rrByItems);
+  }else{
+    if(search)search.placeholder='Search records...';
+  }
+  configureDateRangeFilterForTab(tab);
 }
 
 var _sessionAlerted={};
@@ -4825,8 +4896,10 @@ function _filterChipDefs(){
   function add(kind,id,prefix){var el=document.getElementById(id);if(el)defs.push({kind:kind,el:el,prefix:prefix});}
   if(currentTab==='all'||currentTab==='done'){
     add('svc','f-svc','Service');add('st','f-st','Status');add('pri','f-pri','Priority');add('plt','f-plt','Platform');add('am','f-am-filter','AM');
-  }else if(currentTab==='did'||currentTab==='mine'){
-    add('am','f-am-filter','AM');
+  }else if(currentTab==='did'){
+    add('svc','f-svc','Service');add('st','f-st','Status');add('pri','f-pri','Priority');add('am','f-am-filter','AM');
+  }else if(currentTab==='mine'){
+    add('st','f-st','RR Status');add('pri','f-pri','Priority');add('am','f-am-filter','RR / RO By');
   }
   return defs;
 }
@@ -4863,12 +4936,15 @@ function renderFilterChips(){
 
 function applyDIDFilters(){
   var q=searchValue();
+  var fs=document.getElementById('f-svc').value;
+  var fst=document.getElementById('f-st').value;
+  var fp=document.getElementById('f-pri').value;
   var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
     if(r._type!=='did')return false;
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     if(isDone)return false;
-    return matchesSearch(r,q)&&matchesAM(r,fam)&&matchesDateRange(r);
+    return matchesSearch(r,q)&&(!fs||r.service===fs)&&(!fst||r.status===fst)&&(!fp||r.priority===fp)&&matchesAM(r,fam)&&matchesDateRange(r);
   });
   // Sort by startDate descending, createdAt as tiebreaker
   filteredData.sort(function(a,b){
@@ -5062,10 +5138,18 @@ function updateRRStats(){
 
 function applyRRFilters(){
   var q=searchValue();
+  var fst=document.getElementById('f-st').value;
+  var fp=document.getElementById('f-pri').value;
   var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
     if(r._type!=='rr')return false;
-    return matchesSearch(r,q)&&matchesAM(r,fam)&&matchesDateRange(r);
+    var statusMatch=!fst||(
+      fst==='__rr_pending__'?!r.rrCompleted&&!r.rrDisregard:
+      fst==='__rr_completed__'?!!r.rrCompleted:
+      fst==='__rr_disregard__'?!!r.rrDisregard:
+      r.rrStatus===fst
+    );
+    return matchesSearch(r,q)&&statusMatch&&(!fp||r.rrPriority===fp)&&matchesAM(r,fam)&&matchesDateRange(r);
   });
   // Sort by rrDate descending, then createdAt descending as tiebreaker
   filteredData.sort(function(a,b){
@@ -7041,6 +7125,25 @@ function addCommentFromModal(){
 }
 
 var _dateRangeFilter=null;
+function dateRangeFieldLabel(field){
+  return field==='rrDate'?'RR Date':field==='resolvedDate'?'Resolved':'Start';
+}
+function configureDateRangeFilterForTab(tab){
+  var el=document.getElementById('export-date-field');if(!el)return;
+  var options=tab==='mine'?
+    [{value:'rrDate',label:'RR Date'}]:
+    tab==='did'?
+      [{value:'startDate',label:'Start Date'}]:
+      [{value:'startDate',label:'Start Date'},{value:'resolvedDate',label:'Resolved Date'}];
+  var current=el.value;
+  el.innerHTML=options.map(function(item){return '<option value="'+item.value+'">'+item.label+'</option>';}).join('');
+  el.value=options.some(function(item){return item.value===current;})?current:options[0].value;
+  if(_dateRangeFilter){
+    _dateRangeFilter.field=el.value;
+    var badge=document.getElementById('date-range-badge');
+    if(badge)badge.textContent='● '+dateRangeFieldLabel(el.value)+': '+_dateRangeFilter.from+' → '+_dateRangeFilter.to;
+  }
+}
 function applyDateRangeFilter(){
   var from=document.getElementById('export-from').value;
   var to=document.getElementById('export-to').value;
@@ -7048,7 +7151,7 @@ function applyDateRangeFilter(){
   if(!from||!to){toast('Please set both From and To dates','error');return;}
   if(from>to){toast('From date must be before To date','error');return;}
   _dateRangeFilter={from:from,to:to,field:field};
-  var label=(field==='resolvedDate'?'Resolved':'Start')+': '+from+' → '+to;
+  var label=dateRangeFieldLabel(field)+': '+from+' → '+to;
   var badge=document.getElementById('date-range-badge');
   badge.textContent='● '+label;
   badge.style.display='';
@@ -7069,8 +7172,12 @@ function clearDateRangeFilter(){
 }
 function matchesDateRange(r){
   if(!_dateRangeFilter)return true;
-  var d=r[_dateRangeFilter.field];
-  return !!d&&d>=_dateRangeFilter.from&&d<=_dateRangeFilter.to;
+  var field=_dateRangeFilter.field;
+  if(r._type==='rr')field='rrDate';
+  else if(field==='rrDate')field='startDate';
+  var d=r[field];
+  var day=d?String(d).slice(0,10):'';
+  return !!day&&day>=_dateRangeFilter.from&&day<=_dateRangeFilter.to;
 }
 
 // Load settings from localStorage (fast, local)
@@ -7529,6 +7636,7 @@ function applyDropdownsToForms(){
   RR_BM=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
   RR_AM=[];RR_PROD=[];
   RR_RO=_dropdownData['ro_by']||DROPDOWN_OPTS.ro_by.defaults;
+  configureTaskFilterToolbar(currentTab);
 }
 
 var _dropdownPanelOpen=false;
