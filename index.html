@@ -97,7 +97,6 @@ select.fsel:hover,select.fc:hover{border-color:var(--border2);background-color:v
 select.fsel option,select.fc option{background:var(--bg2);color:var(--text);}
 select::-ms-expand{display:none;}
 .table-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
-.table-wrap::after{content:"";position:absolute;top:1px;right:1px;width:6px;height:calc(var(--scroll-head-height,38px) - 1px);background:var(--bg3);border-bottom:1px solid var(--border2);border-radius:0 8px 0 0;z-index:25;pointer-events:none;}
 .table-scroll{overflow:auto;max-height:calc(100vh - 230px);}
 .instant-table-tooltip{position:fixed;display:none;z-index:10050;max-width:min(420px,calc(100vw - 20px));padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg5);color:var(--text);box-shadow:var(--shadow-elevated);font-family:var(--sf);font-size:12px;font-weight:500;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;}
 .instant-table-tooltip.visible{display:block;}
@@ -523,8 +522,6 @@ textarea.fc{resize:vertical;min-height:70px;}
   :where(.table-scroll,.admin-tbl-scroll,#log-section-body,.cal-tg-scroll,.modal.entry-modal,.modal:not(.entry-modal)>.modal-body,.timer-center-list,.entry-details,.entry-comments .comment-list,.topbar,#trello-log,#daily-report-text,.note-area,textarea.fc):hover::-webkit-scrollbar-thumb{
     background:var(--bg5);
   }
-  /* These containers own a sticky header. Keep the vertical track below it. */
-  :where(.table-scroll,.admin-tbl-scroll,#log-section-body)::-webkit-scrollbar-track:vertical{margin-block-start:var(--scroll-head-height,38px);}
   .cal-tg-scroll::-webkit-scrollbar-track:vertical{margin-block-start:68px;}
   .note-area::-webkit-scrollbar-track:vertical{margin-block:10px;}
 }
@@ -605,7 +602,6 @@ textarea.fc{resize:vertical;min-height:70px;}
 .admin-ctitle{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.55px;}
 .admin-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 .admin-tbl-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.admin-tbl-wrap::after{content:"";position:absolute;top:1px;right:1px;width:6px;height:calc(var(--scroll-head-height,35px) - 1px);background:var(--bg3);border-bottom:2px solid var(--border);border-radius:0 6px 0 0;z-index:25;pointer-events:none;}
 .admin-tbl-scroll{overflow:auto;max-height:calc(100vh - 230px);}
 .admin-table{width:100%;border-collapse:collapse;font-size:13px;}
 .admin-table thead{background:var(--bg3);border-bottom:2px solid var(--border);}
@@ -7773,46 +7769,6 @@ function moveDropdownOptionByKey(e,handle){
 document.addEventListener('pointermove',onDropdownOptionDragMove,{passive:false});
 document.addEventListener('pointerup',finishDropdownOptionDrag);
 document.addEventListener('pointercancel',finishDropdownOptionDrag);
-
-// Keep each scrollbar gutter cover and track exactly level with its real table
-// header. Header height can change with density, responsive font sizing, or a
-// dynamically rendered table, so a fixed pixel mask is not reliable.
-var _scrollbarHeaderObservers=[];
-function initScrollbarHeaderAlignment(){
-  document.querySelectorAll('.table-wrap,.admin-tbl-wrap').forEach(function(wrap){
-    var scroll=wrap.querySelector('.table-scroll,.admin-tbl-scroll');
-    var head=scroll&&scroll.querySelector('thead');
-    if(!scroll||!head)return;
-    var sync=function(){
-      var height=Math.ceil(head.getBoundingClientRect().height);
-      if(height>0){
-        wrap.style.setProperty('--scroll-head-height',height+'px');
-        scroll.style.setProperty('--scroll-head-height',height+'px');
-      }
-    };
-    sync();
-    if(window.ResizeObserver){
-      var observer=new ResizeObserver(sync);
-      observer.observe(head);
-      _scrollbarHeaderObservers.push(observer);
-    }
-  });
-  var logScroll=document.getElementById('log-section-body');
-  var logHead=logScroll&&logScroll.querySelector('thead');
-  if(logScroll&&logHead){
-    var syncLog=function(){
-      var height=Math.ceil(logHead.getBoundingClientRect().height);
-      if(height>0)logScroll.style.setProperty('--scroll-head-height',height+'px');
-    };
-    syncLog();
-    if(window.ResizeObserver){
-      var logObserver=new ResizeObserver(syncLog);
-      logObserver.observe(logHead);
-      _scrollbarHeaderObservers.push(logObserver);
-    }
-  }
-}
-requestAnimationFrame(initScrollbarHeaderAlignment);
 
 function addDropdownOption(key){
   var inp=document.getElementById('new-opt-'+key);
