@@ -802,7 +802,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <button class="tab-btn" id="notepad-tab-btn" style="display:none" data-tip="Notepad" aria-label="Notepad" onclick="switchTab('notepad',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9.5 8h5"/><path d="M9.5 12H16"/><path d="M9.5 16H14"/></svg></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
-    <button class="tab-btn timer-center-btn" id="timer-center-btn" data-tip="Timer Alerts" aria-label="Open timer alerts" onclick="openTaskAlertCenter()" style="display:none">
+    <button class="tab-btn timer-center-btn" id="timer-center-btn" data-tip="Task Alerts" aria-label="Open task alerts" onclick="openTaskAlertCenter()" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
       <span class="timer-center-count" id="timer-center-count">0</span>
     </button>
@@ -1970,13 +1970,13 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
 <div class="modal-ov hidden" id="task-alert-center-modal" style="z-index:9490" onclick="if(event.target===this)closeTaskAlertCenter()">
   <div class="modal timer-center-box">
     <div class="modal-hdr" style="background:rgba(239,68,68,.1)">
-      <h3 style="color:#f87171">⏰ Timer Alerts <span id="task-alert-title-count" style="color:var(--text3);font-size:12px"></span></h3>
+      <h3 style="color:#f87171">⏰ Task Alerts <span id="task-alert-title-count" style="color:var(--text3);font-size:12px"></span></h3>
       <button class="modal-cls" onclick="closeTaskAlertCenter()">x</button>
     </div>
     <div class="modal-body">
       <div class="timer-center-summary">
         <div class="timer-center-summary-icon">🔔</div>
-        <div><strong id="task-alert-summary-title">No timer alerts need attention</strong><span>Closing this window does not clear unhandled alerts.</span></div>
+        <div><strong id="task-alert-summary-title">No task alerts need attention</strong><span>Closing this window does not clear unhandled alerts.</span></div>
       </div>
       <div class="timer-center-list" id="task-alert-center-list"></div>
     </div>
@@ -1985,25 +1985,6 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
       <button class="btn btn-secondary" id="task-alert-snooze-all" onclick="snoozeAllTaskAlerts(10)">Snooze all 10m</button>
       <button class="btn btn-secondary" id="task-alert-handle-all" onclick="handleAllTaskAlerts()">Mark all handled</button>
       <button class="btn btn-primary" onclick="closeTaskAlertCenter()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- SINGLE REMINDER ALERT MODAL (timer expirations use the batched center above) -->
-<div class="modal-ov hidden" id="timer-alert-modal" style="z-index:9500;background:rgba(0,0,0,.7)">
-  <div class="modal timer-alert-box">
-    <div class="modal-hdr" style="background:rgba(239,68,68,.15)">
-      <h3 id="timer-alert-title" style="color:#f87171">⏰ Timer Expired!</h3>
-      <button class="modal-cls" onclick="closeTimerAlert()">x</button>
-    </div>
-    <div class="modal-body" style="text-align:center;padding:24px">
-      <div id="timer-alert-icon" style="font-size:40px;margin-bottom:12px">🚨</div>
-      <p id="timer-alert-msg" style="font-size:15px;color:var(--text);margin-bottom:4px"></p>
-      <p style="font-size:12px;color:var(--text3);margin-top:8px">This alert will auto-dismiss in 10 seconds</p>
-    </div>
-    <div class="modal-ftr">
-      <button class="btn btn-secondary" style="flex:1;justify-content:center" onclick="copyTimerAlert()">Copy all</button>
-      <button class="btn btn-primary" style="flex:1;justify-content:center;background:#f87171;border-color:#f87171" onclick="closeTimerAlert()">Dismiss</button>
     </div>
   </div>
 </div>
@@ -3879,10 +3860,11 @@ function taskAlertAgeText(item){
     return 'Snoozed until '+new Date(item.snoozedUntil).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
   }
   var mins=Math.max(0,Math.floor((Date.now()-(Number(item.firedAt)||Date.now()))/60000));
-  if(mins<1)return 'Just expired';
-  if(mins<60)return mins+'m overdue';
+  var isReminder=item.kind==='reminder';
+  if(mins<1)return isReminder?'Reminder reached just now':'Just expired';
+  if(mins<60)return isReminder?mins+'m since reminder':mins+'m overdue';
   var hrs=Math.floor(mins/60),rest=mins%60;
-  return hrs+'h'+(rest?' '+rest+'m':'')+' overdue';
+  return hrs+'h'+(rest?' '+rest+'m':'')+(isReminder?' since reminder':' overdue');
 }
 function updateTaskAlertBadge(){
   var btn=document.getElementById('timer-center-btn');
@@ -3891,8 +3873,8 @@ function updateTaskAlertBadge(){
   var total=_taskAlertQueue.length;
   btn.style.display=total?'':'none';
   count.textContent=total>99?'99+':String(total);
-  btn.setAttribute('aria-label',total+' unhandled timer '+(total===1?'alert':'alerts'));
-  btn.setAttribute('data-tip',total?total+' Timer '+(total===1?'Alert':'Alerts'):'Timer Alerts');
+  btn.setAttribute('aria-label',total+' unhandled task '+(total===1?'alert':'alerts'));
+  btn.setAttribute('data-tip',total?total+' Task '+(total===1?'Alert':'Alerts'):'Task Alerts');
 }
 function renderTaskAlertCenter(){
   var list=document.getElementById('task-alert-center-list');
@@ -3905,11 +3887,11 @@ function renderTaskAlertCenter(){
   var snoozeAll=document.getElementById('task-alert-snooze-all');
   var handleAll=document.getElementById('task-alert-handle-all');
   if(title)title.textContent=total?'('+total+')':'';
-  if(summary)summary.textContent=total?(active+' need attention'+(total-active?' · '+(total-active)+' snoozed':'')):'No timer alerts need attention';
+  if(summary)summary.textContent=total?(active+' need attention'+(total-active?' · '+(total-active)+' snoozed':'')):'No task alerts need attention';
   if(copyAll)copyAll.disabled=!total;
   if(snoozeAll)snoozeAll.disabled=!active;
   if(handleAll)handleAll.disabled=!total;
-  if(!total){list.innerHTML='<div class="empty" style="padding:28px 12px">All timer alerts have been handled.</div>';return;}
+  if(!total){list.innerHTML='<div class="empty" style="padding:28px 12px">All task alerts have been handled.</div>';return;}
   var items=_taskAlertQueue.slice().sort(function(a,b){
     var as=a.snoozedUntil&&a.snoozedUntil>Date.now()?1:0,bs=b.snoozedUntil&&b.snoozedUntil>Date.now()?1:0;
     return as-bs||(Number(b.firedAt)||0)-(Number(a.firedAt)||0);
@@ -3918,7 +3900,7 @@ function renderTaskAlertCenter(){
     var snoozed=item.snoozedUntil&&item.snoozedUntil>Date.now();
     var arg=taskAlertKeyArg(item.key);
     return '<div class="timer-center-item'+(snoozed?' is-snoozed':'')+'">'
-      +'<div><div class="timer-center-item-name">'+escHtml(item.name||'Timer entry')+'</div>'
+      +'<div><div class="timer-center-item-name">'+escHtml(item.name||'Task entry')+'</div>'
       +(item.detail&&item.detail!==item.name?'<div class="timer-center-item-detail">'+escHtml(item.detail)+'</div>':'')
       +'<div class="timer-center-item-age">'+escHtml(taskAlertAgeText(item))+'</div></div>'
       +'<div class="timer-center-actions">'
@@ -3934,15 +3916,15 @@ function openTaskAlertCenter(){
 }
 function closeTaskAlertCenter(){document.getElementById('task-alert-center-modal').classList.add('hidden');}
 function copyAllTaskAlerts(){
-  if(!_taskAlertQueue.length){toast('No timer alerts to copy','info');return;}
+  if(!_taskAlertQueue.length){toast('No task alerts to copy','info');return;}
   var items=_taskAlertQueue.slice().sort(function(a,b){return (Number(a.firedAt)||0)-(Number(b.firedAt)||0);});
-  var text='Timer Alerts ('+items.length+')\n\n'+items.map(function(item,index){
-    var lines=[(index+1)+'. '+(item.name||'Timer entry')];
+  var text='Task Alerts ('+items.length+')\n\n'+items.map(function(item,index){
+    var lines=[(index+1)+'. '+(item.name||'Task entry')];
     if(item.detail&&item.detail!==item.name)lines.push(item.detail);
     lines.push(taskAlertAgeText(item));
     return lines.join('\n');
   }).join('\n\n');
-  writeClipboardText(text).then(function(){toast('All timer alerts copied','success');}).catch(function(){toast('Copy failed','error');});
+  writeClipboardText(text).then(function(){toast('All task alerts copied','success');}).catch(function(){toast('Copy failed','error');});
 }
 function handleTaskAlert(encodedKey){
   var key=decodeURIComponent(encodedKey);
@@ -3952,7 +3934,7 @@ function handleTaskAlert(encodedKey){
 }
 function handleAllTaskAlerts(){
   if(!_taskAlertQueue.length)return;
-  appConfirm('Mark all '+_taskAlertQueue.length+' timer alerts as handled?','Mark all handled').then(function(ok){
+  appConfirm('Mark all '+_taskAlertQueue.length+' task alerts as handled?','Mark all handled').then(function(ok){
     if(!ok)return;
     _taskAlertQueue=[];persistTaskAlertQueue();renderTaskAlertCenter();closeTaskAlertCenter();
   });
@@ -3968,7 +3950,7 @@ function snoozeAllTaskAlerts(mins){
   _taskAlertQueue.forEach(function(item){item.snoozedUntil=until;});
   _taskAlertLastReminderAt=Date.now();
   persistTaskAlertQueue();renderTaskAlertCenter();closeTaskAlertCenter();
-  toast('Timer alerts snoozed for '+mins+' minutes','info');
+  toast('Task alerts snoozed for '+mins+' minutes','info');
 }
 function openTaskAlertEntry(encodedKey){
   var item=taskAlertByKey(decodeURIComponent(encodedKey));if(!item)return;
@@ -3997,13 +3979,15 @@ function flushTaskAlertBatch(){
   var keys=Object.keys(_taskAlertBatchKeys);_taskAlertBatchKeys={};
   var items=keys.map(taskAlertByKey).filter(function(item){return item&&(!item.snoozedUntil||item.snoozedUntil<=Date.now());});
   if(!items.length)return;
-  try{playAlert(SETTINGS.alarmTone||'beep');}catch(e){}
+  var reminderCount=items.filter(function(item){return item.kind==='reminder';}).length;
+  var timerCount=items.length-reminderCount;
+  try{playAlert(timerCount?(SETTINGS.alarmTone||'beep'):(SETTINGS.reminderTone||'bell'));}catch(e){}
   var count=items.length;
   var body=count===1
-    ?items[0].name+' — timer has expired.'
-    :count+' task timers expired:\n• '+items.slice(0,5).map(function(item){return item.name;}).join('\n• ')+(count>5?'\n…and '+(count-5)+' more':'');
-  toast('⏰ '+count+' '+(count===1?'timer has':'timers have')+' expired — review Timer Alerts','error');
-  sendBrowserNotif('⏰ '+count+' Timer '+(count===1?'Alert':'Alerts'),body,'timer_alert_batch_'+currentAlertUserKey(),true);
+    ?items[0].name+(items[0].kind==='reminder'?' — reminder time reached.':' — timer has expired.')
+    :count+' task alerts need review:\n• '+items.slice(0,5).map(function(item){return item.name;}).join('\n• ')+(count>5?'\n…and '+(count-5)+' more':'');
+  toast('⏰ '+count+' task '+(count===1?'alert needs':'alerts need')+' review','error');
+  sendBrowserNotif('⏰ '+count+' Task '+(count===1?'Alert':'Alerts'),body,'task_alert_batch_'+currentAlertUserKey(),true);
   _taskAlertLastReminderAt=Date.now();
   renderTaskAlertCenter();
   document.getElementById('task-alert-center-modal').classList.remove('hidden');
@@ -4013,7 +3997,18 @@ function enqueueTimerAlert(r,basis){
   var key='timer_'+type+'_'+String(r.id)+'_'+String(basis);
   var existing=taskAlertByKey(key);
   if(!existing){
-    existing={key:key,id:r.id,type:type,name:timerAlertName(r),detail:timerAlertDetail(r),firedAt:Date.now(),snoozedUntil:0};
+    existing={key:key,id:r.id,type:type,kind:'timer',name:timerAlertName(r),detail:timerAlertDetail(r),firedAt:Date.now(),snoozedUntil:0};
+    _taskAlertQueue.push(existing);
+    persistTaskAlertQueue();
+  }
+  scheduleTaskAlertBatch(key);
+}
+function enqueueReminderAlert(r,basis){
+  var type=r._type||'endorsement';
+  var key='reminder_'+type+'_'+String(r.id)+'_'+String(basis);
+  var existing=taskAlertByKey(key);
+  if(!existing){
+    existing={key:key,id:r.id,type:type,kind:'reminder',name:timerAlertName(r),detail:timerAlertDetail(r),firedAt:Date.now(),snoozedUntil:0};
     _taskAlertQueue.push(existing);
     persistTaskAlertQueue();
   }
@@ -4027,9 +4022,9 @@ function checkTaskAlertCenter(){
   var active=_taskAlertQueue.filter(function(item){return !item.snoozedUntil;});
   if(active.length&&now-_taskAlertLastReminderAt>=TASK_ALERT_REMINDER_MS){
     _taskAlertLastReminderAt=now;
-    var body=active.length===1?active[0].name+' still needs review.':active.length+' unhandled timer alerts still need review.';
-    toast('⏰ '+active.length+' timer '+(active.length===1?'alert still needs':'alerts still need')+' review','error');
-    sendBrowserNotif('⏰ Timer alerts still need review',body,'timer_alert_batch_'+currentAlertUserKey(),true);
+    var body=active.length===1?active[0].name+' still needs review.':active.length+' unhandled task alerts still need review.';
+    toast('⏰ '+active.length+' task '+(active.length===1?'alert still needs':'alerts still need')+' review','error');
+    sendBrowserNotif('⏰ Task alerts still need review',body,'task_alert_batch_'+currentAlertUserKey(),true);
   }
 }
 function timerExpiryBasis(r){
@@ -4053,10 +4048,7 @@ function maybeAlertTimerExpiry(r){
 function maybeAlertReminder(r){
   if(!(r.reminderAt&&Date.now()>=r.reminderAt&&!hasLocalAlerted('reminder',r)&&!isRecordCompleted(r)))return;
   markLocalAlerted('reminder',r);
-  try{playAlert(SETTINGS.reminderTone||'bell');}catch(re){}
-  toast('🔔 Reminder: '+timerAlertSummary(r),'info');
-  sendBrowserNotif('🔔 Reminder',timerAlertSummary(r)+' — reminder time reached.',String(r.id)+'_'+currentAlertUserKey()+'_reminder',true);
-  showReminderAlert(r);
+  enqueueReminderAlert(r,r.reminderAt);
 }
 // Scan every record for a due timer/reminder alert. Safe to call as often as we like —
 // each alarm is de-duplicated per device via localStorage, so repeats never double up.
@@ -4184,46 +4176,6 @@ setInterval(function(){
   if(sm&&!sm.classList.contains('hidden'))updateAlertStatusUI();
 },1000);
 
-// Auto-dismiss after 10s — but only while the tab is visible, so alerts that
-// fire while the user is away stay on screen until they come back
-function scheduleAlertAutoDismiss(modal){
-  clearTimeout(window._timerAlertTimeout);
-  window._timerAlertTimeout=setTimeout(function tick(){
-    if(document.hidden){window._timerAlertTimeout=setTimeout(tick,10000);return;}
-    modal.classList.add('hidden');
-  },10000);
-}
-function showReminderAlert(r){
-  var name=timerAlertName(r);
-  var detail=timerAlertDetail(r);
-  var modal=document.getElementById('timer-alert-modal');
-  var title=document.getElementById('timer-alert-title');
-  var icon=document.getElementById('timer-alert-icon');
-  var msg=document.getElementById('timer-alert-msg');
-  if(!modal||!msg)return;
-  if(title)title.textContent='🔔 Reminder';
-  if(icon)icon.textContent='🔔';
-  msg.innerHTML='<strong>'+escHtml(name)+'</strong>'
-    +(detail&&detail!==name?'<br><span style="font-size:12px;color:var(--text3)">'+escHtml(detail)+'</span>':'')
-    +'<br><span style="font-size:12px;color:var(--text3)">Reminder time reached.</span>';
-  modal.classList.remove('hidden');
-  scheduleAlertAutoDismiss(modal);
-}
-function closeTimerAlert(){
-  document.getElementById('timer-alert-modal').classList.add('hidden');
-  clearTimeout(window._timerAlertTimeout);
-}
-function copyTimerAlert(){
-  var title=document.getElementById('timer-alert-title');
-  var msg=document.getElementById('timer-alert-msg');
-  var parts=[];
-  if(title&&title.textContent.trim())parts.push(title.textContent.trim());
-  if(msg&&msg.innerText.trim())parts.push(msg.innerText.trim());
-  if(!parts.length){toast('No timer alert to copy','info');return;}
-  writeClipboardText(parts.join('\n\n')).then(function(){toast('Timer alert copied','success');}).catch(function(){toast('Copy failed','error');});
-}
-window.closeTimerAlert=closeTimerAlert;
-window.copyTimerAlert=copyTimerAlert;
 window.openTaskAlertCenter=openTaskAlertCenter;
 window.closeTaskAlertCenter=closeTaskAlertCenter;
 window.copyAllTaskAlerts=copyAllTaskAlerts;
