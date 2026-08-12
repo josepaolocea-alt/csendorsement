@@ -1981,6 +1981,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
       <div class="timer-center-list" id="task-alert-center-list"></div>
     </div>
     <div class="modal-ftr">
+      <button class="btn btn-secondary" id="task-alert-copy-all" onclick="copyAllTaskAlerts()">Copy all</button>
       <button class="btn btn-secondary" id="task-alert-snooze-all" onclick="snoozeAllTaskAlerts(10)">Snooze all 10m</button>
       <button class="btn btn-secondary" id="task-alert-handle-all" onclick="handleAllTaskAlerts()">Mark all handled</button>
       <button class="btn btn-primary" onclick="closeTaskAlertCenter()">Close</button>
@@ -2001,7 +2002,8 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
       <p style="font-size:12px;color:var(--text3);margin-top:8px">This alert will auto-dismiss in 10 seconds</p>
     </div>
     <div class="modal-ftr">
-      <button class="btn btn-primary" style="width:100%;justify-content:center;background:#f87171;border-color:#f87171" onclick="closeTimerAlert()">Dismiss</button>
+      <button class="btn btn-secondary" style="flex:1;justify-content:center" onclick="copyTimerAlert()">Copy all</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;background:#f87171;border-color:#f87171" onclick="closeTimerAlert()">Dismiss</button>
     </div>
   </div>
 </div>
@@ -3899,10 +3901,12 @@ function renderTaskAlertCenter(){
   var active=_taskAlertQueue.filter(function(item){return !item.snoozedUntil||item.snoozedUntil<=Date.now();}).length;
   var title=document.getElementById('task-alert-title-count');
   var summary=document.getElementById('task-alert-summary-title');
+  var copyAll=document.getElementById('task-alert-copy-all');
   var snoozeAll=document.getElementById('task-alert-snooze-all');
   var handleAll=document.getElementById('task-alert-handle-all');
   if(title)title.textContent=total?'('+total+')':'';
   if(summary)summary.textContent=total?(active+' need attention'+(total-active?' · '+(total-active)+' snoozed':'')):'No timer alerts need attention';
+  if(copyAll)copyAll.disabled=!total;
   if(snoozeAll)snoozeAll.disabled=!active;
   if(handleAll)handleAll.disabled=!total;
   if(!total){list.innerHTML='<div class="empty" style="padding:28px 12px">All timer alerts have been handled.</div>';return;}
@@ -3929,6 +3933,17 @@ function openTaskAlertCenter(){
   document.getElementById('task-alert-center-modal').classList.remove('hidden');
 }
 function closeTaskAlertCenter(){document.getElementById('task-alert-center-modal').classList.add('hidden');}
+function copyAllTaskAlerts(){
+  if(!_taskAlertQueue.length){toast('No timer alerts to copy','info');return;}
+  var items=_taskAlertQueue.slice().sort(function(a,b){return (Number(a.firedAt)||0)-(Number(b.firedAt)||0);});
+  var text='Timer Alerts ('+items.length+')\n\n'+items.map(function(item,index){
+    var lines=[(index+1)+'. '+(item.name||'Timer entry')];
+    if(item.detail&&item.detail!==item.name)lines.push(item.detail);
+    lines.push(taskAlertAgeText(item));
+    return lines.join('\n');
+  }).join('\n\n');
+  writeClipboardText(text).then(function(){toast('All timer alerts copied','success');}).catch(function(){toast('Copy failed','error');});
+}
 function handleTaskAlert(encodedKey){
   var key=decodeURIComponent(encodedKey);
   _taskAlertQueue=_taskAlertQueue.filter(function(item){return item.key!==key;});
@@ -4198,9 +4213,20 @@ function closeTimerAlert(){
   document.getElementById('timer-alert-modal').classList.add('hidden');
   clearTimeout(window._timerAlertTimeout);
 }
+function copyTimerAlert(){
+  var title=document.getElementById('timer-alert-title');
+  var msg=document.getElementById('timer-alert-msg');
+  var parts=[];
+  if(title&&title.textContent.trim())parts.push(title.textContent.trim());
+  if(msg&&msg.innerText.trim())parts.push(msg.innerText.trim());
+  if(!parts.length){toast('No timer alert to copy','info');return;}
+  writeClipboardText(parts.join('\n\n')).then(function(){toast('Timer alert copied','success');}).catch(function(){toast('Copy failed','error');});
+}
 window.closeTimerAlert=closeTimerAlert;
+window.copyTimerAlert=copyTimerAlert;
 window.openTaskAlertCenter=openTaskAlertCenter;
 window.closeTaskAlertCenter=closeTaskAlertCenter;
+window.copyAllTaskAlerts=copyAllTaskAlerts;
 window.handleTaskAlert=handleTaskAlert;
 window.handleAllTaskAlerts=handleAllTaskAlerts;
 window.snoozeTaskAlert=snoozeTaskAlert;
