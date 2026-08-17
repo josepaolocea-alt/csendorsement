@@ -623,6 +623,26 @@ textarea.fc{resize:vertical;min-height:70px;}
 .admin-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
 .admin-table tr:last-child td{border-bottom:none;}
 .admin-table tr:hover td{background:var(--bg3);}
+.archive-detail-row>td{padding:0!important;background:var(--bg3)!important;}
+.archive-detail{padding:14px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.archive-detail-item{min-width:0;}
+.archive-detail-item.full{grid-column:1/-1;}
+.archive-detail-label{font-size:10px;font-weight:700;letter-spacing:.45px;text-transform:uppercase;color:var(--text3);margin-bottom:3px;}
+.archive-detail-value{font-size:12.5px;color:var(--text2);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;}
+.archive-comments{grid-column:1/-1;display:flex;flex-direction:column;gap:7px;margin-top:2px;}
+.archive-comment{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);}
+.archive-comment-meta{font-size:10.5px;color:var(--text3);margin-bottom:3px;}
+.archive-comment-text{font-size:12px;color:var(--text);line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;}
+@media(max-width:650px){.archive-detail{grid-template-columns:1fr}.archive-detail-item.full,.archive-comments{grid-column:1}}
+.done-subtabs{display:none;align-items:center;gap:7px;margin:0 16px 10px;padding:7px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;}
+.done-subtab{border:1px solid transparent;background:transparent;color:var(--text2);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .15s;}
+.done-subtab:hover{background:var(--bg3);color:var(--text);}
+.done-subtab:active{transform:scale(.97);}
+.done-subtab.active{background:rgba(102,133,255,.14);border-color:rgba(102,133,255,.45);color:var(--accent);}
+.done-subtab-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;margin-left:5px;padding:0 5px;border-radius:9px;background:var(--bg4);font-size:10px;color:var(--text3);}
+.done-subtab.active .done-subtab-count{background:rgba(102,133,255,.22);color:var(--accent);}
+.done-archive-btn{margin-left:auto;}
+@media(max-width:650px){.done-subtab{flex:1}.done-archive-btn{width:100%;margin-left:0;justify-content:center}}
 .adm-link{background:none;border:none;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--accent);padding:0;line-height:1;transition:.15s;}
 .adm-link:hover{opacity:.7;}
 .adm-link.del{color:#f87171;}
@@ -836,7 +856,7 @@ try{
   <div class="divider"></div>
   <button class="tab-btn active" id="tab-btn-all" data-tip="All Tasks" aria-label="All Tasks" onclick="switchTab('all',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></button>
   <button class="tab-btn" id="tab-btn-did" data-tip="DID Order / Cancel" aria-label="DID Order / Cancel" onclick="switchTab('did',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></button>
-  <button class="tab-btn" data-tip="Done / Resolved" aria-label="Done / Resolved" onclick="switchTab('done',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></button>
+  <button class="tab-btn" id="tab-btn-done" data-tip="Done / Resolved" aria-label="Done / Resolved" onclick="switchTab('done',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></button>
   <button class="tab-btn" id="tab-btn-mine" data-tip="Pending RR / RO" aria-label="Pending RR / RO" onclick="switchTab('mine',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
   <button class="tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
   <div class="divider" id="management-divider" style="display:none"></div>
@@ -1197,6 +1217,12 @@ try{
   </div>
   </div>
 
+  <div class="done-subtabs" id="done-subtabs" aria-label="Done views">
+    <button class="done-subtab active" id="done-subtab-tasks" onclick="switchDoneView('tasks')">All Tasks &amp; DID <span class="done-subtab-count" id="done-tasks-count">0</span></button>
+    <button class="done-subtab" id="done-subtab-rr" onclick="switchDoneView('rr')">RR / RO <span class="done-subtab-count" id="done-rr-count">0</span></button>
+    <button class="btn btn-secondary btn-sm done-archive-btn" id="done-archive-btn" onclick="archiveCurrentDoneView()" style="display:none">Archive this view</button>
+  </div>
+
   <div class="stats-row" id="stats-row"></div>
 
   <div class="toolbar">
@@ -1429,9 +1455,13 @@ try{
     <div class="admin-section">
       <div class="admin-toolbar">
         <span class="admin-ctitle">Data Backup</span>
-        <button class="btn btn-primary btn-sm" id="backup-btn" onclick="downloadBackup()">Download Full Backup</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn btn-secondary btn-sm" id="archive-open-btn" onclick="openArchiveModal()">Open Archive</button>
+          <button class="btn btn-secondary btn-sm" id="archive-completed-btn" onclick="archiveCompletedTickets()">Archive Completed</button>
+          <button class="btn btn-primary btn-sm" id="backup-btn" onclick="downloadBackup()">Download Full Backup</button>
+        </div>
       </div>
-      <p style="font-size:11px;color:var(--text3);margin-top:2px">Saves one JSON file containing every record, comment, user, client, dropdown, setting, activity log, and calendar event — a complete snapshot to keep as a safety net in case data is ever lost or changed by mistake. Admin only.</p>
+      <p style="font-size:11px;color:var(--text3);margin-top:2px"><strong>Archive Completed</strong> first downloads a JSON backup, then moves completed Tasks, DID, and RR/RO records out of the always-loaded live collection. Archived records remain in Firebase and are included in Full Backup, but are read only when you click Download Archive. Admin only.</p>
     </div>
 
     <!-- USER MANAGEMENT -->
@@ -2051,6 +2081,37 @@ try{
   </div>
 </div>
 
+<!-- COMPLETED ARCHIVE (Admin only; loaded only when opened to save reads) -->
+<div class="modal-ov hidden" id="archive-modal" style="z-index:550">
+  <div class="modal" style="max-width:1000px">
+    <div class="modal-hdr">
+      <h3>Completed Archive <span id="archive-count" style="font-size:12px;color:var(--text3);font-weight:600"></span></h3>
+      <button class="modal-cls" onclick="closeArchiveModal()">x</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <div class="search-wrap" style="max-width:none;flex:1">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="archive-search" placeholder="Search client, concern, subject, status or comment..." oninput="renderArchiveRows()">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadCompletedArchive(true)">Refresh</button>
+      </div>
+      <div class="admin-tbl-wrap">
+        <div class="admin-tbl-scroll" style="max-height:58vh">
+          <table class="admin-table">
+            <thead><tr><th>Type</th><th>Client / Subject</th><th>Concern / Description</th><th>Status</th><th>Archived</th><th>Reopen as</th></tr></thead>
+            <tbody id="archive-tbody"><tr><td colspan="6" class="empty">Open Archive to load completed records</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr" style="justify-content:space-between">
+      <button class="btn btn-secondary" id="archive-download-btn" onclick="downloadCompletedArchive()">Download Archive</button>
+      <button class="btn btn-secondary" onclick="closeArchiveModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- BATCHED TIMER ALERT CENTER -->
 <div class="modal-ov hidden" id="task-alert-center-modal" style="z-index:9490" onclick="if(event.target===this)closeTaskAlertCenter()">
   <div class="modal timer-center-box">
@@ -2242,7 +2303,7 @@ try{
 <script type="module">
 // ─── FIREBASE CONFIG ────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, runTransaction, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, query, where, orderBy, limit, runTransaction, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -2263,6 +2324,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const COLL = 'endorsements';
 const TRASH_COLL = 'endorsements_trash';
+const ARCHIVE_COLL = 'endorsements_archive';
 const SETTINGS_DOC = 'app_settings/main';
 const ANALYTICS_DAILY_COLL = 'analytics_daily';
 const ANALYTICS_SUMMARY_DOC = 'analytics_summary/main';
@@ -2271,16 +2333,24 @@ const ANALYTICS_META_DOC = 'analytics_meta/dashboard_v1';
 // ─── GLOBALS ────────────────────────────────────────────────
 var DATA = [];
 var TRASH_DATA = [];
+var ARCHIVE_DATA = [];
+var _archiveLoaded = false;
+var _archiveLoading = false;
+var _archiveLoadPromise = null;
+var _archiveExpandedId = null;
 var idSeq = 1;
 var SETTINGS = {defaultTimer:3600, paymentTimer:86400, vipPaymentTimer:600, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', rrRoAlertNotify:true, slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
 var EFFECT_COLOR_PALETTE=['#000000','#666666','#999999','#cccccc','#ffffff','#f87171','#fb7185','#f97316','#fbbf24','#facc15','#4ade80','#22c55e','#38bdf8','#60a5fa','#818cf8','#a78bfa','#c084fc','#f472b6','#14b8a6','#94a3b8'];
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
+var _doneView = 'tasks';
 var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
 var _cellStart = null, _dragging = false, _selCells = new Set();
 var _confirmResolve = null;
 var _fbReady = false;
 var _firestoreUnsub = null;
 var _settingsUnsub = null;
+var _clientsUnsub = null;
+var _dropdownUnsub = null;
 var _adminLoaded = false;
 var _currentUser = null;
 var _currentUserRole = 'Viewer';
@@ -2299,6 +2369,11 @@ var _pendingRRComments=[];
 
 // ─── AUTH FUNCTIONS ─────────────────────────────────────────
 function showLoginScreen(){
+  ARCHIVE_DATA=[];
+  _archiveLoaded=false;
+  _archiveExpandedId=null;
+  var archiveModal=document.getElementById('archive-modal');
+  if(archiveModal)archiveModal.classList.add('hidden');
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('user-chip').style.display='none';
   document.getElementById('logout-btn').style.display='none';
@@ -2338,6 +2413,9 @@ function doLogout(){
     if(!ok)return;
     if(_firestoreUnsub){_firestoreUnsub();_firestoreUnsub=null;}
     if(_settingsUnsub){_settingsUnsub();_settingsUnsub=null;}
+    if(_clientsUnsub){_clientsUnsub();_clientsUnsub=null;}
+    if(_dropdownUnsub){_dropdownUnsub();_dropdownUnsub=null;}
+    if(_calUnsub){_calUnsub();_calUnsub=null;}
     if(_noteUnsub){_noteUnsub();_noteUnsub=null;}
     _fbReady=false;DATA=[];filteredData=[];
     signOut(auth);
@@ -2381,11 +2459,8 @@ function setUserDisplay(user){
 
   // Check/create user record in Firestore
   var uid=email.replace(/[^a-z0-9]/g,'_');
-  getDocs(collection(db,'users')).then(function(snap){
-    var found=null;
-    snap.forEach(function(d){
-      if(normalizeEmail(d.data().email)===email) found=d.data();
-    });
+  getDoc(doc(db,'users',uid)).then(function(snap){
+    var found=snap.exists()?snap.data():null;
     if(!found){
       var role=defaultRoleForEmail(email);
       setDoc(doc(db,'users',uid),{name:email,email:email,role:role,addedAt:Date.now()}).then(function(){
@@ -3001,7 +3076,44 @@ function switchTab(tab,el){
   }
   _doSwitchTab(tab,el);
 }
+function isDoneRRView(){return currentTab==='done'&&_doneView==='rr';}
+function isRRTableView(){return currentTab==='mine'||isDoneRRView();}
+function doneTaskRecords(){return DATA.filter(function(r){return r._type!=='rr'&&isRecordCompleted(r);});}
+function doneRRRecords(){return DATA.filter(function(r){return r._type==='rr'&&(r.rrCompleted||r.rrDisregard);});}
+function updateDoneSubtabs(){
+  var bar=document.getElementById('done-subtabs');
+  if(!bar)return;
+  bar.style.display=currentTab==='done'?'flex':'none';
+  var tasksBtn=document.getElementById('done-subtab-tasks');
+  var rrBtn=document.getElementById('done-subtab-rr');
+  if(tasksBtn){tasksBtn.classList.toggle('active',_doneView==='tasks');tasksBtn.setAttribute('aria-pressed',_doneView==='tasks'?'true':'false');}
+  if(rrBtn){rrBtn.classList.toggle('active',_doneView==='rr');rrBtn.setAttribute('aria-pressed',_doneView==='rr'?'true':'false');}
+  var taskCount=doneTaskRecords().length,rrCount=doneRRRecords().length;
+  var taskCountEl=document.getElementById('done-tasks-count');if(taskCountEl)taskCountEl.textContent=taskCount;
+  var rrCountEl=document.getElementById('done-rr-count');if(rrCountEl)rrCountEl.textContent=rrCount;
+  var archiveBtn=document.getElementById('done-archive-btn');
+  if(archiveBtn){
+    var n=_doneView==='rr'?rrCount:taskCount;
+    archiveBtn.style.display=currentTab==='done'&&_currentUserRole==='Admin'?'':'none';
+    archiveBtn.disabled=n===0;
+    archiveBtn.textContent='Archive '+(_doneView==='rr'?'RR / RO':'All Tasks & DID')+(n?' ('+n+')':'');
+  }
+}
+function switchDoneView(view){
+  if(currentTab!=='done')return;
+  _doneView=view==='rr'?'rr':'tasks';
+  DATA.forEach(function(r){r._sel=false;});
+  window._lastCheckAll=false;
+  updateBulkBar();
+  ['search-input','f-svc','f-st','f-pri','f-plt','f-am-filter'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  _donePage=0;_rrPage=0;
+  configureTaskFilterToolbar(_doneView==='rr'?'done-rr':'done');
+  updateDoneSubtabs();
+  applyFilters();
+}
+function archiveCurrentDoneView(){archiveCompletedTickets(_doneView);}
 function _doSwitchTab(tab,el){
+  if(tab==='done')_doneView='tasks';
   currentTab=tab;
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   el.classList.add('active');
@@ -3022,6 +3134,7 @@ function _doSwitchTab(tab,el){
   document.getElementById('new-btn').style.display=(hideMain||isTrash)?'none':'';
   document.getElementById('trash-info').style.display=isTrash?'':'none';
   document.getElementById('trash-empty-btn').style.display=(isTrash&&window._canEdit)?'':'none';
+  updateDoneSubtabs();
   if(isAdmin){
     try{trelloRestoreUI();}catch(e){}
     // Require an explicit load on every Admin entry so merely opening the tab
@@ -3035,7 +3148,9 @@ function _doSwitchTab(tab,el){
     loadAdminData();
     return;
   }
-  if(isDash){loadDashboard(true);return;}
+  // Reuse the dashboard snapshot within this app session. The visible Refresh
+  // button still calls loadDashboard(true) when a fresh Firestore read is wanted.
+  if(isDash){loadDashboard(false);return;}
   if(isCal){renderCalendar();return;}
   if(isNote){renderNotepad();return;}
   DATA.forEach(function(r){r._sel=false;});
@@ -3048,7 +3163,7 @@ function _doSwitchTab(tab,el){
   document.getElementById('f-pri').value='';
   document.getElementById('f-plt').value='';
   var amFilter=document.getElementById('f-am-filter');if(amFilter)amFilter.value='';
-  configureTaskFilterToolbar(tab);
+  configureTaskFilterToolbar(tab==='done'&&_doneView==='rr'?'done-rr':tab);
   if(tab==='done') _donePage=0;
   if(tab==='mine') _rrPage=0;
   if(tab==='trash') loadTrash(); else applyFilters();
@@ -3856,7 +3971,7 @@ function configureTaskFilterToolbar(tab){
   var rrByItems=(_dropdownData&&_dropdownData.rr_by)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.rr_by.defaults)||[];
   var roByItems=(_dropdownData&&_dropdownData.ro_by)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.ro_by.defaults)||[];
   var platformItems=(_dropdownData&&_dropdownData.platform)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.platform.defaults)||[];
-  var isDID=tab==='did',isRR=tab==='mine',isTasks=tab==='all'||tab==='done';
+  var isDID=tab==='did',isRRPending=tab==='mine',isDoneRR=tab==='done-rr',isRR=isRRPending||isDoneRR,isTasks=tab==='all'||tab==='done';
 
   _showTaskFilter('f-svc',isTasks||isDID);
   _showTaskFilter('f-st',isTasks||isDID||isRR);
@@ -3873,23 +3988,23 @@ function configureTaskFilterToolbar(tab){
     _setTaskFilterOptions('f-am-filter','All AM',rrByItems);
   }else if(isRR){
     if(search)search.placeholder='Search subject, remarks, RR/RO by, status...';
-    _setTaskFilterOptions('f-st','All RR Statuses',[
-      {value:'__rr_pending__',label:'Pending RR/RO'},
+    _setTaskFilterOptions('f-st',isDoneRR?'All Done RR/RO':'All Pending RR/RO',isDoneRR?[
       {value:'__rr_completed__',label:'Completed'},
-      {value:'__rr_disregard__',label:'Disregarded'},
-      'Not Yet','Done'
-    ]);
+      {value:'__rr_disregard__',label:'Disregarded'}
+    ]:['Not Yet','Done']);
     _setTaskFilterOptions('f-pri','All Priorities',['Critical','Urgent']);
     _setTaskFilterOptions('f-am-filter','All RR / RO By',_uniqueFilterItems(rrByItems.concat(roByItems)));
   }else if(isTasks){
     if(search)search.placeholder='Search client, concern, description, status...';
     _setTaskFilterOptions('f-svc','All Services',svcItems);
-    _setTaskFilterOptions('f-st','All Statuses',[
-      {value:'__inprogress__',label:'All In Progress'},
-      {value:'__pending_ours__',label:'All Pending - Our Side'},
-      {value:'__advised_aging__',label:'Advised Client Aging Due'},
-      {value:'__completed__',label:'All Completed'}
-    ].concat(ipItems,doneItems));
+    _setTaskFilterOptions('f-st',tab==='done'?'All Completed Statuses':'All Statuses',tab==='done'?
+      [{value:'__completed__',label:'All Completed'}].concat(_uniqueFilterItems(doneItems.concat(DID_DONE_ST))):
+      [
+        {value:'__inprogress__',label:'All In Progress'},
+        {value:'__pending_ours__',label:'All Pending - Our Side'},
+        {value:'__advised_aging__',label:'Advised Client Aging Due'},
+        {value:'__completed__',label:'All Completed'}
+      ].concat(ipItems,doneItems));
     _setTaskFilterOptions('f-pri','All Priorities',['High','Normal']);
     _setTaskFilterOptions('f-plt','All Platforms',platformItems);
     _setTaskFilterOptions('f-am-filter','All AM',rrByItems);
@@ -4293,7 +4408,7 @@ setInterval(function(){
   var rrRoActive=SETTINGS.rrRoAlertEnabled!==false&&isRRRoAlertWindowActive();
   if(rrRoActive!==_rrRoAlertWindowActive){
     _rrRoAlertWindowActive=rrRoActive;
-    if(currentTab==='mine')renderRRRows();
+    if(isRRTableView())renderRRRows();
   }
   try{checkRRRoMissingNotifs();}catch(e){}
   // Re-render when any record crosses an SLA escalation threshold
@@ -4313,14 +4428,14 @@ setInterval(function(){
     if(_timerFxTickSig!==null&&fxSig!==_timerFxTickSig){
       if(currentTab==='all')renderRows();
       else if(currentTab==='did')renderDIDRows();
-      else if(currentTab==='mine')renderRRRows();
+      else if(isRRTableView())renderRRRows();
     }
     _timerFxTickSig=fxSig;
   }else{
     _timerFxTickSig=null;
   }
   // Flip DIDLOGIC "Post by" badges to Overdue the moment their working-day deadline passes
-  if(currentTab==='mine'){
+  if(isRRTableView()){
     var pbSig=DATA.map(function(r){var p=rrPostBy(r);return p&&p.overdue?r.id:'';}).filter(Boolean).join(',');
     if(_pbTickSig!==null&&pbSig!==_pbTickSig)renderRRRows();
     _pbTickSig=pbSig;
@@ -4329,7 +4444,7 @@ setInterval(function(){
   }
   // Re-evaluate the "days since Done" working-day badges when the date rolls over
   var _todayStr=new Date().toDateString();
-  if(_dayTickSig!==null&&_todayStr!==_dayTickSig&&currentTab==='mine')renderRRRows();
+  if(_dayTickSig!==null&&_todayStr!==_dayTickSig&&isRRTableView())renderRRRows();
   _dayTickSig=_todayStr;
   ['f','rr','d'].forEach(updateReminderIndicator);
   var sm=document.getElementById('settings-modal');
@@ -4952,7 +5067,10 @@ function isPendingOnOurSideStatus(status){
 
 function applyFilters(){
   try{updatePendingBadges();}catch(e){}
+  try{updateArchiveCompletedButton();}catch(e){}
+  try{updateDoneSubtabs();}catch(e){}
   if(currentTab==='did'){applyDIDFilters();return;}
+  if(isDoneRRView()){applyDoneRRFilters();return;}
   if(currentTab==='mine'){applyRRFilters();return;}
   if(currentTab==='trash'){applyTrashFilters();return;}
   var q=searchValue();
@@ -5010,11 +5128,11 @@ function applyFilters(){
 function _filterChipDefs(){
   var defs=[];
   function add(kind,id,prefix){var el=document.getElementById(id);if(el)defs.push({kind:kind,el:el,prefix:prefix});}
-  if(currentTab==='all'||currentTab==='done'){
+  if(currentTab==='all'||(currentTab==='done'&&!isDoneRRView())){
     add('svc','f-svc','Service');add('st','f-st','Status');add('pri','f-pri','Priority');add('plt','f-plt','Platform');add('am','f-am-filter','AM');
   }else if(currentTab==='did'){
     add('svc','f-svc','Service');add('st','f-st','Status');add('pri','f-pri','Priority');add('plt','f-plt','Platform');add('am','f-am-filter','AM');
-  }else if(currentTab==='mine'){
+  }else if(currentTab==='mine'||isDoneRRView()){
     add('st','f-st','RR Status');add('pri','f-pri','Priority');add('am','f-am-filter','RR / RO By');
   }
   return defs;
@@ -5211,9 +5329,9 @@ function renderRRRows(){
   if(_rrPage<0) _rrPage=0;
   var displayData=filteredData.slice(_rrPage*_rrPageSize,(_rrPage+1)*_rrPageSize);
   renderRRPagination(filteredData.length);
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">No RR/RO records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">'+(isDoneRRView()?'No completed or disregarded RR/RO records found':'No pending RR/RO records found')+'</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
-    var rowCls=r.rrCompleted?'rr-completed-row':r.rrDisregard?'rr-disregard-row':'';
+    var rowCls=(r.rrCompleted?'rr-completed-row ':'')+(r.rrDisregard?'rr-disregard-row':'');
     var _fx=rowFxParts(r);
     rowCls+=_fx.cls;
     var rowStyle='cursor:pointer'+_fx.style;
@@ -5245,12 +5363,19 @@ function toggleRRField(id,field,val){
 
 function updateRRStats(){
   var total=filteredData.length;
-  var pending=filteredData.filter(function(r){return !r.rrCompleted;}).length;
+  var pending=filteredData.filter(function(r){return !r.rrCompleted&&!r.rrDisregard;}).length;
   var high=filteredData.filter(function(r){return r.rrPriority==='Critical'||r.rrPriority==='Urgent';}).length;
-  document.getElementById('stats-row').innerHTML=
-    '<div class="stat-chip">Total <strong>'+total+'</strong></div>'
-    +'<div class="stat-chip">Pending <strong>'+pending+'</strong></div>'
-    +'<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
+  var html='<div class="stat-chip">Total <strong>'+total+'</strong></div>';
+  if(isDoneRRView()){
+    var completed=filteredData.filter(function(r){return !!r.rrCompleted;}).length;
+    var disregarded=filteredData.filter(function(r){return !!r.rrDisregard;}).length;
+    html+='<div class="stat-chip" style="border-color:rgba(34,197,94,.3)">Completed <strong style="color:#4ade80">'+completed+'</strong></div>'
+      +'<div class="stat-chip">Disregarded <strong>'+disregarded+'</strong></div>';
+  }else{
+    html+='<div class="stat-chip">Pending <strong>'+pending+'</strong></div>'
+      +'<div class="stat-chip" style="border-color:rgba(239,68,68,.3)">High Priority <strong style="color:#f87171">'+high+'</strong></div>';
+  }
+  document.getElementById('stats-row').innerHTML=html;
 }
 
 function applyRRFilters(){
@@ -5259,11 +5384,9 @@ function applyRRFilters(){
   var fp=document.getElementById('f-pri').value;
   var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
   filteredData=DATA.filter(function(r){
-    if(r._type!=='rr')return false;
+    if(r._type!=='rr'||r.rrCompleted||r.rrDisregard)return false;
     var statusMatch=!fst||(
       fst==='__rr_pending__'?!r.rrCompleted&&!r.rrDisregard:
-      fst==='__rr_completed__'?!!r.rrCompleted:
-      fst==='__rr_disregard__'?!!r.rrDisregard:
       r.rrStatus===fst
     );
     return matchesSearch(r,q)&&statusMatch&&(!fp||r.rrPriority===fp)&&matchesAM(r,fam)&&matchesDateRange(r);
@@ -5273,6 +5396,27 @@ function applyRRFilters(){
     var d=(b.rrDate||'').localeCompare(a.rrDate||'');
     if(d!==0) return d;
     return (b.createdAt||0)-(a.createdAt||0);
+  });
+  pinToTop();
+  renderRRRows();updateRRStats();
+  document.getElementById('rec-count').textContent=filteredData.length+' record'+(filteredData.length!==1?'s':'');
+  renderFilterChips();
+}
+
+function applyDoneRRFilters(){
+  var q=searchValue();
+  var fst=document.getElementById('f-st').value;
+  var fp=document.getElementById('f-pri').value;
+  var fam=document.getElementById('f-am-filter')?document.getElementById('f-am-filter').value:'';
+  filteredData=DATA.filter(function(r){
+    if(r._type!=='rr'||(!r.rrCompleted&&!r.rrDisregard))return false;
+    var statusMatch=!fst||(fst==='__rr_completed__'?!!r.rrCompleted:fst==='__rr_disregard__'?!!r.rrDisregard:true);
+    return matchesSearch(r,q)&&statusMatch&&(!fp||r.rrPriority===fp)&&matchesAM(r,fam)&&matchesDateRange(r);
+  });
+  filteredData.sort(function(a,b){
+    var d=(b.rrDate||'').localeCompare(a.rrDate||'');
+    if(d!==0)return d;
+    return (b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0);
   });
   pinToTop();
   renderRRRows();updateRRStats();
@@ -5563,7 +5707,7 @@ function saveRRRecord(){
         rec.rrStatusDoneAt=null;
       }
       applyReminderToRecord(rec,prev,reminder);
-      if(rec.rrCompleted) rec.pinned=false;
+      if(rec.rrCompleted||rec.rrDisregard) rec.pinned=false;
       if(rec.rrCompleted||rec.rrDisregard) rec.autoRestartTimer=false;
       var timerChanged=_rrTimerDirty;
       var timerUpdate;
@@ -5583,7 +5727,7 @@ function saveRRRecord(){
     toast('Updated!','success');
   }else{
     applyReminderToRecord(rec,null,reminder);
-    if(rec.rrCompleted) rec.pinned=false;
+    if(rec.rrCompleted||rec.rrDisregard) rec.pinned=false;
     if(rec.rrCompleted||rec.rrDisregard) rec.autoRestartTimer=false;
     if(rec.rrStatus==='Done')rec.rrStatusDoneAt=Date.now();
     var nr=Object.assign({id:allocId(),_sel:false,comments:[],timerStart:rrTimerSecs?Date.now():null,timerAlerted:false,createdBy:_currentUser?_currentUser.email:'',createdAt:Date.now()},rec);
@@ -6396,7 +6540,7 @@ function exportCSV(){
 function doExportRows(rows,mode){
   var suffix=mode==='selected'?'_selected':'';
   var today=new Date().toISOString().split('T')[0];
-  var isRR=currentTab==='mine';
+  var isRR=isRRTableView();
   var isDID=currentTab==='did';
   var headers,csvRows;
   if(isRR){
@@ -6419,9 +6563,9 @@ function doExportRows(rows,mode){
   var data=[headers.join(',')].concat(csvRows);
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([data.join('\n')],{type:'text/csv'}));
-  a.download=(isRR?'pending_rr_ro':isDID?'did_order_cancel':'endorsements')+suffix+'_'+today+'.csv';
+  a.download=(isRR?(isDoneRRView()?'done_rr_ro':'pending_rr_ro'):isDID?'did_order_cancel':'endorsements')+suffix+'_'+today+'.csv';
   a.click();
-  writeLog('exported',(isRR?'Pending RR/RO CSV':isDID?'DID Order/Cancel CSV':'Endorsements CSV'),'Exported '+rows.length+' records ('+(mode==='selected'?'selected':'all visible')+')');
+  writeLog('exported',(isRR?(isDoneRRView()?'Done RR/RO CSV':'Pending RR/RO CSV'):isDID?'DID Order/Cancel CSV':'Endorsements CSV'),'Exported '+rows.length+' records ('+(mode==='selected'?'selected':'all visible')+')');
   toast('Exported '+rows.length+' record'+(rows.length!==1?'s':''),'success');
 }
 
@@ -6789,20 +6933,341 @@ async function trelloSync(){
   }
 }
 
+function completedArchiveCandidates(scope){
+  return DATA.filter(function(r){
+    var isRR=r._type==='rr';
+    if(scope==='rr'&&!isRR)return false;
+    if(scope==='tasks'&&isRR)return false;
+    return isRR?(!!r.rrCompleted||!!r.rrDisregard):isRecordCompleted(r);
+  });
+}
+
+function updateArchiveCompletedButton(){
+  var btn=document.getElementById('archive-completed-btn');
+  if(!btn)return;
+  var n=completedArchiveCandidates().length;
+  btn.textContent=n?'Archive Completed ('+n+')':'Archive Completed';
+  btn.disabled=n===0;
+  btn.title=n?n+' completed record'+(n!==1?'s':'')+' ready to archive':'No completed records are currently in the live collection';
+}
+
+function downloadJSONPayload(payload,filename){
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  a.download=filename;
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+}
+
+function completedBackupPayload(records,kind){
+  return {
+    _app:'CYN Endorsement',
+    _backup:kind,
+    _version:1,
+    exportedAt:new Date().toISOString(),
+    exportedBy:normalizeEmail((_currentUser&&_currentUser.email)||''),
+    project:firebaseConfig.projectId,
+    count:records.length,
+    records:records.map(function(r){var copy=Object.assign({},r);delete copy._sel;return copy;})
+  };
+}
+
+function archiveTimeValue(value){
+  if(!value)return 0;
+  if(typeof value.toMillis==='function')return value.toMillis();
+  if(typeof value.toDate==='function')return value.toDate().getTime();
+  if(value.seconds)return value.seconds*1000;
+  return Number(value)||0;
+}
+
+function archiveTypeLabel(r){return r._type==='rr'?'RR / RO':r._type==='did'?'DID':'Ticket';}
+function archiveRecordName(r){return r._type==='rr'?(r.rrSubject||'—'):(r.client||'—');}
+function archiveRecordDetail(r){return r._type==='rr'?(r.rrRemarks||'—'):r._type==='did'?(r.desc||'—'):(r.concern||'—');}
+function archiveRecordStatus(r){
+  if(r._type==='rr')return r.rrDisregard?'Disregarded':(r.rrStatus||'Completed');
+  return r.status||'Completed';
+}
+function archivePendingStatuses(r){
+  if(r._type==='rr')return ['Not Yet'];
+  if(r._type==='did')return DID_IN_PROGRESS_ST.slice();
+  return ['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client'];
+}
+function archiveSearchText(r){
+  var comments=(r.comments||[]).map(function(c){return [c.text,c.user].join(' ');}).join(' ');
+  return [archiveTypeLabel(r),archiveRecordName(r),archiveRecordDetail(r),archiveRecordStatus(r),r.service,r.platform,r.priority,r.rrPriority,r.remarks,r.rrBy,r.roBy,comments].join(' ').toLowerCase();
+}
+function archiveEncodedId(id){return encodeURIComponent(String(id)).replace(/'/g,'%27');}
+function archiveDateLabel(value){
+  var ms=archiveTimeValue(value);
+  return ms?new Date(ms).toLocaleString():'—';
+}
+
+function openArchiveModal(){
+  if(_currentUserRole!=='Admin'){toast('Only Admin can open the archive','error');return;}
+  document.getElementById('archive-modal').classList.remove('hidden');
+  loadCompletedArchive(false);
+}
+
+function closeArchiveModal(){document.getElementById('archive-modal').classList.add('hidden');}
+
+async function loadCompletedArchive(force){
+  if(_currentUserRole!=='Admin'){toast('Only Admin can open the archive','error');return ARCHIVE_DATA;}
+  if(_archiveLoaded&&!force){renderArchiveRows();return ARCHIVE_DATA;}
+  if(_archiveLoadPromise)return _archiveLoadPromise;
+  var tbody=document.getElementById('archive-tbody');
+  if(tbody)tbody.innerHTML='<tr><td colspan="6" class="empty">Loading archive…</td></tr>';
+  _archiveLoading=true;
+  _archiveLoadPromise=(async function(){
+    try{
+      var snap=await getDocs(collection(db,ARCHIVE_COLL));
+      var records=[];
+      snap.forEach(function(d){records.push(Object.assign({_archiveId:d.id},d.data()));});
+      records.sort(function(a,b){return archiveTimeValue(b.archivedAt)-archiveTimeValue(a.archivedAt);});
+      ARCHIVE_DATA=records;
+      _archiveLoaded=true;
+      if(_archiveExpandedId&&!ARCHIVE_DATA.some(function(r){return String(r._archiveId)===String(_archiveExpandedId);}))_archiveExpandedId=null;
+      renderArchiveRows();
+      return ARCHIVE_DATA;
+    }catch(e){
+      console.error('Archive load failed',e);
+      _archiveLoaded=false;
+      if(tbody)tbody.innerHTML='<tr><td colspan="6" class="empty">Archive unavailable. Deploy the updated Firestore rules, then try again.</td></tr>';
+      toast('Archive could not be loaded — deploy the updated Firestore rules and try again','error');
+      return null;
+    }finally{
+      _archiveLoading=false;
+      _archiveLoadPromise=null;
+    }
+  })();
+  return _archiveLoadPromise;
+}
+
+function archiveDetailItem(label,value,full){
+  return '<div class="archive-detail-item'+(full?' full':'')+'"><div class="archive-detail-label">'+escHtml(label)+'</div><div class="archive-detail-value">'+escHtml(value||'—')+'</div></div>';
+}
+
+function archiveDetailsHTML(r){
+  var html='<div class="archive-detail">';
+  html+=archiveDetailItem(r._type==='rr'?'Subject':'Client / Vendor',archiveRecordName(r));
+  html+=archiveDetailItem('Original status',archiveRecordStatus(r));
+  if(r._type==='rr'){
+    html+=archiveDetailItem('RR date',fmtRRDate(r.rrDate)||'—');
+    html+=archiveDetailItem('RR by / RO by',[r.rrBy||'—',r.roBy||'—'].join(' / '));
+    html+=archiveDetailItem('Description',r.rrRemarks||'—',true);
+  }else{
+    html+=archiveDetailItem('Service / Platform',[r.service||'—',r.platform||'—'].join(' / '));
+    html+=archiveDetailItem('Priority',r.priority||'—');
+    html+=archiveDetailItem(r._type==='did'?'Description':'Concern',archiveRecordDetail(r),true);
+    if(r.remarks)html+=archiveDetailItem('Remarks',r.remarks,true);
+  }
+  html+=archiveDetailItem('Archived',archiveDateLabel(r.archivedAt));
+  html+=archiveDetailItem('Archived by',r.archivedBy||'—');
+  var comments=r.comments||[];
+  html+='<div class="archive-comments"><div class="archive-detail-label">Comments ('+comments.length+')</div>';
+  if(!comments.length)html+='<div class="archive-detail-value">No comments</div>';
+  comments.forEach(function(c){
+    var attachmentCount=(c.attachments||[]).length;
+    html+='<div class="archive-comment"><div class="archive-comment-meta">'+escHtml(getUserDisplay(c.user)||c.user||'Unknown')+' · '+escHtml(fmtCommentTime(c.ts))+(attachmentCount?' · '+attachmentCount+' attachment'+(attachmentCount!==1?'s':''):'')+'</div><div class="archive-comment-text">'+escHtml(c.text||'(attachment only)')+'</div></div>';
+  });
+  html+='</div></div>';
+  return html;
+}
+
+function renderArchiveRows(){
+  var tbody=document.getElementById('archive-tbody');
+  if(!tbody)return;
+  if(!_archiveLoaded){if(!_archiveLoading)tbody.innerHTML='<tr><td colspan="6" class="empty">Open Archive to load completed records</td></tr>';return;}
+  var input=document.getElementById('archive-search');
+  var term=(input?input.value:'').trim().toLowerCase();
+  var rows=term?ARCHIVE_DATA.filter(function(r){return archiveSearchText(r).indexOf(term)>-1;}):ARCHIVE_DATA.slice();
+  var count=document.getElementById('archive-count');
+  if(count)count.textContent=term?'('+rows.length+' of '+ARCHIVE_DATA.length+')':'('+ARCHIVE_DATA.length+')';
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">'+(term?'No archived records match your search':'No completed records have been archived')+'</td></tr>';return;}
+  var html='';
+  rows.forEach(function(r){
+    var aid=String(r._archiveId||r.id);
+    var enc=archiveEncodedId(aid);
+    var opts=archivePendingStatuses(r).map(function(s){return '<option value="'+escAttr(s)+'">'+escHtml(s)+'</option>';}).join('');
+    html+='<tr>'
+      +'<td>'+escHtml(archiveTypeLabel(r))+'</td>'
+      +'<td><button class="adm-link" title="View archived details and comments" onclick="toggleArchiveDetails(decodeURIComponent(\''+enc+'\'))">'+escHtml(archiveRecordName(r))+'</button></td>'
+      +'<td style="max-width:280px;white-space:normal">'+escHtml(archiveRecordDetail(r))+'</td>'
+      +'<td>'+escHtml(archiveRecordStatus(r))+'</td>'
+      +'<td>'+escHtml(archiveDateLabel(r.archivedAt))+'</td>'
+      +'<td><div style="display:flex;gap:6px;align-items:center;min-width:210px"><select class="fc" id="archive-reopen-status-'+enc+'" style="min-width:120px">'+opts+'</select><button class="btn btn-primary btn-sm" id="archive-restore-'+enc+'" onclick="restoreArchivedTicket(decodeURIComponent(\''+enc+'\'))">Restore</button></div></td>'
+      +'</tr>';
+    if(String(_archiveExpandedId)===aid)html+='<tr class="archive-detail-row"><td colspan="6">'+archiveDetailsHTML(r)+'</td></tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+function toggleArchiveDetails(id){
+  _archiveExpandedId=String(_archiveExpandedId)===String(id)?null:String(id);
+  renderArchiveRows();
+}
+
+function buildRestoredArchiveRecord(source,newStatus){
+  var restored=Object.assign({},source);
+  restored.id=restored.id||restored._archiveId;
+  delete restored._archiveId;
+  delete restored.archivedAt;
+  delete restored.archivedBy;
+  delete restored.archiveReason;
+  delete restored._sel;
+  restored.updatedBy=_currentUser?_currentUser.email:'';
+  restored.updatedAt=Date.now();
+  restored.pinned=false;
+  restored.resolvedDate='';
+  restored.timerAlerted=false;
+  restored.autoRestartedAt=null;
+  if(restored._type==='rr'){
+    restored.rrCompleted=false;
+    restored.rrDisregard=false;
+    restored.rrStatus=newStatus||'Not Yet';
+    restored.rrStatusDoneAt=null;
+    restored.timerStart=restored.timerOverride?Date.now():null;
+  }else{
+    restored.status=newStatus;
+    restored.advisedClientAt=newStatus==='Advised Client'?Date.now():null;
+    restored.timerStart=newStatus!=='Advised Client'&&restored.timerOverride?Date.now():null;
+  }
+  return restored;
+}
+
+async function restoreArchivedTicket(id){
+  if(_currentUserRole!=='Admin'){toast('Only Admin can restore archived records','error');return;}
+  var record=ARCHIVE_DATA.find(function(r){return String(r._archiveId)===String(id);});
+  if(!record){toast('That archived record is no longer available. Refresh the Archive.','error');return;}
+  var enc=archiveEncodedId(id);
+  var select=document.getElementById('archive-reopen-status-'+enc);
+  var newStatus=select?select.value:archivePendingStatuses(record)[0];
+  var ok=await appConfirm('Restore “'+archiveRecordName(record)+'” to the live app as '+newStatus+'? It will appear in its pending tab again.','Restore Ticket');
+  if(!ok)return;
+  var btn=document.getElementById('archive-restore-'+enc);
+  if(btn){btn.disabled=true;btn.textContent='Restoring…';}
+  var archiveRef=doc(db,ARCHIVE_COLL,String(id));
+  var liveId=String(record.id||id);
+  var liveRef=doc(db,COLL,liveId);
+  try{
+    await runTransaction(db,async function(tx){
+      var liveSnap=await tx.get(liveRef);
+      var archiveSnap=await tx.get(archiveRef);
+      if(liveSnap.exists())throw new Error('A live record with this ID already exists');
+      if(!archiveSnap.exists())throw new Error('This record was already restored or removed');
+      var restored=buildRestoredArchiveRecord(Object.assign({_archiveId:archiveSnap.id},archiveSnap.data()),newStatus);
+      tx.set(liveRef,restored);
+      tx.delete(archiveRef);
+    });
+    ARCHIVE_DATA=ARCHIVE_DATA.filter(function(r){return String(r._archiveId)!==String(id);});
+    if(String(_archiveExpandedId)===String(id))_archiveExpandedId=null;
+    renderArchiveRows();
+    try{writeLog('updated',archiveRecordName(record),'Restored from Completed Archive as '+newStatus);}catch(_e){}
+    toast('Restored to pending as '+newStatus,'success');
+  }catch(e){
+    console.error('Archive restore failed',e);
+    toast('Restore failed — '+e.message,'error');
+    if(btn){btn.disabled=false;btn.textContent='Restore';}
+  }
+}
+
+async function downloadCompletedArchive(){
+  if(_currentUserRole!=='Admin'){toast('Only Admin can download the archive','error');return;}
+  var btn=document.getElementById('archive-download-btn');
+  if(btn){btn.disabled=true;btn.textContent='Preparing…';}
+  try{
+    var records=await loadCompletedArchive(false);
+    if(!records)return;
+    var today=new Date().toISOString().split('T')[0];
+    downloadJSONPayload(completedBackupPayload(records,'completed_archive'),'cyn_completed_archive_'+today+'.json');
+    toast('Archive downloaded — '+records.length+' record'+(records.length!==1?'s':''),'success');
+  }catch(e){
+    console.error('Archive download failed',e);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Download Archive';}
+  }
+}
+
+async function archiveCompletedTickets(scope){
+  if(_currentUserRole!=='Admin'){toast('Only Admin can archive records','error');return;}
+  var records=completedArchiveCandidates(scope);
+  if(!records.length){toast('There are no completed records to archive','info');return;}
+  var scopeLabel=scope==='rr'?'RR / RO':scope==='tasks'?'All Tasks & DID':'completed';
+  var ok=await appConfirm(
+    'Archive '+records.length+' '+scopeLabel+' record'+(records.length!==1?'s':'')+'? A JSON backup will download first, then the records will move out of the live collection. They will no longer appear in Done, but remain in Firebase Archive and Full Backup.',
+    'Back Up & Archive'
+  );
+  if(!ok)return;
+
+  var btn=document.getElementById(scope?'done-archive-btn':'archive-completed-btn');
+  if(btn){btn.disabled=true;btn.textContent='Archiving 0/'+records.length+'…';}
+  var today=new Date().toISOString().split('T')[0];
+  downloadJSONPayload(completedBackupPayload(records,'completed_before_archive'),'cyn_completed_backup'+(scope?'_'+scope:'')+'_'+today+'.json');
+
+  var moved=0;
+  try{
+    // Two operations per record (archive write + live delete); 200 keeps each
+    // atomic batch comfortably below Firestore's 500-operation limit.
+    for(var start=0;start<records.length;start+=200){
+      var chunk=records.slice(start,start+200);
+      var batch=writeBatch(db);
+      chunk.forEach(function(r){
+        var archived=Object.assign({},r,{
+          archivedAt:Date.now(),
+          archivedBy:normalizeEmail((_currentUser&&_currentUser.email)||''),
+          archiveReason:'completed'
+        });
+        delete archived._sel;
+        batch.set(doc(db,ARCHIVE_COLL,String(r.id)),archived);
+        batch.delete(doc(db,COLL,String(r.id)));
+      });
+      await batch.commit();
+      moved+=chunk.length;
+      if(btn)btn.textContent='Archiving '+moved+'/'+records.length+'…';
+    }
+    try{writeLog('updated','Completed archive','Archived '+moved+' completed records after JSON backup');}catch(_e){}
+    toast('Archived '+moved+' completed record'+(moved!==1?'s':'')+' — future sessions will no longer read them','success');
+  }catch(e){
+    console.error('Completed archive failed',e);
+    toast('Archive stopped after '+moved+' of '+records.length+' records — the downloaded backup is safe; deploy the updated Firestore rules, then retry','error');
+  }finally{
+    // Reflect committed batches immediately; the live listener will confirm the
+    // same removals shortly afterward. This also makes a partial retry safe.
+    if(moved){
+      var movedIds=records.slice(0,moved).map(function(r){return r.id;});
+      DATA=DATA.filter(function(r){return movedIds.indexOf(r.id)===-1;});
+      _archiveLoaded=false;
+      ARCHIVE_DATA=[];
+      _archiveExpandedId=null;
+      applyFilters();
+      var archiveModal=document.getElementById('archive-modal');
+      if(archiveModal&&!archiveModal.classList.contains('hidden'))loadCompletedArchive(true);
+    }
+    updateArchiveCompletedButton();
+    updateDoneSubtabs();
+  }
+}
+
 // Full backup — downloads every Firestore collection as one JSON snapshot (Admin only).
 // This is a read-only safety net: it never changes any data, it just copies it out.
 async function downloadBackup(){
   if(_currentUserRole!=='Admin'){toast('Only Admin can download a backup','error');return;}
   var btn=document.getElementById('backup-btn');
   if(btn){btn.disabled=true;btn.textContent='Preparing…';}
-  var colls=['endorsements','endorsements_trash','users','clients','dropdown_options','logs','app_settings','calendar_events','notepad','app_config'];
+  var colls=['endorsements','endorsements_archive','endorsements_trash','users','clients','dropdown_options','logs','app_settings','calendar_events','notepad','app_config'];
+  var skippedColls=[];
   try{
-    var snaps=await Promise.all(colls.map(function(c){return getDocs(collection(db,c));}));
+    var snaps=await Promise.all(colls.map(function(c){
+      return getDocs(collection(db,c)).catch(function(e){
+        // Keep legacy Full Backup working before the new archive rule is deployed.
+        if(c===ARCHIVE_COLL){skippedColls.push(c);return null;}
+        throw e;
+      });
+    }));
     var backup={_app:'CYN Endorsement',_backup:'full',_version:1,exportedAt:new Date().toISOString(),exportedBy:normalizeEmail((_currentUser&&_currentUser.email)||''),project:firebaseConfig.projectId,collections:{}};
     var total=0;
     colls.forEach(function(c,i){
       var arr=[];
-      snaps[i].forEach(function(d){arr.push(Object.assign({_id:d.id},d.data()));});
+      if(snaps[i])snaps[i].forEach(function(d){arr.push(Object.assign({_id:d.id},d.data()));});
       backup.collections[c]=arr;
       total+=arr.length;
     });
@@ -6813,7 +7278,7 @@ async function downloadBackup(){
     a.click();
     setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
     writeLog('exported','Full backup','Backed up '+total+' documents across '+colls.length+' collections');
-    toast('Backup downloaded — '+total+' records saved','success');
+    toast('Backup downloaded — '+total+' records saved'+(skippedColls.length?' (archive unavailable until updated rules are deployed)':''),skippedColls.length?'info':'success');
   }catch(e){
     console.error('Backup failed',e);
     toast('Backup failed — check your connection and try again','error');
@@ -7291,7 +7756,7 @@ function openCommentsModal(id){
   }
   // Also re-render table so badge stays clear
   if(currentTab==='did') renderDIDRows();
-  else if(currentTab==='mine') renderRRRows();
+  else if(isRRTableView()) renderRRRows();
   else if(currentTab==='trash') renderTrashRows();
   else renderRows();
   document.getElementById('comments-modal').classList.remove('hidden');
@@ -7316,7 +7781,7 @@ function addCommentFromModal(){
   markRead(r.id);
   document.getElementById('cm-comment-text').value='';
   renderCmModalComments(r.comments);
-  if(currentTab==='did') renderDIDRows(); else if(currentTab==='mine') renderRRRows(); else if(currentTab==='trash') renderTrashRows(); else renderRows();
+  if(currentTab==='did') renderDIDRows(); else if(isRRTableView()) renderRRRows(); else if(currentTab==='trash') renderTrashRows(); else renderRows();
   toast('Comment added','success');
 }
 
@@ -7326,7 +7791,7 @@ function dateRangeFieldLabel(field){
 }
 function configureDateRangeFilterForTab(tab){
   var el=document.getElementById('export-date-field');if(!el)return;
-  var options=tab==='mine'?
+  var options=(tab==='mine'||tab==='done-rr')?
     [{value:'rrDate',label:'RR Date'}]:
     tab==='did'?
       [{value:'startDate',label:'Start Date'}]:
@@ -7523,8 +7988,8 @@ async function startFirestore(){
     });
   }
   // Live-sync personal calendar events across this user's devices
-  if(!_calUnsub){
-    _calUnsub = onSnapshot(collection(db,'calendar_events'), function(snap){
+  if(!_calUnsub && _currentUser && normalizeEmail(_currentUser.email)===PRIMARY_ADMIN_EMAIL){
+    _calUnsub = onSnapshot(query(collection(db,'calendar_events'),where('owner','==',calOwner())), function(snap){
       var mine=[];
       snap.forEach(function(d){var e=d.data();if(e&&e.owner===calOwner())mine.push(e);});
       CAL_EVENTS=mine;
@@ -7580,6 +8045,7 @@ function applyRolePermissions(role){
   // Store permission on window so renderRows can check it
   window._canEdit = !isViewer;   // Admin + Semi-Admin can edit/delete
   window._canAdd  = !isViewer;   // Admin + Semi-Admin can add
+  updateDoneSubtabs();
 }
 
 var _clientGridExpanded=false;
@@ -7719,7 +8185,8 @@ function customBadgeStyle(hex){
 }
 
 function loadDropdownOptions(){
-  onSnapshot(collection(db,'dropdown_options'), function(snap){
+  if(_dropdownUnsub)return;
+  _dropdownUnsub=onSnapshot(collection(db,'dropdown_options'), function(snap){
     var hasData=false;
     var seen={};
     snap.forEach(function(d){
@@ -8584,7 +9051,8 @@ function onRRSubjectInput(){
 
 // Load clients on startup (for dropdowns in all tabs)
 function loadClientsGlobal(){
-  onSnapshot(collection(db,'clients'),function(snap){
+  if(_clientsUnsub)return;
+  _clientsUnsub=onSnapshot(collection(db,'clients'),function(snap){
     CLIENTS=[];CLIENT_LINKS={};
     snap.forEach(function(d){var c=d.data();CLIENTS.push(c.name);if(c.rrBy||c.priority)CLIENT_LINKS[c.name]={rrBy:c.rrBy||'',priority:c.priority||''};});
     CLIENTS.sort();
@@ -9013,7 +9481,7 @@ function _rerenderComments(source,list){
   // Keep the right-edge new-comment marker in sync immediately when comments
   // are edited or deleted (the Firestore listener will also reconcile later).
   if(currentTab==='did')renderDIDRows();
-  else if(currentTab==='mine')renderRRRows();
+  else if(isRRTableView())renderRRRows();
   else if(currentTab!=='trash')renderRows();
 }
 
@@ -10140,6 +10608,16 @@ window.clearAllFilters=clearAllFilters;
 window.renderFilterChips=renderFilterChips;
 window.toggleDensity=toggleDensity;
 window.toggleEntryCompact=toggleEntryCompact;
+window.switchDoneView=switchDoneView;
+window.archiveCurrentDoneView=archiveCurrentDoneView;
+window.archiveCompletedTickets=archiveCompletedTickets;
+window.downloadCompletedArchive=downloadCompletedArchive;
+window.openArchiveModal=openArchiveModal;
+window.closeArchiveModal=closeArchiveModal;
+window.loadCompletedArchive=loadCompletedArchive;
+window.renderArchiveRows=renderArchiveRows;
+window.toggleArchiveDetails=toggleArchiveDetails;
+window.restoreArchivedTicket=restoreArchivedTicket;
 window.setEntryStyle=setEntryStyle;
 window.toggleSplitActionMenu=toggleSplitActionMenu;
 window.splitMenuNew=splitMenuNew;
