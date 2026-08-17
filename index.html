@@ -34,13 +34,13 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .tab-btn.nav-tab{flex-direction:column;width:auto;height:auto;min-width:50px;padding:4px 9px 3px;gap:2px;}
 .tab-btn.nav-tab .tab-label{font-size:11px;font-weight:600;line-height:1;letter-spacing:.1px;white-space:nowrap;}
 /* Give navigation clicks a small, tactile response without moving the button itself. */
-.tab-btn.nav-tab svg{transform-box:fill-box;transform-origin:center;will-change:transform,filter;}
-.tab-btn.nav-tab.nav-icon-animate svg{animation:navIconClick .46s cubic-bezier(.2,.85,.32,1);}
+.tab-btn.nav-tab svg{transform-box:fill-box;transform-origin:center;}
+.tab-btn.nav-tab.nav-icon-animate svg{animation:navIconClick .58s cubic-bezier(.2,.85,.32,1);}
 @keyframes navIconClick{
   0%{transform:translateY(0) scale(1) rotate(0);filter:drop-shadow(0 0 0 transparent);}
-  28%{transform:translateY(1px) scale(.82) rotate(-7deg);}
-  58%{transform:translateY(-2px) scale(1.22) rotate(5deg);filter:drop-shadow(0 0 5px var(--accent));}
-  78%{transform:translateY(0) scale(.96) rotate(-2deg);}
+  28%{transform:translateY(1px) scale(.72) rotate(-12deg);}
+  58%{transform:translateY(-3px) scale(1.35) rotate(8deg);filter:drop-shadow(0 0 7px var(--accent));}
+  80%{transform:translateY(0) scale(.92) rotate(-3deg);}
   100%{transform:translateY(0) scale(1) rotate(0);filter:drop-shadow(0 0 0 transparent);}
 }
 .tab-btn::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-3px);background:var(--bg5);color:var(--text);font-size:11px;font-weight:500;padding:4px 9px;border-radius:6px;white-space:nowrap;border:1px solid var(--border2);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .13s,transform .13s;z-index:300;}
@@ -2937,7 +2937,22 @@ window.addEventListener('blur',hideInstantTableTip);
 
 function animateNavIcon(el){
   if(!el||!el.classList.contains('nav-tab'))return;
-  // Removing and re-adding the class makes rapid or repeated clicks replay it.
+  var icon=el.querySelector('svg');
+  if(!icon)return;
+
+  // Web Animations reliably restarts the motion on every click, even when the
+  // same active tab is clicked repeatedly. Keep the class version as a fallback.
+  if(typeof icon.animate==='function'){
+    if(icon._navClickAnimation)icon._navClickAnimation.cancel();
+    icon._navClickAnimation=icon.animate([
+      {transform:'translateY(0) scale(1) rotate(0deg)',filter:'drop-shadow(0 0 0 rgba(102,133,255,0))',offset:0},
+      {transform:'translateY(1px) scale(.72) rotate(-12deg)',offset:.28},
+      {transform:'translateY(-3px) scale(1.35) rotate(8deg)',filter:'drop-shadow(0 0 7px var(--accent))',offset:.58},
+      {transform:'translateY(0) scale(.92) rotate(-3deg)',offset:.8},
+      {transform:'translateY(0) scale(1) rotate(0deg)',filter:'drop-shadow(0 0 0 rgba(102,133,255,0))',offset:1}
+    ],{duration:580,easing:'cubic-bezier(.2,.85,.32,1)'});
+    return;
+  }
   el.classList.remove('nav-icon-animate');
   void el.offsetWidth;
   el.classList.add('nav-icon-animate');
