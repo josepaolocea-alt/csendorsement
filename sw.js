@@ -1,4 +1,4 @@
-const CACHE = 'cyn-v11';
+const CACHE = 'cyn-v13';
 const SHELL = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

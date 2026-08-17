@@ -634,6 +634,18 @@ textarea.fc{resize:vertical;min-height:70px;}
 .archive-comment-meta{font-size:10.5px;color:var(--text3);margin-bottom:3px;}
 .archive-comment-text{font-size:12px;color:var(--text);line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;}
 @media(max-width:650px){.archive-detail{grid-template-columns:1fr}.archive-detail-item.full,.archive-comments{grid-column:1}}
+#archive-modal .modal{width:calc(100vw - 40px);max-width:1180px!important;}
+#archive-modal .modal-body{min-width:0;}
+#archive-modal .admin-tbl-wrap{min-width:0;max-width:100%;}
+#archive-modal .archive-table-scroll{max-width:100%;overflow-x:auto;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
+#archive-modal .archive-table{min-width:980px;}
+#archive-modal .archive-action-col{position:sticky;right:0;min-width:230px;box-shadow:-8px 0 12px rgba(0,0,0,.16);}
+#archive-modal th.archive-action-col{z-index:12;background:var(--bg3);}
+#archive-modal td.archive-action-col{z-index:3;background:var(--bg2);}
+#archive-modal .archive-table tr:hover td.archive-action-col{background:var(--bg3);}
+#archive-modal .copyable-cell .cell-copy-btn{opacity:.82;pointer-events:auto;top:50%;transform:translateY(-50%);}
+#archive-modal .copyable-cell .cell-copy-btn:hover,#archive-modal .copyable-cell .cell-copy-btn:focus{opacity:1;transform:translateY(-50%) scale(1.04);}
+@media(max-width:650px){#archive-modal .modal{width:calc(100vw - 16px)}#archive-modal .archive-table{min-width:900px}}
 .done-subtabs{display:none;align-items:center;gap:7px;margin:0 0 10px;padding:7px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;}
 .done-subtab{border:1px solid transparent;background:transparent;color:var(--text2);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .15s;}
 .done-subtab:hover{background:var(--bg3);color:var(--text);}
@@ -2083,7 +2095,7 @@ try{
 
 <!-- COMPLETED ARCHIVE (Admin only; loaded only when opened to save reads) -->
 <div class="modal-ov hidden" id="archive-modal" style="z-index:550">
-  <div class="modal" style="max-width:1000px">
+  <div class="modal">
     <div class="modal-hdr">
       <h3>Completed Archive <span id="archive-count" style="font-size:12px;color:var(--text3);font-weight:600"></span></h3>
       <button class="modal-cls" onclick="closeArchiveModal()">x</button>
@@ -2097,9 +2109,9 @@ try{
         <button class="btn btn-secondary btn-sm" onclick="loadCompletedArchive(true)">Refresh</button>
       </div>
       <div class="admin-tbl-wrap">
-        <div class="admin-tbl-scroll" style="max-height:58vh">
-          <table class="admin-table">
-            <thead><tr><th>Type</th><th>Client / Subject</th><th>Concern / Description</th><th>Status</th><th>Archived</th><th>Reopen as</th></tr></thead>
+        <div class="admin-tbl-scroll archive-table-scroll" style="max-height:58vh">
+          <table class="admin-table archive-table">
+            <thead><tr><th>Type</th><th>Client / Subject</th><th>Concern / Description</th><th>Status</th><th>Archived</th><th class="archive-action-col">Reopen as</th></tr></thead>
             <tbody id="archive-tbody"><tr><td colspan="6" class="empty">Open Archive to load completed records</td></tr></tbody>
           </table>
         </div>
@@ -6987,6 +6999,17 @@ function archiveRecordStatus(r){
   if(r._type==='rr')return r.rrDisregard?'Disregarded':(r.rrStatus||'Completed');
   return r.status||'Completed';
 }
+function archiveCopyButton(enc,field,label){
+  return '<button type="button" class="cell-copy-btn" onclick="copyArchiveField(event,decodeURIComponent(\''+enc+'\'),\''+field+'\')" title="Copy '+escAttr(label)+'" aria-label="Copy '+escAttr(label)+'"><span class="copy-icon"></span></button>';
+}
+function copyArchiveField(e,id,field){
+  if(e){e.preventDefault();e.stopPropagation();}
+  var r=ARCHIVE_DATA.find(function(item){return String(item._archiveId||item.id)===String(id);});
+  if(!r){toast('Archived record not found','error');return;}
+  var text=(field==='name'?archiveRecordName(r):archiveRecordDetail(r)).trim();
+  if(!text||text==='—'){toast('Nothing to copy','info');return;}
+  writeClipboardText(text).then(function(){toast('Copied','success');}).catch(function(){toast('Copy failed','error');});
+}
 function archivePendingStatuses(r){
   if(r._type==='rr')return ['Not Yet'];
   if(r._type==='did')return DID_IN_PROGRESS_ST.slice();
@@ -7090,11 +7113,11 @@ function renderArchiveRows(){
     var opts=archivePendingStatuses(r).map(function(s){return '<option value="'+escAttr(s)+'">'+escHtml(s)+'</option>';}).join('');
     html+='<tr>'
       +'<td>'+escHtml(archiveTypeLabel(r))+'</td>'
-      +'<td><button class="adm-link" title="View archived details and comments" onclick="toggleArchiveDetails(decodeURIComponent(\''+enc+'\'))">'+escHtml(archiveRecordName(r))+'</button></td>'
-      +'<td style="max-width:280px;white-space:normal">'+escHtml(archiveRecordDetail(r))+'</td>'
+      +'<td class="copyable-cell"><button class="adm-link" title="View archived details and comments" onclick="toggleArchiveDetails(decodeURIComponent(\''+enc+'\'))">'+escHtml(archiveRecordName(r))+'</button>'+archiveCopyButton(enc,'name',r._type==='rr'?'subject':'client')+'</td>'
+      +'<td class="copyable-cell" style="max-width:280px;white-space:normal">'+escHtml(archiveRecordDetail(r))+archiveCopyButton(enc,'detail',r._type==='rr'?'description':r._type==='did'?'description':'concern')+'</td>'
       +'<td>'+escHtml(archiveRecordStatus(r))+'</td>'
       +'<td>'+escHtml(archiveDateLabel(r.archivedAt))+'</td>'
-      +'<td><div style="display:flex;gap:6px;align-items:center;min-width:210px"><select class="fc" id="archive-reopen-status-'+enc+'" style="min-width:120px">'+opts+'</select><button class="btn btn-primary btn-sm" id="archive-restore-'+enc+'" onclick="restoreArchivedTicket(decodeURIComponent(\''+enc+'\'))">Restore</button></div></td>'
+      +'<td class="archive-action-col"><div style="display:flex;gap:6px;align-items:center;min-width:210px"><select class="fc" id="archive-reopen-status-'+enc+'" style="min-width:120px">'+opts+'</select><button class="btn btn-primary btn-sm" id="archive-restore-'+enc+'" onclick="restoreArchivedTicket(decodeURIComponent(\''+enc+'\'))">Restore</button></div></td>'
       +'</tr>';
     if(String(_archiveExpandedId)===aid)html+='<tr class="archive-detail-row"><td colspan="6">'+archiveDetailsHTML(r)+'</td></tr>';
   });
@@ -10617,6 +10640,7 @@ window.closeArchiveModal=closeArchiveModal;
 window.loadCompletedArchive=loadCompletedArchive;
 window.renderArchiveRows=renderArchiveRows;
 window.toggleArchiveDetails=toggleArchiveDetails;
+window.copyArchiveField=copyArchiveField;
 window.restoreArchivedTicket=restoreArchivedTicket;
 window.setEntryStyle=setEntryStyle;
 window.toggleSplitActionMenu=toggleSplitActionMenu;
