@@ -540,6 +540,15 @@ textarea.fc{resize:vertical;min-height:70px;}
 .comment-empty-ic{font-size:34px;line-height:1;margin-bottom:10px;opacity:.55;}
 .comment-empty-t{font-size:13px;font-weight:600;color:var(--text2);}
 .comment-empty-s{font-size:12px;color:var(--text3);margin-top:3px;}
+.cm-entry-summary{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;padding:12px 13px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);}
+.cm-entry-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:8px;}
+.cm-entry-line{display:grid;grid-template-columns:92px minmax(0,1fr);gap:9px;align-items:start;}
+.cm-entry-line>span:first-child,.cm-status-editor>span{font-size:10px;font-weight:700;letter-spacing:.45px;text-transform:uppercase;color:var(--text3);}
+.cm-entry-line strong,.cm-entry-line .cm-entry-detail{font-size:12.5px;line-height:1.45;color:var(--text);white-space:normal;overflow-wrap:anywhere;}
+.cm-entry-line .cm-entry-detail{color:var(--text2);}
+.cm-status-editor{display:flex;width:174px;flex:0 0 174px;flex-direction:column;gap:5px;}
+.cm-status-editor select:disabled{cursor:not-allowed;opacity:.65;}
+@media(max-width:560px){.cm-entry-summary{flex-direction:column}.cm-status-editor{width:100%;flex-basis:auto}.cm-entry-line{grid-template-columns:78px minmax(0,1fr)}}
 .comment-new{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;}
 .comment-new label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
 .comments-section{border-top:1px solid var(--border);margin-top:16px;padding-top:16px;}
@@ -2002,12 +2011,19 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
 
 <!-- COMMENTS MODAL -->
 <div class="modal-ov hidden" id="comments-modal" style="z-index:550">
-  <div class="modal" style="max-width:500px">
+  <div class="modal" style="max-width:580px">
     <div class="modal-hdr">
       <h3 id="comments-modal-title">💬 Comments</h3>
       <button class="modal-cls" onclick="closeCommentsModal()">x</button>
     </div>
     <div class="modal-body">
+      <div class="cm-entry-summary" id="cm-entry-summary">
+        <div class="cm-entry-copy">
+          <div class="cm-entry-line"><span id="cm-entry-name-label">Client / Vendor</span><strong id="cm-entry-name">—</strong></div>
+          <div class="cm-entry-line"><span id="cm-entry-detail-label">Concern</span><span class="cm-entry-detail" id="cm-entry-detail">—</span></div>
+        </div>
+        <label class="cm-status-editor" id="cm-status-wrap"><span>Quick status</span><select class="fc" id="cm-status" onchange="updateCommentsModalStatus(this.value)"></select></label>
+      </div>
       <div class="comment-list" id="cm-list"></div>
       <div class="comment-new">
         <label>Add Comment</label>
@@ -7175,10 +7191,76 @@ function addComment(){
   }
 }
 
+function configureCommentsModalEntry(r){
+  var isRR=r._type==='rr';
+  var isDID=r._type==='did';
+  document.getElementById('comments-modal-title').textContent='💬 Comments';
+  document.getElementById('cm-entry-name-label').textContent=isRR?'Subject':'Client / Vendor';
+  document.getElementById('cm-entry-name').textContent=isRR?(r.rrSubject||'—'):(r.client||'—');
+  document.getElementById('cm-entry-detail-label').textContent=isRR?'Description':'Concern';
+  document.getElementById('cm-entry-detail').textContent=isRR?(r.rrRemarks||'—'):isDID?(r.desc||'—'):(r.concern||'—');
+
+  var status=document.getElementById('cm-status');
+  var source=document.getElementById(isRR?'rr-status':isDID?'d-status':'f-st-f');
+  status.innerHTML=source?source.innerHTML:'';
+  status.value=isRR?(r.rrStatus||'Not Yet'):(r.status||'');
+  status.disabled=!window._canEdit;
+  status.title=window._canEdit?'Change this entry status':'You do not have permission to edit records';
+}
+
+function updateCommentsModalStatus(newStatus){
+  if(!_commentModalId)return;
+  var r=DATA.find(function(d){return d.id===_commentModalId;});
+  if(!r)return;
+  if(!window._canEdit){
+    toast('You do not have permission to edit records','error');
+    configureCommentsModalEntry(r);
+    return;
+  }
+
+  var isRR=r._type==='rr';
+  var oldStatus=isRR?(r.rrStatus||'Not Yet'):(r.status||'');
+  if(!newStatus||newStatus===oldStatus)return;
+
+  if(isRR){
+    r.rrStatus=newStatus;
+    if(newStatus==='Done')r.rrStatusDoneAt=oldStatus==='Done'?(r.rrStatusDoneAt||rrDoneAnchorMs(r)||Date.now()):Date.now();
+    else r.rrStatusDoneAt=null;
+  }else{
+    var wasStopsTimer=recordStatusStopsTimer(r);
+    var isCompleted=r._type==='did'?DID_DONE_ST.indexOf(newStatus)>-1:DONE_ST.indexOf(newStatus)>-1;
+    r.status=newStatus;
+    if(isCompleted&&!r.resolvedDate)r.resolvedDate=new Date().toISOString().split('T')[0];
+    else if(!isCompleted)r.resolvedDate='';
+    if(newStatus==='Advised Client')r.advisedClientAt=oldStatus==='Advised Client'?(r.advisedClientAt||null):Date.now();
+    else r.advisedClientAt=null;
+    if(isCompleted)r.pinned=false;
+
+    if(recordStatusStopsTimer(r)){
+      r.timerStart=null;
+      r.timerAlerted=false;
+      r.autoRestartedAt=null;
+      r.autoRestartTimer=false;
+    }else if(wasStopsTimer&&!r.timerStart&&r.timerOverride){
+      r.timerStart=Date.now();
+      r.timerAlerted=false;
+      r.autoRestartedAt=null;
+    }
+  }
+
+  r.updatedBy=_currentUser?_currentUser.email:'';
+  r.updatedAt=Date.now();
+  saveOne(r);
+  try{writeLog('updated',r.client||r.rrSubject||'record','Status: '+oldStatus+' → '+newStatus);}catch(_e){}
+  configureCommentsModalEntry(r);
+  applyFilters();
+  toast('Status updated to '+newStatus,'success');
+}
+
 function openCommentsModal(id){
   _commentModalId=id;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
-  document.getElementById('comments-modal-title').textContent='💬 '+(r.client||r.rrSubject||'Comments');
+  configureCommentsModalEntry(r);
   document.getElementById('cm-comment-text').value='';
   _pendingAttachments['cm-attach-pending']=[];
   renderPendingPreviews('cm-attach-pending');
@@ -10051,6 +10133,7 @@ window.clampDIDTimerHH=clampDIDTimerHH;
 window.clampTimerHH=clampTimerHH;
 window.clampTimerMM=clampTimerMM;
 window.closeCommentsModal=closeCommentsModal;
+window.updateCommentsModalStatus=updateCommentsModalStatus;
 window.closeDIDModal=closeDIDModal;
 window.closeModal=closeModal;
 window.closeRRModal=closeRRModal;
