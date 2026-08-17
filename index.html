@@ -435,15 +435,19 @@ body.entry-style-panel .entry-ov{justify-content:flex-end;align-items:stretch;pa
 body.entry-style-panel .entry-ov .entry-modal{width:min(780px,100vw);max-width:min(780px,100vw);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-24px 0 60px rgba(0,0,0,.45);}
 body.entry-style-panel .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
 @keyframes entryDrawerIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
-/* SPLIT VIEW — preserve the task workspace on the left and dock the editor on
-   the right. The full-screen, nearly transparent overlay still protects row
-   actions and lets a click on the left workspace close the editor safely. */
+/* SPLIT VIEW — preserve a fully interactive task workspace on the left and
+   dock the editor on the right. Only the editor pane captures pointer input. */
 body.entry-style-split{--entry-split-width:clamp(560px,46vw,780px);}
 body.entry-style-split .topbar,body.entry-style-split .main{transition:width .25s cubic-bezier(.22,.75,.3,1);}
 @media (min-width:1100px){
   body.entry-style-split.entry-split-open .topbar,body.entry-style-split.entry-split-open .main{width:calc(100% - var(--entry-split-width));}
-  body.entry-style-split .entry-ov{justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden;background:rgba(0,0,0,.1);backdrop-filter:none;}
-  body.entry-style-split .entry-ov .entry-modal{width:var(--entry-split-width);max-width:var(--entry-split-width);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-14px 0 34px rgba(0,0,0,.24);}
+  body.entry-style-split .entry-ov{justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden;background:transparent;backdrop-filter:none;pointer-events:none;}
+  body.entry-style-split .entry-ov .entry-modal{width:var(--entry-split-width);max-width:var(--entry-split-width);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-14px 0 34px rgba(0,0,0,.24);pointer-events:auto;}
+  body.entry-style-split.entry-split-open .topbar .ml-auto>#user-chip,
+  body.entry-style-split.entry-split-open .topbar .ml-auto>#logout-btn,
+  body.entry-style-split.entry-split-open .topbar .ml-auto>#new-btn,
+  body.entry-style-split.entry-split-open .topbar .ml-auto>#theme-btn{display:none!important;}
+  body.entry-style-split.entry-split-open .topbar .split-actions{display:block;}
   body.entry-style-split .entry-ov:not(.hidden) .entry-modal{animation:entrySplitIn .25s cubic-bezier(.22,.75,.3,1);}
   @keyframes entrySplitIn{from{transform:translateX(36px);opacity:.75}to{transform:translateX(0);opacity:1}}
 }
@@ -575,6 +579,19 @@ textarea.fc{resize:vertical;min-height:70px;}
 .login-err{color:#f87171;font-size:12px;text-align:center;min-height:18px;margin-bottom:6px;}
 .user-chip{display:flex;align-items:center;justify-content:center;padding:4px;background:var(--bg3);border:1px solid var(--border);border-radius:50%;color:var(--text2);}
 .user-avatar{width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.split-actions{display:none;position:relative;flex:0 0 auto;}
+.split-actions-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;width:230px;padding:7px;background:var(--bg2);border:1px solid var(--border2);border-radius:11px;box-shadow:var(--shadow-elevated);z-index:1000;}
+.split-actions.open .split-actions-menu{display:block;animation:splitMenuIn .14s ease-out;}
+.split-menu-user{display:flex;align-items:center;gap:9px;padding:8px 9px 10px;margin-bottom:5px;border-bottom:1px solid var(--border);min-width:0;}
+.split-menu-user .user-avatar{width:28px;height:28px;font-size:12px;}
+.split-menu-user-text{min-width:0;}
+.split-menu-user-text strong{display:block;font-size:12px;color:var(--text);}
+.split-menu-user-text span{display:block;font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.split-menu-item{width:100%;display:flex;align-items:center;gap:9px;padding:8px 9px;border:0;border-radius:7px;background:transparent;color:var(--text2);font-size:12.5px;font-weight:600;text-align:left;cursor:pointer;}
+.split-menu-item:hover,.split-menu-item:focus{background:var(--bg3);color:var(--text);outline:none;}
+.split-menu-item svg{width:16px;height:16px;flex:0 0 auto;}
+.split-menu-item.danger:hover,.split-menu-item.danger:focus{color:#f87171;background:rgba(248,113,113,.1);}
+@keyframes splitMenuIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 /* ── ADMIN ── */
 .admin-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow);}
 .admin-ctitle{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.55px;}
@@ -806,6 +823,26 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
       <span class="timer-center-count" id="timer-center-count">0</span>
     </button>
+    <div class="split-actions" id="split-actions" onclick="event.stopPropagation()">
+      <button class="tab-btn" id="split-menu-btn" type="button" data-tip="More actions" aria-label="Open account and app actions" aria-haspopup="menu" aria-expanded="false" onclick="toggleSplitActionMenu(event)">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button>
+      <div class="split-actions-menu" id="split-actions-menu" role="menu">
+        <div class="split-menu-user">
+          <div class="user-avatar" id="split-user-avatar">?</div>
+          <div class="split-menu-user-text"><strong>Signed in</strong><span id="split-user-email">—</span></div>
+        </div>
+        <button class="split-menu-item" id="split-new-action" type="button" role="menuitem" onclick="splitMenuNew()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>New entry</span>
+        </button>
+        <button class="split-menu-item" id="split-theme-action" type="button" role="menuitem" onclick="splitMenuTheme()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span id="split-theme-label">Switch to light mode</span>
+        </button>
+        <button class="split-menu-item danger" type="button" role="menuitem" onclick="splitMenuLogout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg><span>Sign out</span>
+        </button>
+      </div>
+    </div>
     <div class="user-chip" id="user-chip" style="display:none">
       <div class="user-avatar" id="user-avatar">?</div>
     </div>
@@ -907,7 +944,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
     </div>
     </div>
     <div class="settings-sec">
-    <div class="settings-sec-title">💳 Payment &amp; Client Timer Rules</div>
+    <div class="settings-sec-title">💳 Payment, VIP &amp; Client Timer Rules</div>
     <div class="auto-row">
       <span class="auto-label">Payment timer:</span>
       <select class="fsel" id="payment-timer" onchange="saveSettings()">
@@ -921,6 +958,20 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
       </select>
       <input class="fc" id="payment-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
       <span class="auto-label" style="color:var(--text3)">entries with Service = Payment use this timer</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">VIP Payment timer:</span>
+      <select class="fsel" id="vip-payment-timer" onchange="saveSettings()">
+        <option value="300">5 Minutes</option>
+        <option value="600">10 Minutes</option>
+        <option value="900">15 Minutes</option>
+        <option value="1800">30 Minutes</option>
+        <option value="3600">1 Hour</option>
+        <option value="7200">2 Hours</option>
+        <option value="custom">Custom...</option>
+      </select>
+      <input class="fc" id="vip-payment-timer-mins" type="number" min="1" max="525600" placeholder="Minutes" style="width:100px;display:none" oninput="saveSettings()">
+      <span class="auto-label" style="color:var(--text3)">entries with Service = VIP Payment use this timer</span>
     </div>
     <div class="auto-row">
       <span class="auto-label">Client timer:</span>
@@ -1128,7 +1179,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
       <button id="search-clear-btn" onclick="clearSearch()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 4px;line-height:1" title="Clear search">✕</button>
       <span class="kbd">Ctrl+F</span>
     </div>
-    <select class="fsel" id="f-svc" onchange="applyFilters()"><option value="">All Services</option><option>VOIP</option><option>SMS</option><option>Payment</option></select>
+    <select class="fsel" id="f-svc" onchange="applyFilters()"><option value="">All Services</option><option>VOIP</option><option>SMS</option><option>Payment</option><option>VIP Payment</option></select>
     <select class="fsel" id="f-st" onchange="applyFilters()">
       <option value="">All Statuses</option>
       <option value="__inprogress__">⏳ All In Progress</option>
@@ -1616,7 +1667,7 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
           <input class="fc" id="f-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase();applyPaymentTimerRule()" style="margin-top:5px;display:none">
         </div>
         <div class="fgrp"><label>Service</label>
-          <select class="fc" id="f-svc-f" onchange="onSvcChange()"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
+          <select class="fc" id="f-svc-f" onchange="onSvcChange()"><option>VOIP</option><option>SMS</option><option>Payment</option><option>VIP Payment</option></select>
         </div>
         <div class="fgrp full"><label>Concern</label><textarea class="fc" id="f-concern" placeholder="Describe the issue..." style="min-height:55px"></textarea></div>
         <div class="fgrp full"><label>Description</label><textarea class="fc" id="f-remarks" placeholder="Additional description / notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
@@ -2187,7 +2238,7 @@ const ANALYTICS_META_DOC = 'analytics_meta/dashboard_v1';
 var DATA = [];
 var TRASH_DATA = [];
 var idSeq = 1;
-var SETTINGS = {defaultTimer:3600, paymentTimer:86400, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', rrRoAlertNotify:true, slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
+var SETTINGS = {defaultTimer:3600, paymentTimer:86400, vipPaymentTimer:600, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', rrRoAlertNotify:true, slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
 var EFFECT_COLOR_PALETTE=['#000000','#666666','#999999','#cccccc','#ffffff','#f87171','#fb7185','#f97316','#fbbf24','#facc15','#4ade80','#22c55e','#38bdf8','#60a5fa','#818cf8','#a78bfa','#c084fc','#f472b6','#14b8a6','#94a3b8'];
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _endorsementTimerDirty=false,_didTimerDirty=false,_rrTimerDirty=false;
@@ -2217,6 +2268,7 @@ function showLoginScreen(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('user-chip').style.display='none';
   document.getElementById('logout-btn').style.display='none';
+  closeSplitActionMenu();
   resetTaskAlertCenterSession();
 }
 function hideLoginScreen(){
@@ -2289,6 +2341,8 @@ function setUserDisplay(user){
   var userChip=document.getElementById('user-chip');
   userChip.title=email;
   userChip.setAttribute('aria-label',email?'Signed in as '+email:'Signed in user');
+  var splitAvatar=document.getElementById('split-user-avatar');if(splitAvatar)splitAvatar.textContent=initial;
+  var splitEmail=document.getElementById('split-user-email');if(splitEmail)splitEmail.textContent=email||'Signed-in user';
   loadTaskAlertQueue();
 
   // Check/create user record in Firestore
@@ -2516,6 +2570,12 @@ function saveSettings(){
     payHrs.style.display=paySel.value==='custom'?'':'none';
     SETTINGS.paymentTimer=paySel.value==='custom'?Math.max(1,parseInt(payHrs.value,10)||24)*3600:parseInt(paySel.value,10)||86400;
   }
+  var vipPaySel=document.getElementById('vip-payment-timer');
+  var vipPayMins=document.getElementById('vip-payment-timer-mins');
+  if(vipPaySel&&vipPayMins){
+    vipPayMins.style.display=vipPaySel.value==='custom'?'':'none';
+    SETTINGS.vipPaymentTimer=vipPaySel.value==='custom'?Math.max(1,parseInt(vipPayMins.value,10)||10)*60:parseInt(vipPaySel.value,10)||600;
+  }
   var payClientSel=document.getElementById('payment-client');
   if(payClientSel) SETTINGS.paymentClientName=payClientSel.value||'';
   var pcSel=document.getElementById('payment-client-timer');
@@ -2604,7 +2664,40 @@ function toggleTheme(){
   btn.innerHTML=isDark?moon:sun;
   btn.setAttribute('data-tip',isDark?'Dark mode':'Light mode');
   btn.setAttribute('aria-label',isDark?'Switch to dark mode':'Switch to light mode');
+  syncSplitActionMenu();
 }
+
+function syncSplitActionMenu(){
+  var email=document.getElementById('split-user-email');
+  if(email)email.textContent=_currentUser&&_currentUser.email?normalizeEmail(_currentUser.email):'Signed-in user';
+  var avatar=document.getElementById('split-user-avatar');
+  if(avatar)avatar.textContent=_currentUser&&_currentUser.email?normalizeEmail(_currentUser.email).charAt(0).toUpperCase():'?';
+  var themeLabel=document.getElementById('split-theme-label');
+  if(themeLabel)themeLabel.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'Switch to light mode':'Switch to dark mode';
+  var newAction=document.getElementById('split-new-action');
+  var sourceNew=document.getElementById('new-btn');
+  if(newAction)newAction.style.display=window._canAdd&&sourceNew&&sourceNew.style.display!=='none'?'':'none';
+}
+function toggleSplitActionMenu(e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  var wrap=document.getElementById('split-actions'),btn=document.getElementById('split-menu-btn');
+  if(!wrap||!btn)return;
+  syncSplitActionMenu();
+  var open=wrap.classList.toggle('open');
+  btn.setAttribute('aria-expanded',open?'true':'false');
+  if(open){var first=wrap.querySelector('.split-menu-item:not([style*="display: none"])');if(first)setTimeout(function(){first.focus();},0);}
+}
+function closeSplitActionMenu(){
+  var wrap=document.getElementById('split-actions'),btn=document.getElementById('split-menu-btn');
+  if(!wrap||!wrap.classList.contains('open'))return false;
+  wrap.classList.remove('open');
+  if(btn)btn.setAttribute('aria-expanded','false');
+  return true;
+}
+function splitMenuNew(){closeSplitActionMenu();openNewModalCurrent();}
+function splitMenuTheme(){toggleTheme();closeSplitActionMenu();}
+function splitMenuLogout(){closeSplitActionMenu();doLogout();}
+document.addEventListener('click',function(){closeSplitActionMenu();});
 
 // ─── ROW DENSITY (per-device display preference) ─────────────
 function applyDensity(){
@@ -2669,6 +2762,7 @@ function syncEntrySplitOpen(){
     return !overlay.classList.contains('hidden');
   });
   document.body.classList.toggle('entry-split-open',document.body.classList.contains('entry-style-split')&&open);
+  if(!open)closeSplitActionMenu();
 }
 var _returnToTaskAlertCenterAfterEntry=false;
 function openEntryOverlay(id){
@@ -2948,7 +3042,7 @@ function didPriBadge(p){
 function svcBadge(s){
   var hex=dropdownColor('service',s);
   if(hex)return '<span class="badge" style="'+customBadgeStyle(hex)+'">'+escHtml(s||'VOIP')+'</span>';
-  var cls={VOIP:'svc-voip',SMS:'svc-sms',Payment:'svc-payment'}[s]||'svc-voip';return '<span class="badge '+cls+'">'+(s||'VOIP')+'</span>';
+  var cls={VOIP:'svc-voip',SMS:'svc-sms',Payment:'svc-payment','VIP Payment':'svc-payment'}[s]||'svc-voip';return '<span class="badge '+cls+'">'+(s||'VOIP')+'</span>';
 }
 function pltBadge(p){
   if(!p)return '';
@@ -3690,7 +3784,7 @@ function _uniqueFilterItems(items){
 }
 function configureTaskFilterToolbar(tab){
   var search=document.getElementById('search-input');
-  var svcItems=(_dropdownData&&_dropdownData.service)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.service.defaults)||['VOIP','SMS','Payment'];
+  var svcItems=(_dropdownData&&_dropdownData.service)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.service.defaults)||['VOIP','SMS','Payment','VIP Payment'];
   var ipItems=(_dropdownData&&_dropdownData.status_ip)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.status_ip.defaults)||[];
   var doneItems=(_dropdownData&&_dropdownData.status_done)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.status_done.defaults)||[];
   var rrByItems=(_dropdownData&&_dropdownData.rr_by)||(DROPDOWN_OPTS&&DROPDOWN_OPTS.rr_by.defaults)||[];
@@ -3706,7 +3800,7 @@ function configureTaskFilterToolbar(tab){
 
   if(isDID){
     if(search)search.placeholder='Search client, description, status, AM...';
-    _setTaskFilterOptions('f-svc','All Services',svcItems.filter(function(v){return v!=='Payment';}));
+    _setTaskFilterOptions('f-svc','All Services',svcItems.filter(function(v){return v!=='Payment'&&v!=='VIP Payment';}));
     _setTaskFilterOptions('f-st','All DID Statuses',DID_IN_PROGRESS_ST);
     _setTaskFilterOptions('f-pri','All Priorities',['High','Normal']);
     _setTaskFilterOptions('f-plt','All Platforms',platformItems);
@@ -5860,6 +5954,7 @@ document.addEventListener('mousemove',function(e){
 });
 document.addEventListener('mouseup',function(){_dragging=false;});
 document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&closeSplitActionMenu()){e.preventDefault();return;}
   if((e.ctrlKey||e.metaKey)&&e.key==='f'){
     e.preventDefault();
     if(currentTab==='admin'){
@@ -6967,9 +7062,9 @@ function onSvcChange(){
   applyPaymentTimerRule();
 }
 
-// Settings > Payment timer / Client timer:
+// Settings > Payment / VIP Payment / Client timer:
 // - the chosen Client / Vendor (e.g. SIR GENE EMAIL) always gets the Client timer, any service
-// - otherwise entries with Service = Payment get the Payment timer
+// - otherwise Payment and VIP Payment each use their own service timer
 function ruleTimerSecs(client,svc){
   var c=(client||'').trim().toUpperCase();
   var target=(SETTINGS.paymentClientName||'').trim().toUpperCase();
@@ -6977,7 +7072,12 @@ function ruleTimerSecs(client,svc){
     var s=parseInt(SETTINGS.paymentClientTimer,10);
     if(s>0) return s;
   }
-  if(svc==='Payment'){
+  var service=(svc||'').trim().toLowerCase();
+  if(service==='vip payment'){
+    var vip=parseInt(SETTINGS.vipPaymentTimer,10);
+    return vip>0?vip:600;
+  }
+  if(service==='payment'){
     var p=parseInt(SETTINGS.paymentTimer,10);
     return p>0?p:86400;
   }
@@ -6995,7 +7095,7 @@ function readModalTimerSecs(){
 }
 
 function timerDurLabel(secs){
-  var known={1800:'30 minutes',3600:'1 hour',7200:'2 hours',14400:'4 hours',28800:'8 hours',86400:'1 day',259200:'3 days',432000:'5 days',604800:'7 days'};
+  var known={300:'5 minutes',600:'10 minutes',900:'15 minutes',1800:'30 minutes',3600:'1 hour',7200:'2 hours',14400:'4 hours',28800:'8 hours',86400:'1 day',259200:'3 days',432000:'5 days',604800:'7 days'};
   if(known[secs])return known[secs];
   var hh=Math.floor(secs/3600),mm=Math.floor((secs%3600)/60);
   return (hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;
@@ -7145,7 +7245,7 @@ function matchesDateRange(r){
 }
 
 // Load settings from localStorage (fast, local)
-SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',rrRoAlertNotify:true,slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171',pinEffect:'soft',pinColor:'#fbbf24'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
+SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,vipPaymentTimer:600,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',rrRoAlertNotify:true,slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171',pinEffect:'soft',pinColor:'#fbbf24'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
 // Push SETTINGS values into the Settings panel fields (runs at load and whenever synced settings arrive)
 function applySettingsToUI(){
 document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
@@ -7154,6 +7254,7 @@ if(document.getElementById('default-timer').value==='custom'){
   document.getElementById('custom-mins').style.display='';
 }
 SETTINGS.paymentTimer=parseInt(SETTINGS.paymentTimer,10)>0?parseInt(SETTINGS.paymentTimer,10):86400;
+SETTINGS.vipPaymentTimer=parseInt(SETTINGS.vipPaymentTimer,10)>0?parseInt(SETTINGS.vipPaymentTimer,10):600;
 SETTINGS.paymentClientTimer=parseInt(SETTINGS.paymentClientTimer,10)>0?parseInt(SETTINGS.paymentClientTimer,10):86400;
 if(typeof SETTINGS.paymentClientName!=='string')SETTINGS.paymentClientName='SIR GENE EMAIL';
 [['payment-timer','payment-timer-hours',SETTINGS.paymentTimer],['payment-client-timer','payment-client-timer-hours',SETTINGS.paymentClientTimer]].forEach(function(cfg){
@@ -7162,6 +7263,11 @@ if(typeof SETTINGS.paymentClientName!=='string')SETTINGS.paymentClientName='SIR 
   if([1800,3600,7200,86400,259200,604800].indexOf(cfg[2])>-1){sel.value=String(cfg[2]);}
   else{sel.value='custom';hrs.value=Math.max(1,Math.round(cfg[2]/3600));hrs.style.display='';}
 });
+var vipPaySel=document.getElementById('vip-payment-timer'),vipPayMins=document.getElementById('vip-payment-timer-mins');
+if(vipPaySel&&vipPayMins){
+  if([300,600,900,1800,3600,7200].indexOf(SETTINGS.vipPaymentTimer)>-1){vipPaySel.value=String(SETTINGS.vipPaymentTimer);vipPayMins.style.display='none';}
+  else{vipPaySel.value='custom';vipPayMins.value=Math.max(1,Math.round(SETTINGS.vipPaymentTimer/60));vipPayMins.style.display='';}
+}
 populatePaymentClientSetting();
 document.getElementById('auto-alert').checked=SETTINGS.autoAlert||false;
 document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
@@ -7458,7 +7564,7 @@ function checkNewComments(oldData,newData){
   });
 }
 var DROPDOWN_OPTS = {
-  service:    {label:'Service',              defaults:['VOIP','SMS','Payment']},
+  service:    {label:'Service',              defaults:['VOIP','SMS','Payment','VIP Payment']},
   platform:   {label:'Platform',             defaults:['MS Teams','Viber','WhatsApp','Telegram','Email']},
   status_ip:  {label:'Status — In Progress', defaults:['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client']},
   status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Lack of Update from our Team','Continue to Other Ticket','Close due to lack of update from Vendor/Developer']},
@@ -7485,8 +7591,14 @@ function loadDropdownOptions(){
     var hasData=false;
     var seen={};
     snap.forEach(function(d){
-      _dropdownData[d.id]=d.data().items||[];
-      _dropdownColors[d.id]=d.data().colors||{};
+      var dropdownDoc=d.data();
+      var dropdownItems=(dropdownDoc.items||[]).slice();
+      if(d.id==='service'&&dropdownDoc.vipPaymentSeeded!==true){
+        if(!dropdownItems.some(function(item){return String(item).trim().toLowerCase()==='vip payment';}))dropdownItems.push('VIP Payment');
+        setDoc(doc(db,'dropdown_options','service'),{items:dropdownItems,vipPaymentSeeded:true},{merge:true}).catch(function(){});
+      }
+      _dropdownData[d.id]=dropdownItems;
+      _dropdownColors[d.id]=dropdownDoc.colors||{};
       seen[d.id]=true;
       hasData=true;
     });
@@ -7524,7 +7636,7 @@ function applyDropdownsToForms(){
     var el=document.getElementById(id);if(!el)return;
     var cur=el.value;
     var isFilter=id==='f-svc';
-    var items=id==='d-svc'?svcItems.filter(function(v){return v!=='Payment';}):svcItems;
+    var items=id==='d-svc'?svcItems.filter(function(v){return v!=='Payment'&&v!=='VIP Payment';}):svcItems;
     el.innerHTML=(isFilter?'<option value="">All Services</option>':'')
       +items.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(cur) el.value=cur;
@@ -9897,6 +10009,10 @@ window.renderFilterChips=renderFilterChips;
 window.toggleDensity=toggleDensity;
 window.toggleEntryCompact=toggleEntryCompact;
 window.setEntryStyle=setEntryStyle;
+window.toggleSplitActionMenu=toggleSplitActionMenu;
+window.splitMenuNew=splitMenuNew;
+window.splitMenuTheme=splitMenuTheme;
+window.splitMenuLogout=splitMenuLogout;
 window.bulkDelete=bulkDelete;
 window.clampDIDTimerHH=clampDIDTimerHH;
 window.clampTimerHH=clampTimerHH;
