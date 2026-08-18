@@ -158,6 +158,21 @@ body.entry-compact .entry-modal .premium-select.is-fc .premium-select-trigger{pa
   .premium-select-option{min-height:44px;font-size:15px;}
   .premium-select-search{height:42px;font-size:16px;}
 }
+/* Numeric fields use app-native steppers instead of the browser's bright
+   platform spinner, which clashes with the dark theme. */
+input[type="number"]{-moz-appearance:textfield;}
+input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.premium-number{position:relative;display:inline-grid;vertical-align:middle;min-width:0;}
+.premium-number>input{grid-area:1/1;padding-right:27px!important;}
+.premium-number-stepper{position:absolute;z-index:2;top:4px;right:4px;bottom:4px;width:21px;display:grid;grid-template-rows:1fr 1fr;overflow:hidden;border:1px solid color-mix(in srgb,var(--border2) 80%,transparent);border-radius:6px;background:color-mix(in srgb,var(--bg5) 65%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,white 5%,transparent);}
+.premium-number-step{display:grid;place-items:center;min-height:0;padding:0;border:0;background:transparent;color:var(--text3);cursor:pointer;transition:background .12s,color .12s;}
+.premium-number-step:first-child{border-bottom:1px solid color-mix(in srgb,var(--border2) 75%,transparent);}
+.premium-number-step:hover{background:color-mix(in srgb,var(--accent) 18%,var(--bg4));color:var(--accent);}
+.premium-number-step:active{background:color-mix(in srgb,var(--accent) 27%,var(--bg4));}
+.premium-number-step:focus-visible{outline:1px solid var(--accent);outline-offset:-2px;}
+.premium-number-step svg{width:9px;height:9px;display:block;pointer-events:none;}
+.premium-number.is-disabled .premium-number-stepper{opacity:.45;pointer-events:none;}
+[data-theme="light"] .premium-number-stepper{background:color-mix(in srgb,var(--bg4) 82%,white 18%);box-shadow:inset 0 1px 0 rgba(255,255,255,.5);}
 .table-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
 .table-scroll{overflow:auto;max-height:calc(100vh - 230px);}
 .instant-table-tooltip{position:fixed;display:none;z-index:10050;max-width:min(420px,calc(100vw - 20px));padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg5);color:var(--text);box-shadow:var(--shadow-elevated);font-family:var(--sf);font-size:12px;font-weight:500;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;}

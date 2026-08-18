@@ -139,6 +139,55 @@
     }
   }
 
+  function stepIcon(up){
+    return '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 '+(up?'7.5 6 4 9.5 7.5':'4.5 6 8 9.5 4.5')+'" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+
+  function syncNumber(input){
+    var wrapper = input && input.closest('.premium-number');
+    if(!wrapper) return;
+    wrapper.style.display = input.style.display === 'none' ? 'none' : '';
+    wrapper.classList.toggle('is-disabled',input.disabled || input.readOnly);
+    wrapper.querySelectorAll('.premium-number-step').forEach(function(button){ button.disabled = input.disabled || input.readOnly; });
+  }
+
+  function enhanceNumber(input){
+    if(!input || input.dataset.premiumNumber) return;
+    input.dataset.premiumNumber = 'true';
+    var wrapper = document.createElement('span');
+    wrapper.className = 'premium-number';
+    input.parentNode.insertBefore(wrapper,input);
+    wrapper.appendChild(input);
+
+    var controls = document.createElement('span');
+    controls.className = 'premium-number-stepper';
+    ['up','down'].forEach(function(direction){
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'premium-number-step';
+      button.tabIndex = -1;
+      button.setAttribute('aria-label',direction === 'up'?'Increase value':'Decrease value');
+      button.title = direction === 'up'?'Increase':'Decrease';
+      button.innerHTML = stepIcon(direction === 'up');
+      button.addEventListener('pointerdown',function(e){ e.preventDefault(); });
+      button.addEventListener('click',function(){
+        if(input.disabled || input.readOnly) return;
+        try{ direction === 'up' ? input.stepUp() : input.stepDown(); }
+        catch(_){
+          var step = Number(input.step) || 1;
+          var current = Number(input.value) || 0;
+          input.value = String(current+(direction === 'up'?step:-step));
+        }
+        input.dispatchEvent(new Event('input',{bubbles:true}));
+        input.dispatchEvent(new Event('change',{bubbles:true}));
+        input.focus({preventScroll:true});
+      });
+      controls.appendChild(button);
+    });
+    wrapper.appendChild(controls);
+    syncNumber(input);
+  }
+
   function optionRows(select){
     var rows = [];
     Array.prototype.forEach.call(select.children,function(child){
@@ -338,7 +387,10 @@
     menu.style.maxHeight = maxHeight+'px';
     optionsBox.style.maxHeight = Math.max(80,maxHeight-(searchWrap.style.display === 'none'?14:57))+'px';
     menu.classList.toggle('opens-up',opensUp);
-    menu.style.top = opensUp ? Math.max(pad,rect.top-gap-maxHeight)+'px' : Math.min(viewH-pad-maxHeight,rect.bottom+gap)+'px';
+    /* Anchor to the menu's real rendered height. Using maxHeight here left a
+       large empty gap above short, upward-opening lists. */
+    var renderedHeight = Math.min(maxHeight,Math.ceil(menu.getBoundingClientRect().height || menu.scrollHeight));
+    menu.style.top = opensUp ? Math.max(pad,rect.top-gap-renderedHeight)+'px' : Math.min(viewH-pad-renderedHeight,rect.bottom+gap)+'px';
   }
 
   function schedulePosition(){
@@ -349,7 +401,9 @@
   function scan(root){
     if(!root) return;
     if(root.matches && root.matches('select')) enhance(root);
+    if(root.matches && root.matches('input[type="number"]')) enhanceNumber(root);
     if(root.querySelectorAll) root.querySelectorAll('select').forEach(enhance);
+    if(root.querySelectorAll) root.querySelectorAll('input[type="number"]').forEach(enhanceNumber);
   }
 
   document.addEventListener('change',function(e){ if(e.target.matches && e.target.matches('select')) sync(e.target); },true);
@@ -373,6 +427,7 @@
       }else{
         var target = mutation.target;
         if(target.tagName === 'SELECT') queueSync(target);
+        else if(target.matches && target.matches('input[type="number"]')) syncNumber(target);
         else if(target.tagName === 'OPTION' || target.tagName === 'OPTGROUP') queueSync(target.closest('select'));
       }
     });
@@ -380,7 +435,7 @@
 
   function start(){
     scan(document);
-    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','selected','style','class','label']});
+    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['disabled','readonly','selected','style','class','label']});
   }
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded',start,{once:true}) : start();
 })();
