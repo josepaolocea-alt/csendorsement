@@ -181,11 +181,11 @@ table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.4;}
 /* Keep All Tasks columns anchored when filters replace the tbody. With the
    browser's default auto layout, a shorter filtered result recalculates every
    column and makes the table appear to zoom or slide horizontally. */
-#main-table.all-task-layout{table-layout:fixed;min-width:1346px;}
+#main-table.all-task-layout{table-layout:fixed;min-width:1376px;}
 #main-table.all-task-layout th:nth-child(1){width:44px;text-align:center;}
 #main-table.all-task-layout th:nth-child(2){width:42px;}
 #main-table.all-task-layout th:nth-child(3){width:150px;}
-#main-table.all-task-layout th:nth-child(4){width:90px;}
+#main-table.all-task-layout th:nth-child(4){width:120px;}
 #main-table.all-task-layout th:nth-child(5){width:250px;}
 #main-table.all-task-layout th:nth-child(6){width:105px;}
 #main-table.all-task-layout th:nth-child(7){width:185px;}
@@ -197,6 +197,10 @@ table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.4;}
 #main-table.all-task-layout td:nth-child(1),
 #main-table.all-task-layout th:nth-child(2),
 #main-table.all-task-layout td:nth-child(2){padding-left:4px;padding-right:4px;}
+/* Service badges are self-contained pills. Keep any overflow marker inside
+   the pill so a long label never produces a stray dot beside it. */
+#main-table.all-task-layout td:nth-child(4){text-overflow:clip;}
+#main-table.all-task-layout td:nth-child(4) .badge{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
 thead tr{background:var(--bg3);}
 th{padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.45px;border-bottom:1px solid var(--border2);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--bg3);z-index:10;}
 th:hover{color:var(--text);}
