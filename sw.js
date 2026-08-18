@@ -1,5 +1,5 @@
-const CACHE = 'cyn-v19';
-const SHELL = ['./index.html', './manifest.json', './premium-dropdown.js'];
+const CACHE = 'cyn-v21';
+const SHELL = ['./index.html', './manifest.json', './premium-dropdown.js?v=21'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
@@ -19,7 +19,7 @@ self.addEventListener('fetch', e => {
   // Only handle same-origin GET requests; let Firebase/CDN requests pass through
   if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-store' })
       .then(res => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
