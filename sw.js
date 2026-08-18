@@ -1,5 +1,5 @@
-const CACHE = 'cyn-v21';
-const SHELL = ['./index.html', './manifest.json', './premium-dropdown.js?v=21'];
+const CACHE = 'cyn-v23';
+const SHELL = ['./index.html', './manifest.json', './premium-dropdown.js?v=23'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
@@ -11,8 +11,16 @@ self.addEventListener('activate', e => {
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     )
+    .then(() => self.clients.claim())
+    // Reload existing tabs once when this build takes control. This replaces a
+    // stale cached document without asking the user to clear browser storage.
+    .then(() => self.clients.matchAll({ type: 'window' }))
+    .then(clients => Promise.all(clients.map(client =>
+      typeof client.navigate === 'function'
+        ? client.navigate(client.url).catch(() => null)
+        : Promise.resolve(null)
+    )))
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
