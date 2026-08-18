@@ -5312,6 +5312,9 @@ window.togglePin=togglePin;
 function rowCommentClass(r){
   return getUnreadCount(r)>0?' has-new-comment':'';
 }
+function rowIdArg(id){
+  return JSON.stringify(String(id)).replace(/"/g,'&quot;').replace(/</g,'\\u003c');
+}
 
 function setMainTableLayout(mode){
   var table=document.getElementById('main-table');
@@ -5421,7 +5424,7 @@ function renderRRRows(){
     var rowStyle='cursor:pointer'+_fx.style;
     if(r.pinned)rowCls=(rowCls?rowCls+' ':'')+'pinned-row';
     rowCls+=rowCommentClass(r);
-    return '<tr class="'+rowCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'rr\')" style="'+rowStyle+'">'
+    return '<tr class="'+rowCls+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+rowIdArg(r.id)+',\'rr\')" style="'+rowStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
@@ -5704,10 +5707,10 @@ function openNewRRModal(){
   openEntryOverlay('rr-modal');
 }
 function openEditRR(id){
-  editingRRId=id;
   _rrTimerDirty=false;
   _rrAutoClient=null;
-  var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  var r=findDataRecord(id);if(!r)return;
+  editingRRId=r.id;
   setEntryDeleteVisible('rr-modal-delete-btn',!!window._canEdit);
   document.getElementById('rr-modal-title').textContent='Edit RR / RO Entry';
   document.getElementById('rr-subject').value=r.rrSubject||'';
@@ -5870,7 +5873,7 @@ function renderRows(){
     var agingCls=_fx.cls;
     var agingStyle=_fx.style;
     if(r._type==='did'){
-      return '<tr class="'+(r.pinned?'pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer'+agingStyle+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')">'
+      return '<tr class="'+(r.pinned?'pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" style="opacity:0.6;cursor:pointer'+agingStyle+'" ondblclick="rowDblClick(event,'+rowIdArg(r.id)+',\'did\')">'
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
@@ -5884,7 +5887,7 @@ function renderRows(){
         +'</tr>';
     }
     var isDone=DONE_ST.indexOf(r.status)>-1;
-    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'end\')" style="cursor:pointer'+agingStyle+'">'
+    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+rowIdArg(r.id)+',\'end\')" style="cursor:pointer'+agingStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
@@ -5971,7 +5974,7 @@ function renderDIDRows(){
     var _fx=rowFxParts(r);
     var agingCls=_fx.cls;
     var agingStyle=_fx.style;
-    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+r.id+',\'did\')" style="cursor:pointer'+agingStyle+'">'
+    return '<tr class="'+(isDone?'row-done':'')+(r.pinned?' pinned-row':'')+agingCls+rowCommentClass(r)+'" id="row-'+r.id+'" ondblclick="rowDblClick(event,'+rowIdArg(r.id)+',\'did\')" style="cursor:pointer'+agingStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
@@ -6034,9 +6037,9 @@ function openNewDIDModal(){
 }
 
 function openEditDID(id){
-  editingDIDId=id;
   _didTimerDirty=false;
-  var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  var r=findDataRecord(id);if(!r)return;
+  editingDIDId=r.id;
   setEntryDeleteVisible('did-modal-delete-btn',!!window._canEdit);
   document.getElementById('did-modal-title').textContent='Edit DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){setClientDropdown('d-client-sel','d-client',r.client||'');}else{document.getElementById('d-client').value=r.client||'';}
@@ -6453,10 +6456,13 @@ function openNewModal(){
   clearModalMeta('modal');
   openEntryOverlay('record-modal');
 }
+function findDataRecord(id){
+  return DATA.find(function(record){return String(record.id)===String(id);});
+}
 function openEdit(id){
-  editingId=id;
   _endorsementTimerDirty=false;
-  var r=DATA.find(function(d){return d.id===id;});if(!r)return;
+  var r=findDataRecord(id);if(!r)return;
+  editingId=r.id;
   setEntryDeleteVisible('modal-delete-btn',!!window._canEdit);
   document.getElementById('modal-title').textContent='Edit Endorsement';
   // Set client dropdown — add the current client as an option if not in list
@@ -6483,7 +6489,7 @@ function openEdit(id){
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments(r.comments||[]);
   setModalMeta('modal',r);
-  markRead(id);renderRows();
+  markRead(r.id);renderRows();
   openEntryOverlay('record-modal');
 }
 function closeModal(){if(_skipModalClose)return;closeEntryOverlay('record-modal');editingId=null;_endorsementTimerDirty=false;_pendingComments=[];}
@@ -10896,9 +10902,16 @@ window.renderNotepad=renderNotepad;
 // Double-click row to open edit modal
 function rowDblClick(e, id, type) {
   if (e.target.closest('button,input,select,a,label')) return;
-  if (type === 'rr') openEditRR(id);
-  else if (type === 'did') openEditDID(id);
-  else openEdit(id);
+  /* Firestore/imported rows can carry a numeric id as either a number or a
+     string. Resolve through the row as a fallback and pass the record's real
+     id type so a valid double-click never dies on a strict comparison. */
+  var row=e.currentTarget&&e.currentTarget.tagName==='TR'?e.currentTarget:e.target.closest('tr');
+  var rowId=row&&row.id.indexOf('row-')===0?row.id.slice(4):id;
+  var record=findDataRecord(id)||findDataRecord(rowId);
+  var resolvedId=record?record.id:id;
+  if (type === 'rr') openEditRR(resolvedId);
+  else if (type === 'did') openEditDID(resolvedId);
+  else openEdit(resolvedId);
 }
 window.rowDblClick = rowDblClick;
 
