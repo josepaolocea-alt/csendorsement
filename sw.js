@@ -1,4 +1,4 @@
-const CACHE = 'cyn-v14';
+const CACHE = 'cyn-v15';
 const SHELL = ['./index.html', './manifest.json', './premium-dropdown.js'];
 
 self.addEventListener('install', e => {

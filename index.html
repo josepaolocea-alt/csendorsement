@@ -136,7 +136,14 @@ select::-ms-expand{display:none;}
 .premium-select-search::placeholder{color:var(--text3);}
 .premium-select-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 15%,transparent);}
 .premium-select-options{overflow-y:auto;overscroll-behavior:contain;padding:1px;scrollbar-width:thin;scrollbar-color:var(--bg5) transparent;}
-.premium-select-group{padding:9px 10px 4px;color:var(--text3);font:700 10px/1 var(--sf);letter-spacing:.65px;text-transform:uppercase;}
+.premium-select-group{display:flex;align-items:center;gap:7px;margin:8px 3px 4px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--bg4) 68%,transparent);color:var(--text2);font:750 10.5px/1 var(--sf);letter-spacing:.72px;text-transform:uppercase;}
+.premium-select-group:first-child{margin-top:2px;}
+.premium-select-group::before{content:'';width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 14%,transparent);}
+.premium-select-group::after{content:'';height:1px;flex:1;background:currentColor;opacity:.24;}
+.premium-select-group.is-in-progress{color:#8da9ff;border-color:color-mix(in srgb,#6685ff 34%,var(--border));background:color-mix(in srgb,#6685ff 13%,var(--bg3));}
+.premium-select-group.is-completed{color:#5ed99a;border-color:color-mix(in srgb,#34c77b 32%,var(--border));background:color-mix(in srgb,#34c77b 12%,var(--bg3));}
+[data-theme="light"] .premium-select-group.is-in-progress{color:#315bd7;background:color-mix(in srgb,#6685ff 15%,var(--bg2));}
+[data-theme="light"] .premium-select-group.is-completed{color:#167548;background:color-mix(in srgb,#34c77b 14%,var(--bg2));}
 .premium-select-option{position:relative;width:100%;display:flex;align-items:center;gap:9px;min-height:36px;padding:8px 34px 8px 10px;border:0;border-radius:8px;background:transparent;color:var(--text2);font:500 12.5px/1.35 var(--sf);text-align:left;cursor:pointer;transition:background .11s,color .11s,transform .11s;}
 .premium-select-option:hover,.premium-select-option.is-active{background:color-mix(in srgb,var(--accent) 11%,var(--bg4));color:var(--text);}
 .premium-select-option:active{transform:scale(.985);}

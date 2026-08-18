@@ -176,7 +176,8 @@
       if(!matches[row.index]) return;
       if(pendingGroup && !groupHasMatch){
         var heading = document.createElement('div');
-        heading.className = 'premium-select-group';
+        var groupKey = pendingGroup.trim().toLocaleLowerCase();
+        heading.className = 'premium-select-group'+(groupKey === 'in progress'?' is-in-progress':groupKey === 'completed'?' is-completed':'');
         heading.textContent = pendingGroup;
         optionsBox.appendChild(heading);
         groupHasMatch = true;
