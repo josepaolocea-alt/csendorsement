@@ -87,6 +87,35 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .stat-chip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;color:var(--text2);display:flex;align-items:center;gap:5px;}
 .stat-chip strong{color:var(--text);font-size:13px;}
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+/* Premium floating menu for the compact table tools. */
+.toolbar-tools{position:relative;margin-left:auto;flex:0 0 auto;z-index:30;}
+.toolbar-tools-trigger{height:36px;padding:0 12px 0 10px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:10px;background:linear-gradient(145deg,color-mix(in srgb,var(--bg3) 91%,white 9%),color-mix(in srgb,var(--bg2) 96%,var(--accent) 4%));box-shadow:0 8px 22px rgba(0,0,0,.16),inset 0 1px 0 color-mix(in srgb,white 9%,transparent);color:var(--text);display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:.05px;cursor:pointer;transition:transform .16s,border-color .16s,box-shadow .16s,background .16s;}
+.toolbar-tools-trigger:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--accent) 46%,var(--border));box-shadow:0 12px 28px rgba(0,0,0,.24),0 0 0 3px color-mix(in srgb,var(--accent) 8%,transparent),inset 0 1px 0 color-mix(in srgb,white 12%,transparent);}
+.toolbar-tools-trigger:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 68%,transparent);outline-offset:2px;}
+.toolbar-tools.open .toolbar-tools-trigger{border-color:color-mix(in srgb,var(--accent) 58%,var(--border));background:color-mix(in srgb,var(--accent) 13%,var(--bg3));box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 10%,transparent),inset 0 1px 0 color-mix(in srgb,white 10%,transparent);}
+.toolbar-tools-mark{width:22px;height:22px;border-radius:7px;display:grid;grid-template-columns:repeat(2,4px);grid-template-rows:repeat(2,4px);align-content:center;justify-content:center;gap:3px;background:linear-gradient(145deg,var(--accent),var(--accent2));box-shadow:0 5px 12px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.32);}
+.toolbar-tools-mark i{width:4px;height:4px;border-radius:2px;background:#fff;box-shadow:0 1px 1px rgba(0,0,0,.18);}
+.toolbar-tools-chevron{width:7px;height:7px;margin-left:1px;border-right:1.5px solid var(--text3);border-bottom:1.5px solid var(--text3);transform:translateY(-2px) rotate(45deg);transition:transform .18s;}
+.toolbar-tools.open .toolbar-tools-chevron{transform:translateY(2px) rotate(225deg);}
+.toolbar-tools-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:310px;padding:8px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border2));border-radius:16px;background:color-mix(in srgb,var(--bg2) 92%,transparent);box-shadow:0 28px 80px rgba(0,0,0,.48),0 8px 24px rgba(0,0,0,.25),inset 0 1px 0 color-mix(in srgb,white 10%,transparent);backdrop-filter:blur(22px) saturate(155%);-webkit-backdrop-filter:blur(22px) saturate(155%);overflow:hidden;z-index:1200;transform-origin:top right;}
+.toolbar-tools-menu::before{content:"";position:absolute;inset:-70px -55px auto auto;width:155px;height:130px;border-radius:50%;background:color-mix(in srgb,var(--accent) 17%,transparent);filter:blur(28px);pointer-events:none;}
+.toolbar-tools.open .toolbar-tools-menu{display:block;animation:toolbarToolsIn .18s cubic-bezier(.2,.82,.28,1);}
+@keyframes toolbarToolsIn{from{opacity:0;transform:translateY(-7px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.toolbar-tools-head{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:9px 10px 11px;margin-bottom:4px;border-bottom:1px solid color-mix(in srgb,var(--border) 82%,transparent);}
+.toolbar-tools-head strong{display:block;font-size:12.5px;line-height:1.3;color:var(--text);letter-spacing:.05px;}
+.toolbar-tools-head span{display:block;margin-top:2px;font-size:10.5px;color:var(--text3);}
+.toolbar-tools-kicker{flex:0 0 auto!important;margin:1px 0 0!important;padding:3px 7px;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));border-radius:999px;background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--accent)!important;font-size:9px!important;font-weight:800;letter-spacing:.65px;}
+.toolbar-tool{position:relative;width:100%;display:flex;align-items:center;gap:11px;padding:9px 10px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--text2);text-align:left;cursor:pointer;transition:background .14s,border-color .14s,color .14s,transform .14s;}
+.toolbar-tool:hover,.toolbar-tool:focus-visible{outline:none;color:var(--text);background:linear-gradient(100deg,color-mix(in srgb,var(--accent) 11%,var(--bg3)),color-mix(in srgb,var(--bg3) 78%,transparent));border-color:color-mix(in srgb,var(--accent) 18%,var(--border));transform:translateX(1px);}
+.toolbar-tool-icon{width:34px;height:34px;flex:0 0 auto;border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid color-mix(in srgb,var(--tool-color,var(--accent)) 23%,var(--border));background:color-mix(in srgb,var(--tool-color,var(--accent)) 11%,var(--bg3));color:var(--tool-color,var(--accent));box-shadow:inset 0 1px 0 color-mix(in srgb,white 7%,transparent);}
+.toolbar-tool-icon svg{width:17px;height:17px;display:block;}
+.toolbar-tool-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px;}
+.toolbar-tool-copy strong{color:inherit;font-size:12.5px;font-weight:700;line-height:1.3;}
+.toolbar-tool-copy small{color:var(--text3);font-size:10.5px;font-weight:500;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.toolbar-tool-state{flex:0 0 auto;padding:3px 7px;border-radius:999px;background:var(--bg4);border:1px solid var(--border);color:var(--text3);font-size:9.5px;font-weight:700;}
+.toolbar-tool-arrow{width:7px;height:7px;margin-right:4px;border-top:1.5px solid var(--text3);border-right:1.5px solid var(--text3);transform:rotate(45deg);opacity:.65;transition:transform .14s,opacity .14s;}
+.toolbar-tool:hover .toolbar-tool-arrow,.toolbar-tool:focus-visible .toolbar-tool-arrow{opacity:1;transform:translateX(2px) rotate(45deg);}
+@media(max-width:560px){.toolbar-tools{margin-left:auto}.toolbar-tools-menu{position:fixed;top:auto;right:12px;bottom:max(14px,env(safe-area-inset-bottom));left:12px;width:auto;transform-origin:bottom center}.toolbar-tools.open .toolbar-tools-menu{animation:toolbarToolsMobileIn .2s cubic-bezier(.2,.82,.28,1)}@keyframes toolbarToolsMobileIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}}
 /* Active-filter chips — summarize which dropdown filters are applied, each removable */
 .filter-chips{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:2px;}
 .filter-chips .fchip-lead{font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--text3);margin-right:2px;}
@@ -1176,12 +1205,12 @@ td.empty::before,.cal-empty::before{content:"◇";display:block;width:38px;heigh
   <link rel="icon" type="image/png" href="data:image/png;base64,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">
 </head>
 <body class="density-compact entry-compact">
-<script src="./premium-dropdown.js?v=25"></script>
-<script src="./premium-datetime.js?v=25"></script>
+<script src="./premium-dropdown.js?v=26"></script>
+<script src="./premium-datetime.js?v=26"></script>
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('./sw.js?v=25',{updateViaCache:'none'}).then(function(registration){return registration.update();}).catch(function(){});
+    navigator.serviceWorker.register('./sw.js?v=26',{updateViaCache:'none'}).then(function(registration){return registration.update();}).catch(function(){});
   });
 }
 </script>
@@ -1611,10 +1640,39 @@ try{
     <select class="fsel" id="f-am-filter" onchange="applyFilters()"><option value="">All AM</option></select>
     <span id="date-range-badge" style="display:none;font-size:12px;color:var(--accent);font-weight:600"></span>
     <button class="btn btn-secondary btn-sm" id="date-range-clear-btn" onclick="clearDateRangeFilter()" style="display:none">✕ Clear dates</button>
-    <button class="tab-btn" id="density-btn" data-tip="Compact rows" aria-label="Toggle row density" onclick="toggleDensity()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-    <button class="tab-btn" id="auto-toggle-btn" data-tip="Settings" aria-label="Settings" onclick="toggleAutoPanel()" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
-    <button class="tab-btn" data-tip="Export" aria-label="Export" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
-    <button class="tab-btn" id="daily-report-btn" data-tip="Daily Report" aria-label="Daily Report" onclick="openDailyReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></button>
+    <div class="toolbar-tools" id="toolbar-tools" onclick="event.stopPropagation()">
+      <button class="toolbar-tools-trigger" id="toolbar-tools-trigger" type="button" aria-label="Open table tools" aria-haspopup="menu" aria-expanded="false" onclick="toggleToolbarTools(event)">
+        <span class="toolbar-tools-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>Tools</span>
+        <span class="toolbar-tools-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="toolbar-tools-menu" id="toolbar-tools-menu" role="menu" aria-label="Table tools" onkeydown="handleToolbarToolsKeys(event)">
+        <div class="toolbar-tools-head">
+          <div><strong>Workspace tools</strong><span>Display, settings and output</span></div>
+          <span class="toolbar-tools-kicker">QUICK</span>
+        </div>
+        <button class="toolbar-tool" id="density-btn" type="button" role="menuitem" aria-label="Toggle row density" onclick="toolbarToolDensity()" style="--tool-color:#8b9dff">
+          <span class="toolbar-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></span>
+          <span class="toolbar-tool-copy"><strong>Row density</strong><small id="density-menu-copy">Switch table spacing</small></span>
+          <span class="toolbar-tool-state" id="density-menu-state">Compact</span>
+        </button>
+        <button class="toolbar-tool" id="auto-toggle-btn" type="button" role="menuitem" aria-label="Settings" onclick="toolbarToolSettings()" style="display:none;--tool-color:#c084fc">
+          <span class="toolbar-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <span class="toolbar-tool-copy"><strong>Settings</strong><small>Automation, alerts and display</small></span>
+          <span class="toolbar-tool-arrow" aria-hidden="true"></span>
+        </button>
+        <button class="toolbar-tool" type="button" role="menuitem" aria-label="Export CSV" onclick="toolbarToolExport()" style="--tool-color:#34d399">
+          <span class="toolbar-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span>
+          <span class="toolbar-tool-copy"><strong>Export CSV</strong><small>Download selected or visible records</small></span>
+          <span class="toolbar-tool-arrow" aria-hidden="true"></span>
+        </button>
+        <button class="toolbar-tool" id="daily-report-btn" type="button" role="menuitem" aria-label="Daily Report" onclick="toolbarToolReport()" style="--tool-color:#fbbf24">
+          <span class="toolbar-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></span>
+          <span class="toolbar-tool-copy"><strong>Daily report</strong><small>Open the complete activity summary</small></span>
+          <span class="toolbar-tool-arrow" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
     <button class="btn btn-sm" id="bulk-delete-btn" onclick="bulkDelete()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected</button>
     <button class="btn btn-sm" id="trash-restore-sel-btn" onclick="restoreSelected()" style="display:none;background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)">Restore Selected</button>
     <button class="btn btn-sm" id="trash-purge-sel-btn" onclick="purgeSelected()" style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Delete Selected Now</button>
@@ -2437,9 +2495,6 @@ try{
         </div>
       </div>
     </div>
-    <div class="modal-ftr">
-      <button class="btn btn-secondary" onclick="closeCommentsModal()">Close</button>
-    </div>
   </div>
 </div>
 
@@ -3145,6 +3200,7 @@ function syncSplitActionMenu(){
 }
 function toggleSplitActionMenu(e){
   if(e){e.preventDefault();e.stopPropagation();}
+  if(typeof closeToolbarTools==='function')closeToolbarTools(false);
   var wrap=document.getElementById('split-actions'),btn=document.getElementById('split-menu-btn');
   if(!wrap||!btn)return;
   syncSplitActionMenu();
@@ -3164,6 +3220,50 @@ function splitMenuTheme(){toggleTheme();closeSplitActionMenu();}
 function splitMenuLogout(){closeSplitActionMenu();doLogout();}
 document.addEventListener('click',function(){closeSplitActionMenu();});
 
+// ─── PREMIUM TABLE TOOLS MENU ───────────────────────────────
+function syncToolbarTools(){
+  var compact=localStorage.getItem('cyn_density')!=='comfortable';
+  var state=document.getElementById('density-menu-state');
+  var copy=document.getElementById('density-menu-copy');
+  if(state)state.textContent=compact?'Compact':'Comfortable';
+  if(copy)copy.textContent=compact?'Use roomier table rows':'Fit more rows on screen';
+}
+function toolbarToolsItems(){
+  var menu=document.getElementById('toolbar-tools-menu');
+  return menu?Array.from(menu.querySelectorAll('.toolbar-tool')).filter(function(item){return item.style.display!=='none'&&!item.disabled;}):[];
+}
+function toggleToolbarTools(e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  closeSplitActionMenu();
+  var wrap=document.getElementById('toolbar-tools'),btn=document.getElementById('toolbar-tools-trigger');
+  if(!wrap||!btn)return;
+  syncToolbarTools();
+  var open=wrap.classList.toggle('open');
+  btn.setAttribute('aria-expanded',open?'true':'false');
+  if(open){var items=toolbarToolsItems();if(items.length)setTimeout(function(){items[0].focus();},0);}
+}
+function closeToolbarTools(restoreFocus){
+  var wrap=document.getElementById('toolbar-tools'),btn=document.getElementById('toolbar-tools-trigger');
+  if(!wrap||!wrap.classList.contains('open'))return false;
+  wrap.classList.remove('open');
+  if(btn){btn.setAttribute('aria-expanded','false');if(restoreFocus)btn.focus();}
+  return true;
+}
+function handleToolbarToolsKeys(e){
+  var items=toolbarToolsItems();if(!items.length)return;
+  var at=items.indexOf(document.activeElement);
+  if(e.key==='ArrowDown'){e.preventDefault();items[(at+1+items.length)%items.length].focus();}
+  else if(e.key==='ArrowUp'){e.preventDefault();items[(at-1+items.length)%items.length].focus();}
+  else if(e.key==='Home'){e.preventDefault();items[0].focus();}
+  else if(e.key==='End'){e.preventDefault();items[items.length-1].focus();}
+  else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeToolbarTools(true);}
+}
+function toolbarToolDensity(){toggleDensity();syncToolbarTools();closeToolbarTools(true);}
+function toolbarToolSettings(){closeToolbarTools(true);toggleAutoPanel();}
+function toolbarToolExport(){closeToolbarTools(true);exportCSV();}
+function toolbarToolReport(){closeToolbarTools(true);openDailyReport();}
+document.addEventListener('click',function(){closeToolbarTools(false);});
+
 // ─── ROW DENSITY (per-device display preference) ─────────────
 function applyDensity(){
   // Missing/unknown preference means Compact; Comfortable remains an explicit choice.
@@ -3175,6 +3275,7 @@ function applyDensity(){
     b.setAttribute('aria-label',compact?'Switch to comfortable rows':'Switch to compact rows');
     b.setAttribute('aria-pressed',compact?'true':'false');
   }
+  syncToolbarTools();
 }
 function toggleDensity(){
   var compact=localStorage.getItem('cyn_density')!=='comfortable';
@@ -6529,6 +6630,7 @@ document.addEventListener('mousemove',function(e){
 });
 document.addEventListener('mouseup',function(){_dragging=false;});
 document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&closeToolbarTools(true)){e.preventDefault();return;}
   if(e.key==='Escape'&&closeSplitActionMenu()){e.preventDefault();return;}
   if((e.ctrlKey||e.metaKey)&&e.key==='f'){
     e.preventDefault();
@@ -11024,6 +11126,12 @@ window.clearOneFilter=clearOneFilter;
 window.clearAllFilters=clearAllFilters;
 window.renderFilterChips=renderFilterChips;
 window.toggleDensity=toggleDensity;
+window.toggleToolbarTools=toggleToolbarTools;
+window.handleToolbarToolsKeys=handleToolbarToolsKeys;
+window.toolbarToolDensity=toolbarToolDensity;
+window.toolbarToolSettings=toolbarToolSettings;
+window.toolbarToolExport=toolbarToolExport;
+window.toolbarToolReport=toolbarToolReport;
 window.toggleEntryCompact=toggleEntryCompact;
 window.switchDoneView=switchDoneView;
 window.archiveCurrentDoneView=archiveCurrentDoneView;

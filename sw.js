@@ -1,5 +1,5 @@
-const CACHE = 'cyn-v25';
-const SHELL = ['./index.html', './manifest.json', './premium-dropdown.js?v=25', './premium-datetime.js?v=25'];
+const CACHE = 'cyn-v26';
+const SHELL = ['./index.html', './manifest.json', './premium-dropdown.js?v=26', './premium-datetime.js?v=26'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
