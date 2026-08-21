@@ -329,7 +329,7 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
    only rows with new comments from another user and clears after they are read. */
 tr.has-new-comment>td:last-child{position:relative;}
 tr.has-new-comment>td:last-child::after{content:"";position:absolute;top:0;right:0;bottom:0;width:4px;background:var(--accent);}
-.tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:70px;text-align:center;}
+.tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:70px;text-align:center;white-space:nowrap;}
 .tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
 .tbadge.trestart{position:relative;background:rgba(34,197,94,.18);color:#4ade80;box-shadow:0 0 0 0 rgba(74,222,128,.22);animation:autoRestartPulse 1.5s ease-in-out infinite;}
@@ -3951,9 +3951,10 @@ function canUseAutoThirtyRule(r){
 function autoThirtyModeActive(r){
   if(!canUseAutoThirtyRule(r))return false;
   if(r.autoThirtyMode===true)return true;
-  if(r.autoThirtyMode===false)return false;
-  // Backward compatibility: existing ordinary 30-minute records enter the
-  // sequence without needing to be edited and re-saved first.
+  // The 30-minute duration is the durable source of truth for this rule. Some
+  // records were saved with autoThirtyMode=false before the cycle fields were
+  // introduced, which made them repeat 30 minutes forever. Let every eligible
+  // 30-minute record self-heal into the sequence on its next restart.
   return getTimerSecs(r)===AUTO_THIRTY_SECS;
 }
 function setAutoThirtyModeForDuration(r,secs){
@@ -3977,6 +3978,27 @@ function resetAutoThirtyCycle(r){
 function nextAutoThirtyCycle(r){
   var completed=Math.min(AUTO_THIRTY_SHORT_CYCLES,(parseInt(r&&r.autoThirtyCycleCount,10)||0)+1);
   return {completed:completed,secs:completed>=AUTO_THIRTY_SHORT_CYCLES?AUTO_THIRTY_LONG_SECS:AUTO_THIRTY_SECS};
+}
+function autoThirtyPhase(r){
+  if(!autoThirtySequenceApplies(r))return null;
+  var completed=Math.max(0,Math.min(AUTO_THIRTY_SHORT_CYCLES,parseInt(r.autoThirtyCycleCount,10)||0));
+  if(getTimerSecs(r)===AUTO_THIRTY_LONG_SECS||completed>=AUTO_THIRTY_SHORT_CYCLES){
+    return {label:'2h',title:'2-hour repeat timer — all 4 short cycles completed'};
+  }
+  var current=Math.min(AUTO_THIRTY_SHORT_CYCLES,completed+1);
+  return {label:'30m '+current+'/'+AUTO_THIRTY_SHORT_CYCLES,title:'30-minute cycle '+current+' of '+AUTO_THIRTY_SHORT_CYCLES+' — switches to a 2-hour timer after cycle 4'};
+}
+function timerBadgeText(r,rem){
+  var text=rem===null?'--:--':fmtTime(rem);
+  var phase=autoThirtyPhase(r);
+  return phase?text+' · '+phase.label:text;
+}
+function timerBadgeTitle(r){
+  var phase=autoThirtyPhase(r);
+  var parts=[];
+  if(phase)parts.push(phase.title);
+  if(isAutoRestartRecent(r))parts.push('Timer restarted recently');
+  return parts.join(' | ');
 }
 
 /* ── DIDLOGIC 3 WORKING-DAY "Post by" (skips weekends + PH holidays) ──────────
@@ -4106,7 +4128,8 @@ function applyReminderToRecord(rec,prev,reminder){
 function timerHTML(r){
   var rem=r.timerStart?calcRem(r):null;
   var cls='tbadge'+(rem===null?'':(rem===0?' texp':rem<300?' twarn':''))+autoRestartBadgeClass(r,rem);
-  var ts=rem===null?'--:--':fmtTime(rem);
+  var ts=timerBadgeText(r,rem);
+  var title=timerBadgeTitle(r);
   var btns='';
   if(window._canEdit){
     if(recordStatusStopsTimer(r)){
@@ -4117,7 +4140,7 @@ function timerHTML(r){
         :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
     }
   }
-  return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'">'+ts+'</span>'+btns+'</div>';
+  return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'" title="'+escAttr(title)+'">'+ts+'</span>'+btns+'</div>';
 }
 
 function timerBlockedToast(r){
@@ -4903,9 +4926,9 @@ setInterval(function(){
       var badge=document.getElementById('tb-'+r.id);
       if(badge){
         var isHHMM=r._type==='did'||r._type==='rr';
-        badge.textContent=fmtTime(rem);
+        badge.textContent=timerBadgeText(r,rem);
         badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'')+autoRestartBadgeClass(r,rem);
-        badge.title=isAutoRestartRecent(r)?'Timer restarted recently':'';
+        badge.title=timerBadgeTitle(r);
       }
     }
     maybeAlertReminder(r);
