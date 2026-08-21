@@ -1331,6 +1331,13 @@ try{
       </label>
     </div>
     <div class="auto-row">
+      <span class="auto-label">30m ×4 → 2h auto-timer:</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="auto-thirty-rule-enabled" onchange="onAutoThirtyRuleSettingChange()" style="accent-color:var(--accent)" checked> Enable
+      </label>
+      <span class="auto-label" style="color:var(--text3)">Ordinary 30-minute timers run four short cycles, then repeat every 2 hours</span>
+    </div>
+    <div class="auto-row">
       <span class="auto-label">Timer alarm:</span>
       <select class="fsel" id="alarm-tone" onchange="saveSettings()">
         <optgroup label="Alerting">
@@ -2759,7 +2766,7 @@ var _archiveLoading = false;
 var _archiveLoadPromise = null;
 var _archiveExpandedId = null;
 var idSeq = 1;
-var SETTINGS = {defaultTimer:3600, paymentTimer:86400, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', rrRoAlertNotify:true, slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
+var SETTINGS = {defaultTimer:3600, autoThirtyRuleEnabled:true, paymentTimer:86400, paymentClientName:'SIR GENE EMAIL', paymentClientTimer:86400, autoAlert:false, alarmTone:'beep', reminderTone:'bell', timerFxEnabled:true, timerFxEffect:'blink', timerFxColor:'#f87171', timerFxMins:5, advisedAgingEnabled:true, advisedAgingDays:7, advisedAgingEffect:'soft', advisedAgingColor:'#fb7185', rrRoAlertEnabled:true, rrRoAlertTime:'18:00', rrRoAlertEffect:'pulse', rrRoAlertColor:'#38bdf8', rrRoAlertNotify:true, slaEnabled:false, slaL2Hours:3, slaL2Effect:'soft', slaL2Color:'#facc15', slaCtoHours:6, slaCtoEffect:'pulse', slaCtoColor:'#f97316', slaAmHours:8, slaAmEffect:'blink', slaAmColor:'#f87171'};
 var EFFECT_COLOR_PALETTE=['#000000','#666666','#999999','#cccccc','#ffffff','#f87171','#fb7185','#f97316','#fbbf24','#facc15','#4ade80','#22c55e','#38bdf8','#60a5fa','#818cf8','#a78bfa','#c084fc','#f472b6','#14b8a6','#94a3b8'];
 var editingId = null, sortCol = 'startDate', sortDir = -1, currentTab = 'all', filteredData = [];
 var _doneView = 'tasks';
@@ -2782,8 +2789,11 @@ window._canAdd=false;
 var CLIENTS = []; // loaded from Firestore
 var CLIENT_LINKS = {}; // client name → {rrBy, priority} (linked in Admin tab)
 var _editingUserId = null;
+var _allPage=0, _allPageSize=10;
+var _didPage=0, _didPageSize=10;
 var _donePage=0, _donePageSize=10;
 var _rrPage=0, _rrPageSize=50;
+var _doneRRPage=0, _doneRRPageSize=10;
 var _undoState=null, _undoTimeout=null;
 var _pendingRRComments=[];
 
@@ -3107,6 +3117,8 @@ function saveSettings(){
     pcHrs.style.display=pcSel.value==='custom'?'':'none';
     SETTINGS.paymentClientTimer=pcSel.value==='custom'?Math.max(1,parseInt(pcHrs.value,10)||24)*3600:parseInt(pcSel.value,10)||86400;
   }
+  var autoThirtyRuleEl=document.getElementById('auto-thirty-rule-enabled');
+  SETTINGS.autoThirtyRuleEnabled=autoThirtyRuleEl?autoThirtyRuleEl.checked:true;
   SETTINGS.autoAlert=document.getElementById('auto-alert').checked;
   SETTINGS.alarmTone=document.getElementById('alarm-tone').value;
   SETTINGS.reminderTone=document.getElementById('reminder-alarm-tone').value;
@@ -3176,6 +3188,39 @@ function onTimerChange(){
   var sel=document.getElementById('default-timer').value;
   document.getElementById('custom-mins').style.display=sel==='custom'?'':'none';
   saveSettings();
+}
+function disableActiveAutoThirtySequences(){
+  var now=Date.now(),changed=[];
+  DATA.forEach(function(r){
+    if(!ordinaryAutoThirtyEligible(r))return;
+    var wasSequence=r.autoThirtyMode===true||(parseInt(r.autoThirtyCycleCount,10)||0)>0;
+    if(!wasSequence)return;
+    r.timerOverride=AUTO_THIRTY_SECS;
+    r.autoThirtyMode=false;
+    r.autoThirtyCycleCount=0;
+    r.autoThirtyResume=false;
+    r.autoRestartedAt=null;
+    if(r.timerStart&&!recordStatusStopsTimer(r)){
+      r.timerStart=now;
+      r.timerAlerted=false;
+    }
+    r.updatedBy=_currentUser?_currentUser.email:'';
+    r.updatedAt=now;
+    changed.push(r);
+  });
+  changed.forEach(function(r){saveOne(r);});
+  if(changed.length)applyFilters();
+  return changed.length;
+}
+function onAutoThirtyRuleSettingChange(){
+  var el=document.getElementById('auto-thirty-rule-enabled');
+  var enabled=el?el.checked:true;
+  var wasEnabled=SETTINGS.autoThirtyRuleEnabled!==false;
+  SETTINGS.autoThirtyRuleEnabled=enabled;
+  saveSettings();
+  var resetCount=wasEnabled&&!enabled?disableActiveAutoThirtySequences():0;
+  applyFilters();
+  toast(enabled?'30m ×4 → 2h auto-timer enabled':'30m ×4 → 2h auto-timer disabled'+(resetCount?' — '+resetCount+' active timer'+(resetCount===1?'':'s')+' reset to 30 minutes':''),'info');
 }
 
 function toggleTheme(){
@@ -3566,7 +3611,7 @@ function switchDoneView(view){
   window._lastCheckAll=false;
   updateBulkBar();
   ['search-input','f-svc','f-st','f-pri','f-plt','f-am-filter'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  _donePage=0;_rrPage=0;
+  _donePage=0;_doneRRPage=0;
   configureTaskFilterToolbar(_doneView==='rr'?'done-rr':'done');
   updateDoneSubtabs();
   applyFilters();
@@ -3624,6 +3669,8 @@ function _doSwitchTab(tab,el){
   document.getElementById('f-plt').value='';
   var amFilter=document.getElementById('f-am-filter');if(amFilter)amFilter.value='';
   configureTaskFilterToolbar(tab==='done'&&_doneView==='rr'?'done-rr':tab);
+  if(tab==='all') _allPage=0;
+  if(tab==='did') _didPage=0;
   if(tab==='done') _donePage=0;
   if(tab==='mine') _rrPage=0;
   if(tab==='trash') loadTrash(); else applyFilters();
@@ -3947,9 +3994,12 @@ function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.default
 var AUTO_THIRTY_SECS=1800;
 var AUTO_THIRTY_LONG_SECS=7200;
 var AUTO_THIRTY_SHORT_CYCLES=4;
-function canUseAutoThirtyRule(r){
+function ordinaryAutoThirtyEligible(r){
   if(!r||r._type==='did'||r._type==='rr')return false;
   return ruleTimerSecs(r.client,r.service)===0;
+}
+function canUseAutoThirtyRule(r){
+  return SETTINGS.autoThirtyRuleEnabled!==false&&ordinaryAutoThirtyEligible(r);
 }
 function autoThirtyModeActive(r){
   if(!canUseAutoThirtyRule(r))return false;
@@ -5837,39 +5887,53 @@ var RR_THEAD='<tr>'
   +'<th style="width:160px">Timer</th>'
   +'</tr>';
 
-function renderRRPagination(total){
+var MAIN_PAGE_SIZES=[10,50,100,500];
+function clampMainPage(total,pageSize,page){
+  return Math.max(0,Math.min(Math.max(1,Math.ceil(total/pageSize))-1,page));
+}
+function renderMainPagination(total,page,pageSize,goFn,sizeFn){
   var pgDiv=document.getElementById('main-pagination');
   if(!pgDiv) return;
-  var totalPages=Math.max(1,Math.ceil(total/_rrPageSize));
-  if(_rrPage>=totalPages) _rrPage=totalPages-1;
-  if(_rrPage<0) _rrPage=0;
+  var totalPages=Math.max(1,Math.ceil(total/pageSize));
   var pageBtns=totalPages<=1?'':
-    '<button class="btn btn-secondary btn-sm" onclick="goRRPage(0)" '+(_rrPage===0?'disabled':'')+'>«</button>'
-    +'<button class="btn btn-secondary btn-sm" onclick="goRRPage('+(_rrPage-1)+')" '+(_rrPage===0?'disabled':'')+'>‹ Prev</button>'
-    +'<span style="font-size:12px;color:var(--text2)">Page '+(_rrPage+1)+' / '+totalPages+'</span>'
-    +'<button class="btn btn-secondary btn-sm" onclick="goRRPage('+(_rrPage+1)+')" '+(_rrPage>=totalPages-1?'disabled':'')+'>Next ›</button>'
-    +'<button class="btn btn-secondary btn-sm" onclick="goRRPage('+(totalPages-1)+')" '+(_rrPage>=totalPages-1?'disabled':'')+'>»</button>';
+    '<button class="btn btn-secondary btn-sm" onclick="'+goFn+'(0)" '+(page===0?'disabled':'')+'>«</button>'
+    +'<button class="btn btn-secondary btn-sm" onclick="'+goFn+'('+(page-1)+')" '+(page===0?'disabled':'')+'>‹ Prev</button>'
+    +'<span style="font-size:12px;color:var(--text2)">Page '+(page+1)+' / '+totalPages+'</span>'
+    +'<button class="btn btn-secondary btn-sm" onclick="'+goFn+'('+(page+1)+')" '+(page>=totalPages-1?'disabled':'')+'>Next ›</button>'
+    +'<button class="btn btn-secondary btn-sm" onclick="'+goFn+'('+(totalPages-1)+')" '+(page>=totalPages-1?'disabled':'')+'>»</button>';
   pgDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap">'
     +pageBtns
     +'<span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">Rows per page:'
-    +'<select class="fsel" style="font-size:12px" onchange="changeRRPageSize(this.value)">'
-    +'<option value="50"'+(_rrPageSize===50?' selected':'')+'>50</option>'
-    +'<option value="100"'+(_rrPageSize===100?' selected':'')+'>100</option>'
-    +'<option value="500"'+(_rrPageSize===500?' selected':'')+'>500</option>'
+    +'<select class="fsel" style="font-size:12px" onchange="'+sizeFn+'(this.value)">'
+    +MAIN_PAGE_SIZES.map(function(size){return '<option value="'+size+'"'+(pageSize===size?' selected':'')+'>'+size+'</option>';}).join('')
     +'</select></span>'
     +'</div>';
 }
-function goRRPage(p){_rrPage=p;renderRRRows();}
-function changeRRPageSize(v){_rrPageSize=parseInt(v,10);_rrPage=0;renderRRRows();}
+function renderRRPagination(total){
+  var doneView=isDoneRRView();
+  var pageSize=doneView?_doneRRPageSize:_rrPageSize;
+  var page=clampMainPage(total,pageSize,doneView?_doneRRPage:_rrPage);
+  if(doneView)_doneRRPage=page;else _rrPage=page;
+  renderMainPagination(total,page,pageSize,'goRRPage','changeRRPageSize');
+}
+function goRRPage(p){if(isDoneRRView())_doneRRPage=p;else _rrPage=p;renderRRRows();}
+function changeRRPageSize(v){
+  var size=parseInt(v,10);
+  if(MAIN_PAGE_SIZES.indexOf(size)===-1)return;
+  if(isDoneRRView()){_doneRRPageSize=size;_doneRRPage=0;}
+  else{_rrPageSize=size;_rrPage=0;}
+  renderRRRows();
+}
 
 function renderRRRows(){
   setMainTableLayout('rr');
   document.getElementById('main-thead').innerHTML=RR_THEAD;
   var tbody=document.getElementById('main-tbody');
-  var totalPages=Math.max(1,Math.ceil(filteredData.length/_rrPageSize));
-  if(_rrPage>=totalPages) _rrPage=totalPages-1;
-  if(_rrPage<0) _rrPage=0;
-  var displayData=filteredData.slice(_rrPage*_rrPageSize,(_rrPage+1)*_rrPageSize);
+  var doneView=isDoneRRView();
+  var pageSize=doneView?_doneRRPageSize:_rrPageSize;
+  var page=clampMainPage(filteredData.length,pageSize,doneView?_doneRRPage:_rrPage);
+  if(doneView)_doneRRPage=page;else _rrPage=page;
+  var displayData=filteredData.slice(page*pageSize,(page+1)*pageSize);
   renderRRPagination(filteredData.length);
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">'+(isDoneRRView()?'No completed or disregarded RR/RO records found':'No pending RR/RO records found')+'</td></tr>';return;}
   tbody.innerHTML=displayData.map(function(r){
@@ -6282,30 +6346,17 @@ function saveRRRecord(){
 }
 
 function renderDonePagination(total){
-  var pgDiv=document.getElementById('main-pagination');
-  if(!pgDiv) return;
-  var totalPages=Math.max(1,Math.ceil(total/_donePageSize));
-  if(_donePage>=totalPages) _donePage=totalPages-1;
-  if(_donePage<0) _donePage=0;
-  var pageBtns=totalPages<=1?'':
-    '<button class="btn btn-secondary btn-sm" onclick="goDonePage(0)" '+(_donePage===0?'disabled':'')+'>«</button>'
-    +'<button class="btn btn-secondary btn-sm" onclick="goDonePage('+(_donePage-1)+')" '+(_donePage===0?'disabled':'')+'>‹ Prev</button>'
-    +'<span style="font-size:12px;color:var(--text2)">Page '+(_donePage+1)+' / '+totalPages+'</span>'
-    +'<button class="btn btn-secondary btn-sm" onclick="goDonePage('+(_donePage+1)+')" '+(_donePage>=totalPages-1?'disabled':'')+'>Next ›</button>'
-    +'<button class="btn btn-secondary btn-sm" onclick="goDonePage('+(totalPages-1)+')" '+(_donePage>=totalPages-1?'disabled':'')+'>»</button>';
-  pgDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap">'
-    +pageBtns
-    +'<span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">Rows per page:'
-    +'<select class="fsel" style="font-size:12px" onchange="changeDonePageSize(this.value)">'
-    +'<option value="10"'+(_donePageSize===10?' selected':'')+'>10</option>'
-    +'<option value="50"'+(_donePageSize===50?' selected':'')+'>50</option>'
-    +'<option value="100"'+(_donePageSize===100?' selected':'')+'>100</option>'
-    +'<option value="500"'+(_donePageSize===500?' selected':'')+'>500</option>'
-    +'</select></span>'
-    +'</div>';
+  _donePage=clampMainPage(total,_donePageSize,_donePage);
+  renderMainPagination(total,_donePage,_donePageSize,'goDonePage','changeDonePageSize');
 }
 function goDonePage(p){_donePage=p;renderRows();}
-function changeDonePageSize(v){_donePageSize=parseInt(v,10);_donePage=0;renderRows();}
+function changeDonePageSize(v){var size=parseInt(v,10);if(MAIN_PAGE_SIZES.indexOf(size)===-1)return;_donePageSize=size;_donePage=0;renderRows();}
+function renderAllPagination(total){
+  _allPage=clampMainPage(total,_allPageSize,_allPage);
+  renderMainPagination(total,_allPage,_allPageSize,'goAllPage','changeAllPageSize');
+}
+function goAllPage(p){_allPage=p;renderRows();}
+function changeAllPageSize(v){var size=parseInt(v,10);if(MAIN_PAGE_SIZES.indexOf(size)===-1)return;_allPageSize=size;_allPage=0;renderRows();}
 
 function renderRows(){
   setMainTableLayout(currentTab==='all'?'all':'done');
@@ -6314,11 +6365,13 @@ function renderRows(){
   var pgDiv=document.getElementById('main-pagination');
   var displayData=filteredData;
   if(currentTab==='done'){
-    var totalPages=Math.max(1,Math.ceil(filteredData.length/_donePageSize));
-    if(_donePage>=totalPages) _donePage=totalPages-1;
-    if(_donePage<0) _donePage=0;
+    _donePage=clampMainPage(filteredData.length,_donePageSize,_donePage);
     displayData=filteredData.slice(_donePage*_donePageSize,(_donePage+1)*_donePageSize);
     renderDonePagination(filteredData.length);
+  }else if(currentTab==='all'){
+    _allPage=clampMainPage(filteredData.length,_allPageSize,_allPage);
+    displayData=filteredData.slice(_allPage*_allPageSize,(_allPage+1)*_allPageSize);
+    renderAllPagination(filteredData.length);
   }else{
     if(pgDiv) pgDiv.innerHTML='';
   }
@@ -6417,14 +6470,22 @@ var DONE_THEAD='<tr>'
   +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'</tr>';
 
+function renderDIDPagination(total){
+  _didPage=clampMainPage(total,_didPageSize,_didPage);
+  renderMainPagination(total,_didPage,_didPageSize,'goDIDPage','changeDIDPageSize');
+}
+function goDIDPage(p){_didPage=p;renderDIDRows();}
+function changeDIDPageSize(v){var size=parseInt(v,10);if(MAIN_PAGE_SIZES.indexOf(size)===-1)return;_didPageSize=size;_didPage=0;renderDIDRows();}
+
 function renderDIDRows(){
   setMainTableLayout('did');
   document.getElementById('main-thead').innerHTML=DID_THEAD;
   var tbody=document.getElementById('main-tbody');
-  var pgDiv=document.getElementById('main-pagination');
-  if(pgDiv) pgDiv.innerHTML='';
+  _didPage=clampMainPage(filteredData.length,_didPageSize,_didPage);
+  var displayData=filteredData.slice(_didPage*_didPageSize,(_didPage+1)*_didPageSize);
+  renderDIDPagination(filteredData.length);
   if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
-  tbody.innerHTML=filteredData.map(function(r){
+  tbody.innerHTML=displayData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     var _fx=rowFxParts(r);
     var agingCls=_fx.cls;
@@ -8458,10 +8519,11 @@ function matchesDateRange(r){
 }
 
 // Load settings from localStorage (fast, local)
-SETTINGS=Object.assign({defaultTimer:3600,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',rrRoAlertNotify:true,slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171',pinEffect:'soft',pinColor:'#fbbf24'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
+SETTINGS=Object.assign({defaultTimer:3600,autoThirtyRuleEnabled:true,paymentTimer:86400,paymentClientName:'SIR GENE EMAIL',paymentClientTimer:86400,autoAlert:false,alarmTone:'beep',reminderTone:'bell',advisedAgingEnabled:true,advisedAgingDays:7,advisedAgingEffect:'soft',advisedAgingColor:'#fb7185',rrRoAlertEnabled:true,rrRoAlertTime:'18:00',rrRoAlertEffect:'pulse',rrRoAlertColor:'#38bdf8',rrRoAlertNotify:true,slaEnabled:false,slaL2Hours:3,slaL2Effect:'soft',slaL2Color:'#facc15',slaCtoHours:6,slaCtoEffect:'pulse',slaCtoColor:'#f97316',slaAmHours:8,slaAmEffect:'blink',slaAmColor:'#f87171',pinEffect:'soft',pinColor:'#fbbf24'},JSON.parse(localStorage.getItem('end_settings')||'{}'));
 // Push SETTINGS values into the Settings panel fields (runs at load and whenever synced settings arrive)
 function applySettingsToUI(){
 document.getElementById('default-timer').value=[3600,1800,900,600,300].indexOf(SETTINGS.defaultTimer)>-1?SETTINGS.defaultTimer:'custom';
+document.getElementById('auto-thirty-rule-enabled').checked=SETTINGS.autoThirtyRuleEnabled!==false;
 if(document.getElementById('default-timer').value==='custom'){
   document.getElementById('custom-mins').value=Math.max(1,Math.round((SETTINGS.defaultTimer||3600)/60));
   document.getElementById('custom-mins').style.display='';
@@ -11341,6 +11403,7 @@ window.onModalTimerChange=onModalTimerChange;
 window.onPasteAttach=onPasteAttach;
 window.onPriorityChange=onPriorityChange;
 window.onTimerChange=onTimerChange;
+window.onAutoThirtyRuleSettingChange=onAutoThirtyRuleSettingChange;
 window.openCommentsModal=openCommentsModal;
 window.openEdit=openEdit;
 window.openEditDID=openEditDID;
@@ -11406,6 +11469,10 @@ window.doExportRows=doExportRows;
 window.undoDelete=undoDelete;
 window.goDonePage=goDonePage;
 window.changeDonePageSize=changeDonePageSize;
+window.goAllPage=goAllPage;
+window.changeAllPageSize=changeAllPageSize;
+window.goDIDPage=goDIDPage;
+window.changeDIDPageSize=changeDIDPageSize;
 window.goRRPage=goRRPage;
 window.changeRRPageSize=changeRRPageSize;
 window.addRRComment=addRRComment;
