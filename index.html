@@ -3996,14 +3996,6 @@ function timerBadgeHTML(r,rem){
   var phase=autoThirtyPhase(r);
   return '<span class="timer-value">'+text+'</span>'+(phase?'<span class="timer-phase">'+escHtml(phase.label+(phase.label==='2h'?' repeat':''))+'</span>':'');
 }
-function timerBadgeTitle(r){
-  var phase=autoThirtyPhase(r);
-  var parts=[];
-  if(phase)parts.push(phase.label+' — '+phase.title);
-  if(isAutoRestartRecent(r))parts.push('Timer restarted recently');
-  return parts.join(' | ');
-}
-
 /* ── DIDLOGIC 3 WORKING-DAY "Post by" (skips weekends + PH holidays) ──────────
    A plain 3-day timer counts calendar time, which is unreliable across weekends
    and holidays. For DIDLOGIC we instead compute a "Post by" date 3 WORKING days
@@ -4133,7 +4125,6 @@ function timerHTML(r){
   var phase=autoThirtyPhase(r);
   var cls='tbadge'+(phase?' has-phase':'')+(rem===null?'':(rem===0?' texp':rem<300?' twarn':''))+autoRestartBadgeClass(r,rem);
   var ts=timerBadgeHTML(r,rem);
-  var title=timerBadgeTitle(r);
   var btns='';
   if(window._canEdit){
     if(recordStatusStopsTimer(r)){
@@ -4144,7 +4135,7 @@ function timerHTML(r){
         :'<button class="btn-icon btn-sm" onclick="startTmr('+r.id+')" title="Start">&#9654;</button>';
     }
   }
-  return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'" title="'+escAttr(title)+'">'+ts+'</span>'+btns+'</div>';
+  return '<div class="timer-cell" id="tc-'+r.id+'"><span class="'+cls+'" id="tb-'+r.id+'">'+ts+'</span>'+btns+'</div>';
 }
 
 function timerBlockedToast(r){
@@ -4933,7 +4924,6 @@ setInterval(function(){
         var phase=autoThirtyPhase(r);
         badge.innerHTML=timerBadgeHTML(r,rem);
         badge.className='tbadge'+(phase?' has-phase':'')+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'')+autoRestartBadgeClass(r,rem);
-        badge.title=timerBadgeTitle(r);
       }
     }
     maybeAlertReminder(r);
