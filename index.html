@@ -330,6 +330,9 @@ tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
 tr.has-new-comment>td:last-child{position:relative;}
 tr.has-new-comment>td:last-child::after{content:"";position:absolute;top:0;right:0;bottom:0;width:4px;background:var(--accent);}
 .tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:70px;text-align:center;white-space:nowrap;}
+.tbadge .timer-phase{display:none;font-weight:700;}
+.tbadge.has-phase:hover .timer-value{display:none;}
+.tbadge.has-phase:hover .timer-phase{display:inline;}
 .tbadge.twarn{background:rgba(234,179,8,.15);color:#fbbf24;}
 .tbadge.texp{background:rgba(239,68,68,.15);color:#f87171;box-shadow:0 0 0 0 rgba(248,113,113,.22);animation:timerPulse 1.6s ease-in-out infinite;}
 .tbadge.trestart{position:relative;background:rgba(34,197,94,.18);color:#4ade80;box-shadow:0 0 0 0 rgba(74,222,128,.22);animation:autoRestartPulse 1.5s ease-in-out infinite;}
@@ -3988,15 +3991,15 @@ function autoThirtyPhase(r){
   var current=Math.min(AUTO_THIRTY_SHORT_CYCLES,completed+1);
   return {label:'30m '+current+'/'+AUTO_THIRTY_SHORT_CYCLES,title:'30-minute cycle '+current+' of '+AUTO_THIRTY_SHORT_CYCLES+' — switches to a 2-hour timer after cycle 4'};
 }
-function timerBadgeText(r,rem){
+function timerBadgeHTML(r,rem){
   var text=rem===null?'--:--':fmtTime(rem);
   var phase=autoThirtyPhase(r);
-  return phase?text+' · '+phase.label:text;
+  return '<span class="timer-value">'+text+'</span>'+(phase?'<span class="timer-phase">'+escHtml(phase.label+(phase.label==='2h'?' repeat':''))+'</span>':'');
 }
 function timerBadgeTitle(r){
   var phase=autoThirtyPhase(r);
   var parts=[];
-  if(phase)parts.push(phase.title);
+  if(phase)parts.push(phase.label+' — '+phase.title);
   if(isAutoRestartRecent(r))parts.push('Timer restarted recently');
   return parts.join(' | ');
 }
@@ -4127,8 +4130,9 @@ function applyReminderToRecord(rec,prev,reminder){
 
 function timerHTML(r){
   var rem=r.timerStart?calcRem(r):null;
-  var cls='tbadge'+(rem===null?'':(rem===0?' texp':rem<300?' twarn':''))+autoRestartBadgeClass(r,rem);
-  var ts=timerBadgeText(r,rem);
+  var phase=autoThirtyPhase(r);
+  var cls='tbadge'+(phase?' has-phase':'')+(rem===null?'':(rem===0?' texp':rem<300?' twarn':''))+autoRestartBadgeClass(r,rem);
+  var ts=timerBadgeHTML(r,rem);
   var title=timerBadgeTitle(r);
   var btns='';
   if(window._canEdit){
@@ -4926,8 +4930,9 @@ setInterval(function(){
       var badge=document.getElementById('tb-'+r.id);
       if(badge){
         var isHHMM=r._type==='did'||r._type==='rr';
-        badge.textContent=timerBadgeText(r,rem);
-        badge.className='tbadge'+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'')+autoRestartBadgeClass(r,rem);
+        var phase=autoThirtyPhase(r);
+        badge.innerHTML=timerBadgeHTML(r,rem);
+        badge.className='tbadge'+(phase?' has-phase':'')+(rem===0?' texp':(isHHMM?rem<3600:rem<300)?' twarn':'')+autoRestartBadgeClass(r,rem);
         badge.title=timerBadgeTitle(r);
       }
     }
