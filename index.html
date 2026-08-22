@@ -3721,10 +3721,11 @@ function initNavLabels(){
 initNavLabels();
 
 // Native title tooltips wait before appearing and do not match the app. Replace
-// them with one immediate premium tooltip in tables and the main workspace panels.
+// them with one immediate premium tooltip in tables, workspace panels, and the
+// signed-in account avatar.
 var _instantTableTip=null;
 var _instantTableTipTarget=null;
-var _premiumTipScopes='table,#dashboard-panel,#calendar-panel,#notepad-panel,#cal-event-modal,#cal-alert-modal';
+var _premiumTipScopes='table,#dashboard-panel,#calendar-panel,#notepad-panel,#cal-event-modal,#cal-alert-modal,#user-chip';
 function ensureInstantTableTip(){
   if(_instantTableTip)return _instantTableTip;
   _instantTableTip=document.createElement('div');
