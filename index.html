@@ -227,7 +227,7 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
 .premium-number.is-disabled .premium-number-stepper{opacity:.45;pointer-events:none;}
 [data-theme="light"] .premium-number-stepper{background:color-mix(in srgb,var(--bg4) 82%,white 18%);box-shadow:inset 0 1px 0 rgba(255,255,255,.5);}
 .table-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
-.table-scroll{overflow:auto;max-height:calc(100vh - 230px);}
+.table-scroll{position:relative;overflow:auto;max-height:calc(100vh - 230px);}
 body.logo-stats-layout .table-scroll{max-height:calc(100vh - 184px);}
 .instant-table-tooltip{position:fixed;display:none;z-index:10050;max-width:min(420px,calc(100vw - 20px));padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg5);color:var(--text);box-shadow:var(--shadow-elevated);font-family:var(--sf);font-size:12px;font-weight:500;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;}
 .instant-table-tooltip.visible{display:block;}
@@ -266,6 +266,17 @@ td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;
 td.cell-sel{background:rgba(91,124,255,.15)!important;outline:1px solid var(--accent);outline-offset:-1px;}
 /* Press-and-hold feedback: a soft accent wash fades in while the mouse button is held on a row (opens Comments). The 0.1s delay keeps normal/double clicks from flashing. */
 tr.lp-arming>td{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;transition:background .42s ease .1s;}
+/* Drag a live record row left to reveal its delete action. The action is
+   positioned against the visible edge of the scroll area, so it remains
+   discoverable even when the table itself is wider than the screen. */
+#main-table tbody tr[data-record-id].swipe-active>td{position:relative;z-index:2;transform:translate3d(var(--swipe-x,0),0,0);transition:transform .18s cubic-bezier(.22,.75,.3,1);will-change:transform;}
+#main-table tbody tr[data-record-id].swipe-dragging>td{transition:none;}
+#main-table tbody tr[data-record-id].swipe-deleting>td{transition:transform .2s ease-in,opacity .2s ease-in;opacity:0;}
+.row-swipe-delete{position:absolute;z-index:8;display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;padding:0 12px;border:0;border-radius:0;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font:700 12px/1 var(--sf);letter-spacing:.15px;white-space:nowrap;overflow:hidden;cursor:pointer;box-shadow:inset 1px 0 0 rgba(255,255,255,.16);transition:width .18s cubic-bezier(.22,.75,.3,1),left .18s cubic-bezier(.22,.75,.3,1),background .15s,filter .15s;}
+.row-swipe-delete svg{width:17px;height:17px;flex:0 0 auto;}
+.row-swipe-delete.swipe-dragging{transition:none;pointer-events:none;}
+.row-swipe-delete.swipe-commit{background:linear-gradient(135deg,#f43f5e,#b91c1c);filter:saturate(1.12);}
+.row-swipe-delete:focus-visible{outline:2px solid #fff;outline-offset:-3px;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:var(--bg3);}
 tr.row-done td{opacity:.5;}
@@ -619,6 +630,14 @@ body.entry-style-panel .entry-ov.is-closing .entry-modal{animation:entryDrawerOu
 select.fc{background-color:var(--bg3);}
 select.fc:focus{background-color:var(--bg2);}
 textarea.fc{resize:vertical;min-height:70px;}
+/* Required entry fields stay neutral while filling the form and become
+   unmistakable only after an incomplete Save attempt. */
+.fgrp.has-required-error>label,.comment-new.has-required-error>label{color:#fb7185!important;}
+.fc.is-required-missing,.premium-select.is-required-missing .premium-select-trigger{border-color:#f43f5e!important;background:color-mix(in srgb,#ef4444 8%,var(--bg3))!important;box-shadow:0 0 0 3px rgba(244,63,94,.16)!important;animation:requiredFieldNudge .28s ease;}
+.field-required-msg{display:flex;align-items:center;gap:5px;margin-top:1px;color:#fb7185;font-size:11px;font-weight:800;letter-spacing:.1px;text-transform:none;}
+.field-required-msg::before{content:'!';display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#e11d48;color:#fff;font-size:10px;line-height:1;}
+.comment-new>.field-required-msg{margin:2px 0 0;}
+@keyframes requiredFieldNudge{0%,100%{transform:translateX(0)}35%{transform:translateX(-3px)}70%{transform:translateX(3px)}}
 .reminder-state{display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text3);background:var(--bg3);}
 .reminder-fields input[type="date"]{flex:0 0 188px;max-width:188px!important;}
 .reminder-fields input[type="time"]{flex:0 0 178px;max-width:178px!important;min-width:178px;}
@@ -2185,20 +2204,21 @@ try{
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
           <select class="fc" id="f-client-sel" onchange="syncClientInput('f-client-sel','f-client');applyClientLink('f');applyPaymentTimerRule()">
-            <option value="">— Select Client —</option>
+            <option value="">— Select Client / Vendor —</option>
           </select>
           <input class="fc" id="f-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase();applyPaymentTimerRule()" style="margin-top:5px;display:none">
         </div>
-        <div class="fgrp"><label>Service</label>
-          <select class="fc" id="f-svc-f" onchange="onSvcChange()"><option>VOIP</option><option>SMS</option><option>Payment</option></select>
+        <div class="fgrp"><label>Service *</label>
+          <select class="fc" id="f-svc-f" onchange="onSvcChange()"><option value="">— Select Service —</option><option>VOIP</option><option>SMS</option><option>Payment</option></select>
         </div>
-        <div class="fgrp full"><label>Concern</label><textarea class="fc" id="f-concern" placeholder="Describe the issue..." style="min-height:55px"></textarea></div>
+        <div class="fgrp full"><label>Concern *</label><textarea class="fc" id="f-concern" placeholder="Describe the issue..." style="min-height:55px"></textarea></div>
         <div class="fgrp full"><label>Description</label><textarea class="fc" id="f-remarks" placeholder="Additional description / notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
-        <div class="fgrp"><label>Platform</label>
-          <select class="fc" id="f-plt-f"><option value="">-- Select --</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
+        <div class="fgrp"><label>Platform *</label>
+          <select class="fc" id="f-plt-f"><option value="">— Select Platform —</option><option>MS Teams</option><option>Viber</option><option>WhatsApp</option><option>Telegram</option><option>Email</option></select>
         </div>
-        <div class="fgrp"><label>Status</label>
+        <div class="fgrp"><label>Status *</label>
           <select class="fc" id="f-st-f" onchange="onEndorsementStatusChange()">
+            <option value="">— Select Status —</option>
             <optgroup label="In Progress">
               <option>Pending at CS</option><option>Pending at NOC</option><option>Pending at TSE</option><option>Pending at L2</option><option>Pending at CTO</option><option>Pending at AM</option><option>Pending at Product</option><option>Pending at Accounting</option><option>Pending at Vendor</option><option>Pending at Developer</option><option>Advised Client</option>
             </optgroup>
@@ -2207,8 +2227,8 @@ try{
             </optgroup>
           </select>
         </div>
-        <div class="fgrp"><label>AM</label>
-          <select class="fc" id="f-am"><option value="">— None —</option></select>
+        <div class="fgrp"><label>AM *</label>
+          <select class="fc" id="f-am"><option value="">— Select AM —</option></select>
         </div>
         <div class="fgrp"><label>Priority</label>
           <select class="fc" id="f-pri-f" onchange="onPriorityChange()"><option>High</option><option selected>Normal</option></select>
@@ -2257,7 +2277,7 @@ try{
         <h4>💬 Comments <span class="comment-badge" id="modal-comment-count">0</span></h4>
         <div class="comment-list" id="modal-comment-list"></div>
         <div class="comment-new">
-          <label>Add Comment</label>
+          <label>Add Comment *</label>
           <div class="attach-zone" id="endorse-attach-zone" ondragover="onDragOver(event,'endorse-attach-zone')" ondragleave="onDragLeave('endorse-attach-zone')" ondrop="onDrop(event,'endorse-attach-zone','endorse-attach-pending')">
             <textarea class="fc" id="f-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:auto" oninput="autoResize(this)" onpaste="onPasteAttach(event,'endorse-attach-pending')"></textarea>
             <div class="attach-previews" id="endorse-attach-pending"></div>
@@ -2291,43 +2311,44 @@ try{
     <div class="modal-body entry-details">
       <div class="fg">
         <div class="fgrp full"><label>Subject *</label><input class="fc" id="rr-subject" placeholder="e.g. ROUTE REQUEST - CID CYN DIDLOGIC - THREE (3) PLDT FCS" oninput="onRRSubjectInput()"></div>
-        <div class="fgrp"><label>Priority</label>
+        <div class="fgrp"><label>Priority *</label>
           <select class="fc" id="rr-priority" onchange="onRRPriorityChange()">
-            <option value="">— None —</option>
+            <option value="">— Select Priority —</option>
+            <option value="Normal">Normal</option>
             <option value="Critical">⚡ Critical</option>
             <option value="Urgent">⚠️ Urgent</option>
           </select>
         </div>
         <div class="fgrp full"><label>Description</label><textarea class="fc" id="rr-remarks" placeholder="Instructions, references, notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
         <div class="fgrp"><label>RR Date</label><input class="fc" id="rr-date" type="datetime-local"></div>
-        <div class="fgrp"><label>RR by</label>
+        <div class="fgrp"><label>RR by *</label>
           <select class="fc" id="rr-by">
-            <option value="">— Select —</option>
+            <option value="">— Select RR by —</option>
           </select>
         </div>
-        <div class="fgrp"><label>RO by</label>
+        <div class="fgrp"><label>RO by *</label>
           <select class="fc" id="ro-by">
-            <option value="">— Select —</option>
+            <option value="">— Select RO by —</option>
           </select>
         </div>
-        <div class="fgrp"><label>Status</label>
+        <div class="fgrp"><label>Status *</label>
           <select class="fc" id="rr-status">
-            <option>Not Yet</option><option>Done</option>
+            <option value="">— Select Status —</option><option>Not Yet</option><option>Done</option>
           </select>
         </div>
-        <div class="fgrp"><label>Advised to Client</label>
+        <div class="fgrp"><label>Advised to Client *</label>
           <select class="fc" id="rr-advised">
-            <option>Not Yet</option><option>Done</option><option>No need</option><option>AM will advise</option><option>Coordinated to AM</option><option>Coordinated to Prod</option>
+            <option value="">— Select Advised to Client —</option><option>Not Yet</option><option>Done</option><option>No need</option><option>AM will advise</option><option>Coordinated to AM</option><option>Coordinated to Prod</option>
           </select>
         </div>
-        <div class="fgrp"><label>Posted</label>
+        <div class="fgrp"><label>Posted *</label>
           <select class="fc" id="rr-posted">
-            <option>None</option><option>Not Yet</option><option>Posted MRC</option><option>Removed MRC</option>
+            <option value="">— Select Posted —</option><option>None</option><option>Not Yet</option><option>Posted MRC</option><option>Removed MRC</option>
           </select>
         </div>
-        <div class="fgrp"><label>Updated Inventory</label>
+        <div class="fgrp"><label>Updated Inventory *</label>
           <select class="fc" id="rr-inv">
-            <option>None</option><option>Not Yet</option><option>Done</option>
+            <option value="">— Select Updated Inventory —</option><option>None</option><option>Not Yet</option><option>Done</option>
           </select>
         </div>
         <div class="fgrp"><label>Timer Duration</label>
@@ -2414,20 +2435,21 @@ try{
       <div class="fg">
         <div class="fgrp"><label>Client / Vendor *</label>
           <select class="fc" id="d-client-sel" onchange="syncClientInput('d-client-sel','d-client');applyClientLink('d')">
-            <option value="">— Select Client —</option>
+            <option value="">— Select Client / Vendor —</option>
           </select>
           <input class="fc" id="d-client" placeholder="Or type manually..." oninput="this.value=this.value.toUpperCase()" style="margin-top:5px;display:none">
         </div>
-        <div class="fgrp"><label>Service</label>
-          <select class="fc" id="d-svc"><option>VOIP</option><option>SMS</option></select>
+        <div class="fgrp"><label>Service *</label>
+          <select class="fc" id="d-svc"><option value="">— Select Service —</option><option>VOIP</option><option>SMS</option></select>
         </div>
-        <div class="fgrp"><label>Platform</label>
-          <select class="fc" id="d-platform"><option value="">-- Select --</option></select>
+        <div class="fgrp"><label>Platform *</label>
+          <select class="fc" id="d-platform"><option value="">— Select Platform —</option></select>
         </div>
-        <div class="fgrp full"><label>Concern</label><textarea class="fc" id="d-desc" placeholder="e.g. #9954130700: DID Disconnection Notice — AM" style="min-height:55px"></textarea></div>
+        <div class="fgrp full"><label>Concern *</label><textarea class="fc" id="d-desc" placeholder="e.g. #9954130700: DID Disconnection Notice — AM" style="min-height:55px"></textarea></div>
         <div class="fgrp full"><label>Description</label><textarea class="fc" id="d-remarks" placeholder="Additional description / notes..." style="min-height:90px;overflow:hidden" oninput="autoResize(this)"></textarea></div>
-        <div class="fgrp"><label>Status</label>
+        <div class="fgrp"><label>Status *</label>
           <select class="fc" id="d-status" onchange="onDIDStatusChange()">
+            <option value="">— Select Status —</option>
             <optgroup label="In Progress">
               <option>Pending AM</option><option>Pending CS</option><option>Pending Product</option><option>In Progress</option><option>Advised Client</option>
             </optgroup>
@@ -2436,8 +2458,8 @@ try{
             </optgroup>
           </select>
         </div>
-        <div class="fgrp"><label>AM</label>
-          <select class="fc" id="d-am"><option value="">— None —</option></select>
+        <div class="fgrp"><label>AM *</label>
+          <select class="fc" id="d-am"><option value="">— Select AM —</option></select>
         </div>
         <div class="fgrp"><label>Start Date</label><input class="fc" id="d-date" type="date"></div>
         <div class="fgrp" id="d-resolved-wrap"><label>Resolved Date</label><div id="d-resolved-display" style="font-size:13px;color:var(--text3);padding:8px 0;font-family:var(--mono)">—</div></div>
@@ -2486,7 +2508,7 @@ try{
         <h4>💬 Comments <span class="comment-badge" id="did-modal-comment-count">0</span></h4>
         <div class="comment-list" id="did-modal-comment-list"></div>
         <div class="comment-new">
-          <label>Add Comment</label>
+          <label>Add Comment *</label>
           <div class="attach-zone" id="did-attach-zone" ondragover="onDragOver(event,'did-attach-zone')" ondragleave="onDragLeave('did-attach-zone')" ondrop="onDrop(event,'did-attach-zone','did-attach-pending')">
             <textarea class="fc" id="d-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:auto" oninput="autoResize(this)" onpaste="onPasteAttach(event,'did-attach-pending')"></textarea>
             <div class="attach-previews" id="did-attach-pending"></div>
@@ -2832,6 +2854,146 @@ var _rrPage=0, _rrPageSize=50;
 var _doneRRPage=0, _doneRRPageSize=10;
 var _undoState=null, _undoTimeout=null;
 var _pendingRRComments=[];
+
+// ─── REQUIRED ENTRY FIELDS ──────────────────────────────────
+// Validation is shared by the three entry modals so missing fields use one
+// consistent inline message, focus behavior, and visual treatment.
+function activeClientControl(prefix){
+  var select=document.getElementById(prefix==='d'?'d-client-sel':'f-client-sel');
+  var input=document.getElementById(prefix==='d'?'d-client':'f-client');
+  return select&&select.style.display!=='none'?select:input;
+}
+function clearRequiredField(el){
+  if(!el)return;
+  el.classList.remove('is-required-missing');
+  el.removeAttribute('aria-invalid');
+  var premium=el.closest&&el.closest('.premium-select');
+  if(premium)premium.classList.remove('is-required-missing');
+  var group=el.closest&&el.closest('.fgrp,.comment-new');
+  if(group){
+    group.classList.remove('has-required-error');
+    var msg=group.querySelector('.field-required-msg');
+    if(msg)msg.remove();
+  }
+}
+function clearEntryRequired(modalId){
+  var modal=document.getElementById(modalId);if(!modal)return;
+  modal.querySelectorAll('.is-required-missing').forEach(function(el){el.classList.remove('is-required-missing');});
+  modal.querySelectorAll('[aria-invalid="true"]').forEach(function(el){el.removeAttribute('aria-invalid');});
+  modal.querySelectorAll('.has-required-error').forEach(function(group){group.classList.remove('has-required-error');});
+  modal.querySelectorAll('.field-required-msg').forEach(function(msg){msg.remove();});
+}
+function markRequiredField(el,label){
+  if(!el)return;
+  el.classList.add('is-required-missing');
+  el.setAttribute('aria-invalid','true');
+  el.setAttribute('aria-required','true');
+  var premium=el.closest&&el.closest('.premium-select');
+  if(premium)premium.classList.add('is-required-missing');
+  var group=el.closest&&el.closest('.fgrp,.comment-new');
+  if(group){
+    group.classList.add('has-required-error');
+    if(!group.querySelector('.field-required-msg')){
+      var msg=document.createElement('span');
+      msg.className='field-required-msg';
+      msg.setAttribute('role','alert');
+      msg.textContent='Required — '+label;
+      group.appendChild(msg);
+    }
+  }
+}
+function bufferedTextComment(list){
+  return Array.isArray(list)&&list.some(function(comment){return String(comment&&comment.text||'').trim();});
+}
+function entryCommentSatisfied(kind){
+  var isDID=kind==='did';
+  var input=document.getElementById(isDID?'d-comment-text':'f-comment-text');
+  if(input&&input.value.trim())return true;
+  if(bufferedTextComment(isDID?_pendingDIDComments:_pendingComments))return true;
+  var editId=isDID?editingDIDId:editingId;
+  if(editId!==null){
+    var record=findDataRecord(editId);
+    if(record&&Array.isArray(record.comments)&&record.comments.length)return true;
+  }
+  return false;
+}
+function entryRequiredSpecs(kind){
+  if(kind==='rr')return [
+    {id:'rr-subject',label:'enter a subject'},
+    {id:'rr-priority',label:'select a priority'},
+    {id:'rr-by',label:'select RR by'},
+    {id:'ro-by',label:'select RO by'},
+    {id:'rr-status',label:'select a status'},
+    {id:'rr-advised',label:'select an advised-to-client value'},
+    {id:'rr-posted',label:'select a posted value'},
+    {id:'rr-inv',label:'select an inventory value'}
+  ];
+  if(kind==='did')return [
+    {control:function(){return activeClientControl('d');},label:'select or enter a client / vendor'},
+    {id:'d-svc',label:'select a service'},
+    {id:'d-platform',label:'select a platform'},
+    {id:'d-desc',label:'enter a concern'},
+    {id:'d-status',label:'select a status'},
+    {id:'d-am',label:'select an AM'},
+    {id:'d-comment-text',label:'add a comment',valid:function(){return entryCommentSatisfied('did');}}
+  ];
+  return [
+    {control:function(){return activeClientControl('f');},label:'select or enter a client / vendor'},
+    {id:'f-svc-f',label:'select a service'},
+    {id:'f-concern',label:'enter a concern'},
+    {id:'f-plt-f',label:'select a platform'},
+    {id:'f-st-f',label:'select a status'},
+    {id:'f-am',label:'select an AM'},
+    {id:'f-comment-text',label:'add a comment',valid:function(){return entryCommentSatisfied('end');}}
+  ];
+}
+function validateEntryRequired(kind){
+  var modalId=kind==='rr'?'rr-modal':kind==='did'?'did-modal':'record-modal';
+  clearEntryRequired(modalId);
+  var missing=[];
+  entryRequiredSpecs(kind).forEach(function(spec){
+    var el=spec.control?spec.control():document.getElementById(spec.id);
+    var valid=spec.valid?spec.valid():!!(el&&String(el.value||'').trim());
+    if(!valid){markRequiredField(el,spec.label);missing.push(el);}
+  });
+  if(!missing.length)return true;
+  var first=missing[0];
+  var premium=first&&first.closest&&first.closest('.premium-select');
+  var focusTarget=premium&&premium.querySelector('.premium-select-trigger')||first;
+  if(focusTarget){
+    focusTarget.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(function(){try{focusTarget.focus({preventScroll:true});}catch(_){focusTarget.focus();}},180);
+  }
+  toast('Please complete '+missing.length+' required field'+(missing.length===1?'':'s'),'error');
+  return false;
+}
+function commitTypedRequiredComment(kind){
+  var isDID=kind==='did';
+  var input=document.getElementById(isDID?'d-comment-text':'f-comment-text');
+  var text=input?input.value.trim():'';
+  if(!text)return;
+  var zoneId=isDID?'did-attach-pending':'endorse-attach-pending';
+  var attachments=collectAndClearPending(zoneId);
+  var comment={ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')};
+  var editId=isDID?editingDIDId:editingId;
+  if(editId!==null){
+    var record=findDataRecord(editId);
+    if(record){
+      if(!record.comments)record.comments=[];
+      record.comments.push(comment);
+      recordAnalyticsEvent('comment',comment.user,comment.ts);
+    }
+  }else{
+    (isDID?_pendingDIDComments:_pendingComments).push(comment);
+  }
+  input.value='';input.style.height='';clearRequiredField(input);
+}
+document.addEventListener('input',function(e){
+  if(e.target&&e.target.closest&&e.target.closest('.entry-ov'))clearRequiredField(e.target);
+});
+document.addEventListener('change',function(e){
+  if(e.target&&e.target.closest&&e.target.closest('.entry-ov'))clearRequiredField(e.target);
+});
 
 // ─── AUTH FUNCTIONS ─────────────────────────────────────────
 function showLoginScreen(){
@@ -6286,6 +6448,7 @@ function openNewRRModal(){
   editingRRId=null;
   _rrTimerDirty=false;
   _rrAutoClient=null;
+  clearEntryRequired('rr-modal');
   setEntryDeleteVisible('rr-modal-delete-btn',false);
   document.getElementById('rr-modal-title').textContent='New RR / RO Entry';
   document.getElementById('rr-subject').value='';
@@ -6294,10 +6457,10 @@ function openNewRRModal(){
   document.getElementById('rr-date').value=_nowLocalDT();
   document.getElementById('rr-by').value='';
   document.getElementById('ro-by').value='';
-  document.getElementById('rr-status').value='Not Yet';
-  document.getElementById('rr-advised').value='Not Yet';
-  document.getElementById('rr-posted').value='None';
-  document.getElementById('rr-inv').value='None';
+  document.getElementById('rr-status').value='';
+  document.getElementById('rr-advised').value='';
+  document.getElementById('rr-posted').value='';
+  document.getElementById('rr-inv').value='';
   document.getElementById('rr-completed').checked=false;
   document.getElementById('rr-disregard').checked=false;
   document.getElementById('rr-pin').checked=false;
@@ -6316,22 +6479,23 @@ function openNewRRModal(){
 function openEditRR(id){
   _rrTimerDirty=false;
   _rrAutoClient=null;
+  clearEntryRequired('rr-modal');
   var r=findDataRecord(id);if(!r)return;
   editingRRId=r.id;
   setEntryDeleteVisible('rr-modal-delete-btn',!!window._canEdit);
   document.getElementById('rr-modal-title').textContent='Edit RR / RO Entry';
   document.getElementById('rr-subject').value=r.rrSubject||'';
-  document.getElementById('rr-priority').value=r.rrPriority||'';
+  setSelectValueSafe(document.getElementById('rr-priority'),r.rrPriority||'');
   document.getElementById('rr-remarks').value=r.rrRemarks||'';setTimeout(function(){autoResizeId('rr-remarks');},0);
   // datetime-local needs "YYYY-MM-DDTHH:MM"; older rows stored date only, so pad them to midnight.
   var _rrd=r.rrDate||'';if(_rrd&&_rrd.indexOf('T')<0)_rrd=_rrd+'T00:00';
   document.getElementById('rr-date').value=_rrd;
   document.getElementById('rr-by').value=r.rrBy||'';
   document.getElementById('ro-by').value=r.roBy||'';
-  document.getElementById('rr-status').value=r.rrStatus||'Not Yet';
-  document.getElementById('rr-advised').value=r.rrAdvised||'Not Yet';
-  document.getElementById('rr-posted').value=r.rrPosted||'None';
-  document.getElementById('rr-inv').value=r.rrInv||'None';
+  document.getElementById('rr-status').value=r.rrStatus||'';
+  document.getElementById('rr-advised').value=r.rrAdvised||'';
+  document.getElementById('rr-posted').value=r.rrPosted||'';
+  document.getElementById('rr-inv').value=r.rrInv||'';
   document.getElementById('rr-completed').checked=!!r.rrCompleted;
   document.getElementById('rr-disregard').checked=!!r.rrDisregard;
   document.getElementById('rr-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
@@ -6356,10 +6520,11 @@ function openEditRR(id){
   setModalMeta('rr-modal',r);
   openEntryOverlay('rr-modal');
 }
-function closeRRModal(){closeEntryOverlay('rr-modal');editingRRId=null;_rrTimerDirty=false;_pendingRRComments=[];}
+function closeRRModal(){clearEntryRequired('rr-modal');closeEntryOverlay('rr-modal');editingRRId=null;_rrTimerDirty=false;_pendingRRComments=[];}
 function saveRRRecord(){
+  if(!validateEntryRequired('rr'))return;
   var subject=document.getElementById('rr-subject').value.trim();
-  if(!subject){toast('Subject is required','error');return;}
+  if(!subject)return;
   var rrTimerSel=document.getElementById('rr-timer-sel').value;
   var rrTimerSecs;
   if(rrTimerSel==='custom'){
@@ -6614,14 +6779,15 @@ var editingDIDId=null;
 function openNewDIDModal(){
   editingDIDId=null;
   _didTimerDirty=false;
+  clearEntryRequired('did-modal');
   setEntryDeleteVisible('did-modal-delete-btn',false);
   document.getElementById('did-modal-title').textContent='New DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs){dcs.value='';}document.getElementById('d-client').value='';
-  document.getElementById('d-svc').value='VOIP';
+  document.getElementById('d-svc').value='';
   document.getElementById('d-platform').value='';
   document.getElementById('d-desc').value='';
   document.getElementById('d-remarks').value='';autoResizeId('d-remarks');
-  document.getElementById('d-status').value='Pending AM';
+  document.getElementById('d-status').value='';
   document.getElementById('d-pin').checked=false;
   document.getElementById('d-auto-restart').checked=true;
   document.getElementById('d-auto-restart').disabled=false;
@@ -6646,16 +6812,17 @@ function openNewDIDModal(){
 
 function openEditDID(id){
   _didTimerDirty=false;
+  clearEntryRequired('did-modal');
   var r=findDataRecord(id);if(!r)return;
   editingDIDId=r.id;
   setEntryDeleteVisible('did-modal-delete-btn',!!window._canEdit);
   document.getElementById('did-modal-title').textContent='Edit DID Order / Cancel';
   var dcs=document.getElementById('d-client-sel');if(dcs&&dcs.style.display!=='none'){setClientDropdown('d-client-sel','d-client',r.client||'');}else{document.getElementById('d-client').value=r.client||'';}
-  document.getElementById('d-svc').value=r.service||'VOIP';
+  document.getElementById('d-svc').value=r.service||'';
   document.getElementById('d-platform').value=r.platform||'';
   document.getElementById('d-desc').value=r.desc||'';
   document.getElementById('d-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('d-remarks');},0);
-  document.getElementById('d-status').value=r.status||'Pending AM';
+  document.getElementById('d-status').value=r.status||'';
   document.getElementById('d-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
   var _dStops=statusStopsTimerFor(r.status||'Pending AM','did');
   document.getElementById('d-auto-restart').checked=_dStops?false:!!r.autoRestartTimer;
@@ -6690,13 +6857,14 @@ function openEditDID(id){
   openEntryOverlay('did-modal');
 }
 
-function closeDIDModal(){if(_skipModalClose)return;closeEntryOverlay('did-modal');editingDIDId=null;_didTimerDirty=false;_pendingDIDComments=[];}
+function closeDIDModal(){if(_skipModalClose)return;clearEntryRequired('did-modal');closeEntryOverlay('did-modal');editingDIDId=null;_didTimerDirty=false;_pendingDIDComments=[];}
 
 function onDIDPriorityChange(){}
 
 function saveDIDRecord(){
+  if(!validateEntryRequired('did'))return;
   var sel=document.getElementById('d-client-sel');var client=(sel&&sel.style.display!=='none'?sel.value:document.getElementById('d-client').value).trim().toUpperCase();
-  if(!client){toast('Client / Vendor is required','error');return;}
+  if(!client)return;
   var newStatus=document.getElementById('d-status').value;
   var isDone=DID_DONE_ST.indexOf(newStatus)>-1;
   var statusStopsTimer=isDone||newStatus==='Advised Client';
@@ -6728,6 +6896,7 @@ function saveDIDRecord(){
     timerOverride:dTimerSecs||null
   };
   var reminder=readReminderFields('d');if(reminder.invalid)return;
+  commitTypedRequiredComment('did');
   if(!dTimerSecs||dTimerSecs===AUTO_RESTART_SKIP_SECS)rec.autoRestartTimer=false;
   if(editingDIDId){
     var idx=DATA.findIndex(function(d){return d.id===editingDIDId;});
@@ -7045,15 +7214,16 @@ function setModalTimerFields(secs){
 function openNewModal(){
   editingId=null;
   _endorsementTimerDirty=false;
+  clearEntryRequired('record-modal');
   setEntryDeleteVisible('modal-delete-btn',false);
   document.getElementById('modal-title').textContent='New Endorsement';
   var fcs=document.getElementById('f-client-sel');if(fcs){fcs.value='';}document.getElementById('f-client').value='';
   applyDropdownsToForms();
-  document.getElementById('f-svc-f').value='VOIP';
+  document.getElementById('f-svc-f').value='';
   document.getElementById('f-concern').value='';
   document.getElementById('f-remarks').value='';autoResizeId('f-remarks');
   document.getElementById('f-plt-f').value='';
-  document.getElementById('f-st-f').value='Pending at CS';
+  document.getElementById('f-st-f').value='';
   document.getElementById('f-pin').checked=false;
   document.getElementById('f-auto-restart').checked=true;
   document.getElementById('f-auto-restart').disabled=false;
@@ -7078,6 +7248,7 @@ function findDataRecord(id){
 }
 function openEdit(id){
   _endorsementTimerDirty=false;
+  clearEntryRequired('record-modal');
   var r=findDataRecord(id);if(!r)return;
   editingId=r.id;
   setEntryDeleteVisible('modal-delete-btn',!!window._canEdit);
@@ -7085,7 +7256,7 @@ function openEdit(id){
   // Set client dropdown — add the current client as an option if not in list
   setClientDropdown('f-client-sel','f-client',r.client||'');
   var serviceSelect=document.getElementById('f-svc-f');
-  var serviceValue=r.service||'VOIP';
+  var serviceValue=r.service||'';
   if(serviceValue&&!Array.from(serviceSelect.options).some(function(option){return option.value===serviceValue;})){
     var legacyServiceOption=document.createElement('option');
     legacyServiceOption.value=serviceValue;
@@ -7097,7 +7268,7 @@ function openEdit(id){
   document.getElementById('f-concern').value=r.concern||'';
   document.getElementById('f-remarks').value=r.remarks||'';setTimeout(function(){autoResizeId('f-remarks');},0);
   document.getElementById('f-plt-f').value=r.platform||'';
-  document.getElementById('f-st-f').value=r.status||'Pending at CS';
+  document.getElementById('f-st-f').value=r.status||'';
   document.getElementById('f-pin').checked=!isRecordCompleted(r)&&!!r.pinned;
   var _fStops=statusStopsTimerFor(r.status||'Pending at CS','main');
   document.getElementById('f-auto-restart').checked=_fStops?false:!!r.autoRestartTimer;
@@ -7118,11 +7289,12 @@ function openEdit(id){
   markRead(r.id);renderRows();
   openEntryOverlay('record-modal');
 }
-function closeModal(){if(_skipModalClose)return;closeEntryOverlay('record-modal');editingId=null;_endorsementTimerDirty=false;_pendingComments=[];}
+function closeModal(){if(_skipModalClose)return;clearEntryRequired('record-modal');closeEntryOverlay('record-modal');editingId=null;_endorsementTimerDirty=false;_pendingComments=[];}
 
 function saveRecord(){
+  if(!validateEntryRequired('end'))return;
   var sel=document.getElementById('f-client-sel');var client=(sel&&sel.style.display!=='none'?sel.value:document.getElementById('f-client').value).trim().toUpperCase();
-  if(!client){toast('Client / Vendor is required','error');return;}
+  if(!client)return;
   var timerSel=document.getElementById('f-timer-sel').value;
   var timerSecs;
   if(timerSel==='custom'){
@@ -7153,6 +7325,7 @@ function saveRecord(){
     timerOverride:timerSecs
   };
   var reminder=readReminderFields('f');if(reminder.invalid)return;
+  commitTypedRequiredComment('end');
   if(!timerSecs||timerSecs===AUTO_RESTART_SKIP_SECS)rec.autoRestartTimer=false;
   if(editingId){
     try{
@@ -9016,7 +9189,7 @@ function applyDropdownsToForms(){
     var cur=el.value;
     var isFilter=id==='f-svc';
     var items=id==='d-svc'?svcItems.filter(function(v){return v!=='Payment'&&v!=='VIP Payment';}):svcItems;
-    el.innerHTML=(isFilter?'<option value="">All Services</option>':'')
+    el.innerHTML=(isFilter?'<option value="">All Services</option>':'<option value="">— Select Service —</option>')
       +items.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(cur) el.value=cur;
   });
@@ -9026,7 +9199,7 @@ function applyDropdownsToForms(){
     var el=document.getElementById(id);if(!el)return;
     var cur=el.value;
     var isFilter=id==='f-plt';
-    el.innerHTML=(isFilter?'<option value="">All Platforms</option>':'<option value="">-- Select --</option>')
+    el.innerHTML=(isFilter?'<option value="">All Platforms</option>':'<option value="">— Select Platform —</option>')
       +pltItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(cur) el.value=cur;
   });
@@ -9053,10 +9226,11 @@ function applyDropdownsToForms(){
   var fstf=document.getElementById('f-st-f');
   if(fstf){
     var curStf=fstf.value;
-    fstf.innerHTML='<optgroup label="In Progress">'+ipItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>'
+    fstf.innerHTML='<option value="">— Select Status —</option>'
+      +'<optgroup label="In Progress">'+ipItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>'
       +'<optgroup label="Completed">'+doneItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('')+'</optgroup>';
     if(curStf) fstf.value=curStf;
-    else fstf.value=ipItems[0]||'';
+    else fstf.value='';
   }
   // AM dropdowns (endorsement + DID modals) — uses rr_by options from Admin Panel
   var amItems=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
@@ -9065,7 +9239,7 @@ function applyDropdownsToForms(){
     if(!amEl)return;
     var curAm=amEl.value;
     var isFilter=id==='f-am-filter';
-    amEl.innerHTML=(isFilter?'<option value="">All AM</option>':'<option value="">— None —</option>')
+    amEl.innerHTML=(isFilter?'<option value="">All AM</option>':'<option value="">— Select AM —</option>')
       +amItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(curAm) amEl.value=curAm;
   });
@@ -9074,7 +9248,7 @@ function applyDropdownsToForms(){
   var rrByEl=document.getElementById('rr-by');
   if(rrByEl){
     var curRrBy=rrByEl.value;
-    rrByEl.innerHTML='<option value="">— Select —</option>'
+    rrByEl.innerHTML='<option value="">— Select RR by —</option>'
       +rrByItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(curRrBy) rrByEl.value=curRrBy;
   }
@@ -9083,7 +9257,7 @@ function applyDropdownsToForms(){
   var roByEl=document.getElementById('ro-by');
   if(roByEl){
     var curRoBy=roByEl.value;
-    roByEl.innerHTML='<option value="">— Select —</option>'
+    roByEl.innerHTML='<option value="">— Select RO by —</option>'
       +roByItems.map(function(v){return '<option>'+escHtml(v)+'</option>';}).join('');
     if(curRoBy) roByEl.value=curRoBy;
   }
@@ -9645,7 +9819,7 @@ function populateClientDropdowns(){
     }
     el.style.display='';
     var cur=el.value;
-    el.innerHTML='<option value="">— Select Client —</option>'
+    el.innerHTML='<option value="">— Select Client / Vendor —</option>'
       +CLIENTS.map(function(c){return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>';}).join('');
     if(cur) el.value=cur;
   });
@@ -9801,7 +9975,7 @@ function applyClientLink(prefix){
   var filled=[];
   if(link.rrBy){
     var amEl=document.getElementById(prefix==='d'?'d-am':'f-am');
-    if(amEl&&amEl.value!==link.rrBy){setSelectValueSafe(amEl,link.rrBy);filled.push('AM: '+link.rrBy);}
+    if(amEl&&amEl.value!==link.rrBy){setSelectValueSafe(amEl,link.rrBy);clearRequiredField(amEl);filled.push('AM: '+link.rrBy);}
   }
   if(link.priority){ // High / Critical / Urgent all count as High here (only High/Normal exist)
     var priEl=document.getElementById(prefix==='d'?'d-priority':'f-pri-f');
@@ -9834,10 +10008,11 @@ function onRRSubjectInput(){
   var link=CLIENT_LINKS[best];
   var filled=[];
   var rrByEl=document.getElementById('rr-by');
-  if(link.rrBy&&rrByEl&&!rrByEl.value){setSelectValueSafe(rrByEl,link.rrBy);filled.push('RR by: '+link.rrBy);}
+  if(link.rrBy&&rrByEl&&!rrByEl.value){setSelectValueSafe(rrByEl,link.rrBy);clearRequiredField(rrByEl);filled.push('RR by: '+link.rrBy);}
   var priEl=document.getElementById('rr-priority');
   if((link.priority==='Critical'||link.priority==='Urgent')&&priEl&&!priEl.value){
     priEl.value=link.priority;
+    clearRequiredField(priEl);
     onRRPriorityChange();
     filled.push('Priority: '+link.priority);
   }
@@ -11608,7 +11783,9 @@ window.renderNotepad=renderNotepad;
 // Double-click row to open edit modal
 var _rowEditorLastKey='';
 var _rowEditorLastAt=0;
+var _rowSwipeSuppressUntil=0;
 function openRowEditor(id,type){
+  if(Date.now()<_rowSwipeSuppressUntil)return;
   var record=findDataRecord(id);if(!record)return;
   var key=String(record.id)+'|'+type,now=Date.now();
   /* The pointer fallback and native dblclick can both recognize the same
@@ -11635,6 +11812,7 @@ var _nativeRowDblClickAt=0;
 var _nativeRowDblClickId='';
 var _mainTable=document.getElementById('main-table');
 _mainTable.addEventListener('dblclick',function(e){
+  if(Date.now()<_rowSwipeSuppressUntil)return;
   var row=e.target.closest('tbody tr[data-record-id]');
   if(!row||!this.contains(row))return;
   _nativeRowDblClickAt=Date.now();
@@ -11647,6 +11825,7 @@ _mainTable.addEventListener('dblclick',function(e){
    to 2 but never dispatch dblclick. Wait one task so the native event gets
    first priority; only synthesize the edit when it never arrives. */
 _mainTable.addEventListener('click',function(e){
+  if(Date.now()<_rowSwipeSuppressUntil)return;
   if(e.detail<2||e.target.closest('button,input,select,a,label'))return;
   var row=e.target.closest('tbody tr[data-record-id]');if(!row)return;
   var started=Date.now(),recordId=row.dataset.recordId,type=row.dataset.recordType||'end';
@@ -11661,6 +11840,7 @@ _mainTable.addEventListener('click',function(e){
    close in time and position, are treated as the existing double-click action. */
 var _rowPointerTap={key:'',at:0,x:0,y:0};
 _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e){
+  if(Date.now()<_rowSwipeSuppressUntil)return;
   if(e.button!==undefined&&e.button!==0)return;
   if(e.target.closest('button,input,select,textarea,a,label,.col-rz'))return;
   var row=e.target.closest('tbody tr[data-record-id]');if(!row)return;
@@ -11672,6 +11852,162 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
   var id;try{id=decodeURIComponent(row.dataset.recordId);}catch(_){id=row.dataset.recordId;}
   openRowEditor(id,row.dataset.recordType||'end');
 },true);
+
+// ─── DRAG A ROW LEFT → REVEAL / DELETE ─────────────────────
+// A short drag settles with a Delete action exposed at the visible right edge.
+// Continue past the commit threshold and release to soft-delete with Undo.
+(function(){
+  if(!window.PointerEvent)return;
+  var REVEAL_PX=96;
+  var START_PX=9;
+  var SNAP_PX=44;
+  var state=null;
+  var openRow=null;
+  var action=null;
+  var scroll=document.querySelector('#main-table-wrap .table-scroll');
+  var trashSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
+  function commitPx(){return Math.min(240,Math.max(164,Math.round((scroll?scroll.clientWidth:700)*.27)));}
+  function decodedRowId(row){
+    var value=row&&row.dataset.recordId||'';
+    try{return decodeURIComponent(value);}catch(_){return value;}
+  }
+  function removeAction(){
+    if(action&&action.parentNode)action.parentNode.removeChild(action);
+    action=null;
+  }
+  function removeActionSoon(){
+    setTimeout(function(){if(!openRow&&!state)removeAction();},190);
+  }
+  function resetRow(row,removeNow){
+    if(!row)return;
+    row.style.setProperty('--swipe-x','0px');
+    row.classList.remove('swipe-dragging','swipe-deleting');
+    if(removeNow){row.classList.remove('swipe-active');row.style.removeProperty('--swipe-x');}
+    else setTimeout(function(){if(row!==openRow){row.classList.remove('swipe-active');row.style.removeProperty('--swipe-x');}},190);
+  }
+  function closeOpen(immediate){
+    var row=openRow;
+    openRow=null;
+    resetRow(row,!!immediate);
+    if(immediate)removeAction();else setTimeout(function(){if(!openRow)removeAction();},190);
+  }
+  function ensureAction(row){
+    if(action&&action._swipeRow===row)return action;
+    removeAction();
+    action=document.createElement('button');
+    action.type='button';
+    action.className='row-swipe-delete';
+    action._swipeRow=row;
+    action.innerHTML=trashSvg+'<span>Delete</span>';
+    action.setAttribute('aria-label','Delete this entry');
+    action.addEventListener('pointerdown',function(e){e.stopPropagation();});
+    action.addEventListener('click',function(e){
+      e.preventDefault();e.stopPropagation();
+      var target=action&&action._swipeRow;
+      if(target)deleteSwipedRow(target);
+    });
+    scroll.appendChild(action);
+    return action;
+  }
+  function placeAction(row,width,isDragging,isCommit){
+    if(!scroll||!row||!row.isConnected)return;
+    var el=ensureAction(row);
+    var rowRect=row.getBoundingClientRect();
+    var scrollRect=scroll.getBoundingClientRect();
+    var visibleWidth=Math.max(0,Math.round(width));
+    el.style.top=Math.round(rowRect.top-scrollRect.top+scroll.scrollTop)+'px';
+    el.style.left=Math.round(scroll.scrollLeft+scroll.clientWidth-visibleWidth)+'px';
+    el.style.width=visibleWidth+'px';
+    el.style.height=Math.round(rowRect.height)+'px';
+    el.classList.toggle('swipe-dragging',!!isDragging);
+    el.classList.toggle('swipe-commit',!!isCommit);
+    el.querySelector('span').textContent=isCommit?'Release to delete':'Delete';
+  }
+  function paint(row,amount,isDragging){
+    var limit=commitPx()+42;
+    var dx=Math.max(0,Math.min(limit,amount));
+    var ready=dx>=commitPx();
+    row.classList.add('swipe-active');
+    row.classList.toggle('swipe-dragging',!!isDragging);
+    row.style.setProperty('--swipe-x',(-dx)+'px');
+    placeAction(row,Math.min(dx,commitPx()),isDragging,ready);
+    return ready;
+  }
+  function findRecord(row){return findDataRecord(decodedRowId(row));}
+  function deleteSwipedRow(row){
+    var record=findRecord(row);
+    if(!record||!window._canEdit||currentTab==='trash'){closeOpen(false);return;}
+    _rowSwipeSuppressUntil=Date.now()+800;
+    openRow=null;
+    if(action){action.classList.add('swipe-commit');action.style.pointerEvents='none';}
+    row.classList.remove('swipe-dragging');
+    row.classList.add('swipe-deleting','swipe-active');
+    row.style.setProperty('--swipe-x',(-Math.max(scroll.clientWidth,360))+'px');
+    setTimeout(function(){removeAction();softDelete([record]);},205);
+  }
+
+  document.addEventListener('pointerdown',function(e){
+    if(openRow&&(!openRow.contains(e.target))&&(!action||!action.contains(e.target)))closeOpen(false);
+  },true);
+
+  _mainTable.addEventListener('pointerdown',function(e){
+    if(e.isPrimary===false||(e.pointerType==='mouse'&&e.button!==0))return;
+    if(!window._canEdit||currentTab==='trash')return;
+    if(e.target.closest('button,input,select,textarea,a,label,.col-rz'))return;
+    var row=e.target.closest('tbody tr[data-record-id]');
+    if(!row||!this.contains(row)||!findRecord(row))return;
+    state={pointerId:e.pointerId,row:row,startX:e.clientX,startY:e.clientY,startOffset:row===openRow?REVEAL_PX:0,amount:row===openRow?REVEAL_PX:0,dragging:false};
+  });
+
+  document.addEventListener('pointermove',function(e){
+    if(!state||e.pointerId!==state.pointerId)return;
+    var moveX=e.clientX-state.startX;
+    var moveY=e.clientY-state.startY;
+    if(!state.dragging){
+      if(Math.abs(moveY)>START_PX&&Math.abs(moveY)>Math.abs(moveX)+5){state=null;return;}
+      if(Math.abs(moveX)<START_PX)return;
+      if(state.startOffset===0&&moveX>0){state=null;return;}
+      if(Math.abs(moveX)<=Math.abs(moveY))return;
+      state.dragging=true;
+      openRow=state.row;
+      _rowSwipeSuppressUntil=Date.now()+800;
+      try{state.row.setPointerCapture(e.pointerId);}catch(_){}
+      document.querySelectorAll('.cell-sel').forEach(function(cell){cell.classList.remove('cell-sel');});
+      _selCells.clear();_dragging=false;_cellStart=null;
+    }
+    e.preventDefault();
+    state.amount=Math.max(0,state.startOffset-moveX);
+    paint(state.row,state.amount,true);
+  },{passive:false});
+
+  document.addEventListener('pointerup',function(e){
+    if(!state||e.pointerId!==state.pointerId)return;
+    var finished=state;state=null;
+    if(!finished.dragging)return;
+    _rowSwipeSuppressUntil=Date.now()+800;
+    try{finished.row.releasePointerCapture(e.pointerId);}catch(_){}
+    if(finished.amount>=commitPx()){deleteSwipedRow(finished.row);return;}
+    if(finished.amount>=SNAP_PX){
+      openRow=finished.row;
+      paint(finished.row,REVEAL_PX,false);
+    }else{
+      openRow=null;
+      resetRow(finished.row,false);
+      removeActionSoon();
+    }
+  });
+
+  document.addEventListener('pointercancel',function(e){
+    if(!state||e.pointerId!==state.pointerId)return;
+    var row=state.row;state=null;openRow=null;resetRow(row,false);removeActionSoon();
+  });
+  if(scroll)scroll.addEventListener('scroll',function(){if(state){state=null;}if(openRow)closeOpen(true);}, {passive:true});
+  new MutationObserver(function(){
+    if(openRow&&!openRow.isConnected){openRow=null;removeAction();}
+    if(state&&!state.row.isConnected){state=null;removeAction();}
+  }).observe(document.getElementById('main-tbody'),{childList:true});
+})();
 
 // ─── LONG-PRESS A ROW → OPEN ITS COMMENTS ───────────────────
 // Press and hold anywhere on a record row — with the mouse OR a
