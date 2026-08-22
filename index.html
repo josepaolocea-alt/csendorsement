@@ -6063,7 +6063,12 @@ function primaryCellTooltip(r,fallback){
   });
   var text=String(latest&&latest.text||'').trim();
   if(!text)text=latest&&Array.isArray(latest.attachments)&&latest.attachments.length?'(attachment only)':'(no text)';
-  return 'Last comment by '+getUserDisplay(latest&&latest.user)+'\n'+text;
+  var commentDate='';
+  if(latest&&latest.ts){
+    var date=new Date(Number(latest.ts));
+    if(!isNaN(date.getTime()))commentDate=date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+  return 'Last comment by '+getUserDisplay(latest&&latest.user)+(commentDate?' on '+commentDate:'')+'\n'+text;
 }
 function rowDataId(id){
   return encodeURIComponent(String(id));
@@ -6195,7 +6200,7 @@ function renderRRRows(){
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
-      +'<td class="copyable-cell" style="font-weight:600;max-width:220px;white-space:normal" title="'+escAttr(isDoneRRView()?(r.rrSubject||''):primaryCellTooltip(r,r.rrSubject))+'">'+(r.rrSubject||'')+copyCellButton(r.id,'rrSubject')+'</td>'
+      +'<td class="copyable-cell" style="font-weight:600;max-width:220px;white-space:normal" title="'+escAttr(primaryCellTooltip(r,r.rrSubject))+'">'+(r.rrSubject||'')+copyCellButton(r.id,'rrSubject')+'</td>'
       +'<td class="rr-remarks-cell" title="'+(r.rrRemarks||'').replace(/"/g,'&quot;')+'"><div class="rr-remarks-inner">'+(r.rrRemarks||'')+'</div></td>'
       +'<td>'+fmtRRDate(r.rrDate)+'</td>'
       +'<td>'+rrBadge(r.rrBy||'','rrby')+'</td>'
