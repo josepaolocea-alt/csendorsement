@@ -229,8 +229,9 @@ input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-in
 .table-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
 .table-scroll{position:relative;overflow:auto;max-height:calc(100vh - 230px);}
 body.logo-stats-layout .table-scroll{max-height:calc(100vh - 184px);}
-.instant-table-tooltip{position:fixed;display:none;z-index:10050;max-width:min(420px,calc(100vw - 20px));padding:7px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg5);color:var(--text);box-shadow:var(--shadow-elevated);font-family:var(--sf);font-size:12px;font-weight:500;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;}
-.instant-table-tooltip.visible{display:block;}
+.instant-table-tooltip{position:fixed;display:none;z-index:10050;max-width:min(420px,calc(100vw - 20px));padding:8px 11px;border:1px solid color-mix(in srgb,var(--accent) 32%,var(--border2));border-radius:9px;background:linear-gradient(145deg,color-mix(in srgb,var(--bg5) 94%,var(--accent) 6%),var(--bg5));color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.025) inset;font-family:var(--sf);font-size:12px;font-weight:550;line-height:1.4;letter-spacing:.01em;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transform-origin:top left;}
+.instant-table-tooltip.visible{display:block;animation:premiumTipIn .12s ease-out;}
+@keyframes premiumTipIn{from{opacity:0;transform:translateY(3px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.4;}
 /* Keep All Tasks columns anchored when filters replace the tbody. With the
    browser's default auto layout, a shorter filtered result recalculates every
@@ -3719,10 +3720,11 @@ function initNavLabels(){
 }
 initNavLabels();
 
-// Native title tooltips wait before appearing. Inside every table, temporarily
-// replace them with one immediate app tooltip while the pointer is over the item.
+// Native title tooltips wait before appearing and do not match the app. Replace
+// them with one immediate premium tooltip in tables and the main workspace panels.
 var _instantTableTip=null;
 var _instantTableTipTarget=null;
+var _premiumTipScopes='table,#dashboard-panel,#calendar-panel,#notepad-panel,#cal-event-modal,#cal-alert-modal';
 function ensureInstantTableTip(){
   if(_instantTableTip)return _instantTableTip;
   _instantTableTip=document.createElement('div');
@@ -3733,7 +3735,8 @@ function ensureInstantTableTip(){
 }
 function instantTableTipCandidate(node){
   if(!node||node.nodeType!==1||!node.closest)return null;
-  return node.closest('table [title],table [data-instant-table-tip]');
+  var target=node.closest('[title],[data-instant-table-tip]');
+  return target&&target.closest(_premiumTipScopes)?target:null;
 }
 function positionInstantTableTip(e){
   if(!_instantTableTip||!_instantTableTip.classList.contains('visible'))return;
