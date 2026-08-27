@@ -1511,6 +1511,19 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
 .dash-split-grid>.admin-section{height:100%;margin:0;}
 .admin-toolbar,.cal-head,.note-head{gap:14px;margin-bottom:20px;}
 .admin-ctitle,.cal-title,.note-title,.cal-up-title{font-size:13px;font-weight:800;letter-spacing:.025em;color:var(--text);text-transform:none;}
+.cal-head{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 14px;margin-bottom:24px;border-radius:17px;background:var(--bg2);box-shadow:var(--neo-pressed);
+}
+.cal-head-primary,.cal-head-actions{display:flex;align-items:center;gap:14px;min-width:0;}
+.cal-head-primary{flex:1 1 auto;}
+.cal-head-actions{flex:0 0 auto;margin-left:auto;}
+.cal-head .cal-title{min-width:0;flex:1 1 auto;font-size:15px;letter-spacing:-.01em;white-space:nowrap;}
+.cal-head .cal-nav{display:grid;grid-template-columns:38px auto 38px;align-items:center;gap:7px;padding:4px;border-radius:13px;background:var(--bg2);box-shadow:var(--neo-raised-sm);}
+.cal-head .cal-nav .btn-icon{width:34px;height:34px;border-radius:9px;box-shadow:none;}
+.cal-head .cal-nav .btn{min-height:34px;padding:6px 11px;border-radius:9px;box-shadow:var(--neo-pressed);}
+.cal-head .cal-viewsw{height:42px;align-items:center;gap:4px;margin:0;padding:4px;border-radius:13px;box-shadow:var(--neo-raised-sm);}
+.cal-head .cal-viewsw button{min-height:34px;padding:6px 12px;border-radius:9px;}
+.cal-head .cal-new-event{min-height:42px;margin-left:0!important;white-space:nowrap;}
 .admin-tbl-wrap{
   padding:7px;border:0;border-radius:17px;background:var(--bg2);box-shadow:var(--neo-pressed-deep);overflow:hidden;
 }
@@ -1601,6 +1614,10 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
   .main{padding:20px 14px 30px;}
   .toolbar{gap:11px;padding:14px;}
   .search-wrap{min-width:240px;}
+  .cal-head{align-items:stretch;flex-direction:column;gap:12px;padding:12px;}
+  .cal-head-primary,.cal-head-actions{width:100%;}
+  .cal-head-actions{justify-content:space-between;margin-left:0;}
+  .cal-head .cal-viewsw{flex:1 1 auto;justify-content:center;}
 }
 @media (max-width:700px){
   .topbar{height:62px;top:6px;width:calc(100% - 12px);margin-top:6px;padding-inline:max(8px,env(safe-area-inset-left));border-radius:17px;}
@@ -1615,6 +1632,12 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
   .admin-section,.cal-wrap,.note-wrap{padding:17px;border-radius:18px;margin-bottom:18px;}
   #admin-panel>.admin-section+.admin-section{margin-top:18px;}
   .dash-split-grid{gap:18px;}
+  .cal-head-primary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;}
+  .cal-head .cal-nav{grid-template-columns:36px auto 36px;}
+  .cal-head .cal-title{font-size:14px;}
+  .cal-head-actions{align-items:stretch;flex-direction:column;}
+  .cal-head .cal-viewsw{width:100%;height:auto;display:grid;grid-template-columns:repeat(4,1fr);}
+  .cal-head .cal-new-event{width:100%;justify-content:center;}
   .table-pan{grid-template-columns:38px minmax(90px,1fr) 38px;padding:8px;}
   .table-pan-btn{width:38px;height:38px;}
   .table-pan-status{display:none;}
@@ -2171,21 +2194,25 @@ try{
   <div id="calendar-panel" style="display:none">
     <div class="cal-wrap">
       <div class="cal-head">
-        <div class="cal-title" id="cal-title">Calendar</div>
-        <div class="cal-nav">
-          <button class="btn-icon" onclick="calPrev()" aria-label="Previous">&lsaquo;</button>
-          <button class="btn btn-secondary btn-sm" onclick="calToday()">Today</button>
-          <button class="btn-icon" onclick="calNext()" aria-label="Next">&rsaquo;</button>
+        <div class="cal-head-primary">
+          <div class="cal-title" id="cal-title">Calendar</div>
+          <div class="cal-nav">
+            <button class="btn-icon" onclick="calPrev()" aria-label="Previous">&lsaquo;</button>
+            <button class="btn btn-secondary btn-sm" onclick="calToday()">Today</button>
+            <button class="btn-icon" onclick="calNext()" aria-label="Next">&rsaquo;</button>
+          </div>
         </div>
-        <div class="cal-viewsw" id="cal-viewsw" role="tablist" aria-label="Calendar view">
-          <button type="button" data-view="day" onclick="calSetView('day')">Day</button>
-          <button type="button" data-view="week" onclick="calSetView('week')">Week</button>
-          <button type="button" data-view="month" onclick="calSetView('month')">Month</button>
-          <button type="button" data-view="year" onclick="calSetView('year')">Year</button>
+        <div class="cal-head-actions">
+          <div class="cal-viewsw" id="cal-viewsw" role="tablist" aria-label="Calendar view">
+            <button type="button" data-view="day" onclick="calSetView('day')">Day</button>
+            <button type="button" data-view="week" onclick="calSetView('week')">Week</button>
+            <button type="button" data-view="month" onclick="calSetView('month')">Month</button>
+            <button type="button" data-view="year" onclick="calSetView('year')">Year</button>
+          </div>
+          <button class="btn btn-primary cal-new-event" onclick="openCalEventModal()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New event
+          </button>
         </div>
-        <button class="btn btn-primary" style="margin-left:auto" onclick="openCalEventModal()">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New event
-        </button>
       </div>
       <div id="cal-view"></div>
       <div class="cal-up">
