@@ -19,6 +19,14 @@
   var viewMode = 'days';
   var uid = 0;
   var positionFrame = 0;
+  var activeTime = null;
+  var timeMenuPopup = null;
+  var timeHourInput = null;
+  var timeMinuteInput = null;
+  var timeSecondInput = null;
+  var timeApplyButton = null;
+  var timeClearButton = null;
+  var timePositionFrame = 0;
   var nativeValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
   var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   var shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -26,6 +34,10 @@
 
   function calendarIcon(){
     return '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="2.75" y="4.25" width="14.5" height="13" rx="2.25" stroke="currentColor" stroke-width="1.5"/><path d="M6 2.75v3M14 2.75v3M2.75 8h14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  }
+
+  function clockIcon(){
+    return '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.25" stroke="currentColor" stroke-width="1.5"/><path d="M10 5.75v4.6l3.05 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
 
   function chevronIcon(){
@@ -57,6 +69,13 @@
     if(match) return {hour:Number(match[1]),minute:Number(match[2])};
     var now = new Date();
     return {hour:now.getHours(),minute:Math.floor(now.getMinutes()/5)*5};
+  }
+
+  function clockParts(value){
+    var match = String(value || '').match(/^(\d{2}):(\d{2})(?::(\d{2}))?/);
+    if(match)return {hour:Number(match[1]),minute:Number(match[2]),second:Number(match[3] || 0)};
+    var now = new Date();
+    return {hour:now.getHours(),minute:Math.floor(now.getMinutes()/5)*5,second:0};
   }
 
   function clamp(number,min,max){ return Math.min(max,Math.max(min,number)); }
@@ -137,7 +156,7 @@
     sync(input);
   }
 
-  function queueSync(input){ Promise.resolve().then(function(){ if(input && input.isConnected) sync(input); }); }
+  function queueSync(input){ Promise.resolve().then(function(){ if(input && input.isConnected){sync(input);syncTime(input);} }); }
 
   function sync(input){
     var wrapper = input && input.closest('.premium-date');
@@ -154,6 +173,162 @@
     wrapper.style.display = input.style.display === 'none' ? 'none' : '';
     if(active === input) render();
   }
+
+  function formatTimeDisplay(input){
+    if(!input.value)return 'Select time';
+    var parts = clockParts(input.value);
+    var stamp = new Date(2000,0,1,parts.hour,parts.minute,parts.second);
+    return new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',second:input.step === '1'?'2-digit':undefined}).format(stamp);
+  }
+
+  function enhanceTime(input){
+    if(!input || input.dataset.premiumTime || input.type !== 'time' || !input.closest('.reminder-fields'))return;
+    input.dataset.premiumTime = 'true';
+    installValueHook(input);
+
+    var wrapper = document.createElement('span');
+    wrapper.className = 'premium-time'+(input.classList.contains('fc')?' is-fc':'');
+    input.parentNode.insertBefore(wrapper,input);
+    wrapper.appendChild(input);
+
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'premium-time-trigger-'+(++uid);
+    button.className = 'premium-time-trigger';
+    button.setAttribute('aria-haspopup','dialog');
+    button.setAttribute('aria-expanded','false');
+    button.setAttribute('aria-label',labelFor(input));
+    button.innerHTML = '<span class="premium-time-icon">'+clockIcon()+'</span><span class="premium-time-value"></span><span class="premium-time-chevron">'+chevronIcon()+'</span>';
+    wrapper.appendChild(button);
+
+    if(input.tabIndex >= 0)button.tabIndex = input.tabIndex;
+    input.tabIndex = -1;
+    input.setAttribute('aria-hidden','true');
+    button.addEventListener('click',function(event){
+      event.preventDefault();event.stopPropagation();
+      if(input.disabled || input.readOnly)return;
+      activeTime === input ? closeTime(false) : openTime(input);
+    });
+    button.addEventListener('keydown',function(event){
+      if((event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') && !input.disabled && !input.readOnly){
+        event.preventDefault();openTime(input);
+      }
+    });
+    input.addEventListener('focus',function(){if(button && !input.disabled)button.focus();});
+    syncTime(input);
+  }
+
+  function syncTime(input){
+    var wrapper = input && input.closest('.premium-time');
+    if(!wrapper)return;
+    var button = wrapper.querySelector('.premium-time-trigger');
+    var value = wrapper.querySelector('.premium-time-value');
+    var hasValue = !!input.value;
+    value.textContent = formatTimeDisplay(input);
+    button.title = hasValue ? value.textContent : labelFor(input);
+    button.disabled = !!input.disabled;
+    wrapper.classList.toggle('is-empty',!hasValue);
+    wrapper.classList.toggle('is-disabled',input.disabled || input.readOnly);
+    wrapper.classList.toggle('is-invalid',input.required && !hasValue);
+    wrapper.style.display = input.style.display === 'none' ? 'none' : '';
+    if(activeTime === input)loadTimeDraft(input.value);
+  }
+
+  function timeUnit(label,max){
+    var unit = document.createElement('div');
+    unit.className = 'premium-time-unit';
+    var caption = document.createElement('span');caption.className='premium-time-unit-label';caption.textContent=label;
+    var up = document.createElement('button');up.type='button';up.className='premium-time-adjust';up.setAttribute('aria-label','Increase '+label.toLowerCase());up.textContent='+';
+    var field = document.createElement('input');field.type='text';field.inputMode='numeric';field.maxLength=2;field.className='premium-time-digit';field.setAttribute('aria-label',label);field.dataset.max=String(max);
+    var down = document.createElement('button');down.type='button';down.className='premium-time-adjust';down.setAttribute('aria-label','Decrease '+label.toLowerCase());down.textContent='−';
+    up.addEventListener('click',function(){adjustTimeField(field,1);});
+    down.addEventListener('click',function(){adjustTimeField(field,-1);});
+    field.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,2);});
+    field.addEventListener('blur',function(){normalizeClockField(this);});
+    field.addEventListener('keydown',function(event){if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();adjustTimeField(this,event.key==='ArrowUp'?1:-1);}});
+    unit.appendChild(caption);unit.appendChild(up);unit.appendChild(field);unit.appendChild(down);
+    return {element:unit,input:field};
+  }
+
+  function normalizeClockField(field){field.value=pad(clamp(Number(field.value || 0),0,Number(field.dataset.max)));}
+  function adjustTimeField(field,delta){
+    var max=Number(field.dataset.max),value=Number(field.value || 0)+delta;
+    if(value>max)value=0;if(value<0)value=max;
+    field.value=pad(value);field.focus();field.select();
+  }
+
+  function ensureTimeMenu(){
+    if(timeMenuPopup)return;
+    timeMenuPopup=document.createElement('div');
+    timeMenuPopup.className='premium-time-menu';
+    timeMenuPopup.setAttribute('role','dialog');
+    timeMenuPopup.setAttribute('aria-modal','false');
+
+    var head=document.createElement('div');head.className='premium-time-head';
+    head.innerHTML='<span class="premium-time-head-icon">'+clockIcon()+'</span><span><strong>Reminder time</strong><small>Set the exact alert time</small></span>';
+    var editor=document.createElement('div');editor.className='premium-time-editor';
+    var hour=timeUnit('Hour',23),minute=timeUnit('Minute',59),second=timeUnit('Second',59);
+    timeHourInput=hour.input;timeMinuteInput=minute.input;timeSecondInput=second.input;
+    editor.appendChild(hour.element);editor.appendChild(timeSeparator());editor.appendChild(minute.element);editor.appendChild(timeSeparator());editor.appendChild(second.element);
+
+    var quick=document.createElement('div');quick.className='premium-time-quick';
+    var nowButton=document.createElement('button');nowButton.type='button';nowButton.className='premium-time-chip';nowButton.textContent='Use current time';
+    nowButton.addEventListener('click',function(){var now=new Date();timeHourInput.value=pad(now.getHours());timeMinuteInput.value=pad(now.getMinutes());timeSecondInput.value=pad(now.getSeconds());});
+    quick.appendChild(nowButton);
+
+    var actions=document.createElement('div');actions.className='premium-time-actions';
+    timeClearButton=document.createElement('button');timeClearButton.type='button';timeClearButton.className='premium-calendar-action is-clear';timeClearButton.textContent='Clear';
+    timeApplyButton=document.createElement('button');timeApplyButton.type='button';timeApplyButton.className='premium-calendar-action is-primary';timeApplyButton.textContent='Apply time';
+    actions.appendChild(timeClearButton);actions.appendChild(timeApplyButton);
+    timeClearButton.addEventListener('click',function(){commitTime('');});
+    timeApplyButton.addEventListener('click',applyTimeDraft);
+    timeMenuPopup.addEventListener('keydown',function(event){if(event.key==='Escape'){event.preventDefault();closeTime(true);}else if(event.key==='Enter'&&event.target.classList.contains('premium-time-digit')){event.preventDefault();applyTimeDraft();}});
+    timeMenuPopup.appendChild(head);timeMenuPopup.appendChild(editor);timeMenuPopup.appendChild(quick);timeMenuPopup.appendChild(actions);
+    document.body.appendChild(timeMenuPopup);
+  }
+
+  function timeSeparator(){var separator=document.createElement('span');separator.className='premium-time-separator';separator.textContent=':';return separator;}
+  function loadTimeDraft(value){var parts=clockParts(value);timeHourInput.value=pad(parts.hour);timeMinuteInput.value=pad(parts.minute);timeSecondInput.value=pad(parts.second);}
+
+  function openTime(input){
+    ensureTimeMenu();close(false);closeTime(false);activeTime=input;loadTimeDraft(input.value);
+    var wrapper=input.closest('.premium-time'),trigger=wrapper.querySelector('.premium-time-trigger');
+    wrapper.classList.add('is-open');trigger.setAttribute('aria-expanded','true');timeMenuPopup.setAttribute('aria-labelledby',trigger.id);timeMenuPopup.classList.add('is-visible');
+    timeClearButton.style.display=input.required?'none':'';positionTime();
+    requestAnimationFrame(function(){timeHourInput.focus({preventScroll:true});timeHourInput.select();});
+  }
+
+  function closeTime(restoreFocus){
+    if(!activeTime){if(timeMenuPopup)timeMenuPopup.classList.remove('is-visible','opens-up');return;}
+    var closing=activeTime,wrapper=closing.closest('.premium-time');
+    if(wrapper){wrapper.classList.remove('is-open');var trigger=wrapper.querySelector('.premium-time-trigger');if(trigger){trigger.setAttribute('aria-expanded','false');if(restoreFocus)trigger.focus();}}
+    activeTime=null;if(timeMenuPopup)timeMenuPopup.classList.remove('is-visible','opens-up');
+  }
+
+  function applyTimeDraft(){
+    normalizeClockField(timeHourInput);normalizeClockField(timeMinuteInput);normalizeClockField(timeSecondInput);
+    commitTime(timeHourInput.value+':'+timeMinuteInput.value+(activeTime && activeTime.step === '1'?':'+timeSecondInput.value:''));
+  }
+
+  function commitTime(value){
+    if(!activeTime)return;
+    var input=activeTime,changed=input.value!==value;
+    nativeValue.set.call(input,value);syncTime(input);closeTime(true);
+    if(changed){input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}
+  }
+
+  function positionTime(){
+    if(!activeTime || !timeMenuPopup || !timeMenuPopup.classList.contains('is-visible'))return;
+    var trigger=activeTime.closest('.premium-time').querySelector('.premium-time-trigger'),rect=trigger.getBoundingClientRect();
+    var space=10,gap=8,viewWidth=document.documentElement.clientWidth,viewHeight=document.documentElement.clientHeight;
+    var width=Math.min(344,viewWidth-space*2),left=Math.min(Math.max(space,rect.left),viewWidth-width-space);
+    var height=Math.ceil(timeMenuPopup.getBoundingClientRect().height || timeMenuPopup.scrollHeight || 300),below=viewHeight-rect.bottom-gap-space,above=rect.top-gap-space;
+    var opensUp=below<height&&above>below;
+    timeMenuPopup.style.width=width+'px';timeMenuPopup.style.left=left+'px';timeMenuPopup.classList.toggle('opens-up',opensUp);
+    timeMenuPopup.style.top=(opensUp?Math.max(space,rect.top-gap-height):Math.min(viewHeight-space-height,rect.bottom+gap))+'px';
+  }
+
+  function scheduleTimePosition(){if(timePositionFrame)return;timePositionFrame=requestAnimationFrame(function(){timePositionFrame=0;positionTime();});}
 
   function ensureMenu(){
     if(menu) return;
@@ -386,19 +561,21 @@
     if(!root)return;
     if(root.matches && root.matches('input[type="date"],input[type="datetime-local"]'))enhance(root);
     if(root.querySelectorAll)root.querySelectorAll('input[type="date"],input[type="datetime-local"]').forEach(enhance);
+    if(root.matches && root.matches('.reminder-fields input[type="time"]'))enhanceTime(root);
+    if(root.querySelectorAll)root.querySelectorAll('.reminder-fields input[type="time"]').forEach(enhanceTime);
   }
 
-  document.addEventListener('change',function(event){if(event.target.matches && event.target.matches('input[type="date"],input[type="datetime-local"]'))sync(event.target);},true);
-  document.addEventListener('input',function(event){if(event.target.matches && event.target.matches('input[type="date"],input[type="datetime-local"]'))sync(event.target);},true);
-  document.addEventListener('reset',function(event){setTimeout(function(){scan(event.target);event.target.querySelectorAll('input[type="date"],input[type="datetime-local"]').forEach(sync);},0);},true);
-  document.addEventListener('pointerdown',function(event){if(active && !event.target.closest('.premium-calendar') && !event.target.closest('.premium-date'))close(false);},true);
-  document.addEventListener('focusin',function(event){if(active && !event.target.closest('.premium-calendar') && !event.target.closest('.premium-date'))close(false);});
-  document.addEventListener('scroll',schedulePosition,true);window.addEventListener('resize',schedulePosition,{passive:true});
+  document.addEventListener('change',function(event){if(event.target.matches && event.target.matches('input[type="date"],input[type="datetime-local"]'))sync(event.target);if(event.target.matches && event.target.matches('.reminder-fields input[type="time"]'))syncTime(event.target);},true);
+  document.addEventListener('input',function(event){if(event.target.matches && event.target.matches('input[type="date"],input[type="datetime-local"]'))sync(event.target);if(event.target.matches && event.target.matches('.reminder-fields input[type="time"]'))syncTime(event.target);},true);
+  document.addEventListener('reset',function(event){setTimeout(function(){scan(event.target);event.target.querySelectorAll('input[type="date"],input[type="datetime-local"]').forEach(sync);event.target.querySelectorAll('.reminder-fields input[type="time"]').forEach(syncTime);},0);},true);
+  document.addEventListener('pointerdown',function(event){if(active && !event.target.closest('.premium-calendar') && !event.target.closest('.premium-date'))close(false);if(activeTime && !event.target.closest('.premium-time-menu') && !event.target.closest('.premium-time'))closeTime(false);},true);
+  document.addEventListener('focusin',function(event){if(active && !event.target.closest('.premium-calendar') && !event.target.closest('.premium-date'))close(false);if(activeTime && !event.target.closest('.premium-time-menu') && !event.target.closest('.premium-time'))closeTime(false);});
+  document.addEventListener('scroll',function(){schedulePosition();scheduleTimePosition();},true);window.addEventListener('resize',function(){schedulePosition();scheduleTimePosition();},{passive:true});
 
   var observer = new MutationObserver(function(mutations){
     mutations.forEach(function(mutation){
       if(mutation.type === 'childList')mutation.addedNodes.forEach(function(node){if(node.nodeType===1)scan(node);});
-      else if(mutation.target.matches && mutation.target.matches('input[type="date"],input[type="datetime-local"]'))queueSync(mutation.target);
+      else if(mutation.target.matches && mutation.target.matches('input[type="date"],input[type="datetime-local"],.reminder-fields input[type="time"]'))queueSync(mutation.target);
     });
   });
 
