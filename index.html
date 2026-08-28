@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CYN Endorsement</title>
-<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22CYN+Endorsement%22%2C%22short_name%22%3A%22CYN%22%2C%22description%22%3A%22CYN+Endorsement+App%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23e3e8f0%22%2C%22theme_color%22%3A%22%23e3e8f0%22%2C%22orientation%22%3A%22any%22%7D">
-<meta name="theme-color" content="#e3e8f0">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22CYN+Endorsement%22%2C%22short_name%22%3A%22CYN%22%2C%22description%22%3A%22CYN+Endorsement+App%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230d0e11%22%2C%22theme_color%22%3A%22%230d0e11%22%2C%22orientation%22%3A%22any%22%7D">
+<meta name="theme-color" content="#0d0e11">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1759,7 +1759,7 @@ try{
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>New entry</span>
         </button>
         <button class="split-menu-item" id="split-theme-action" type="button" role="menuitem" onclick="splitMenuTheme()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span id="split-theme-label">Switch to dark mode</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><span id="split-theme-label">Switch to light mode</span>
         </button>
         <button class="split-menu-item danger" type="button" role="menuitem" onclick="splitMenuLogout()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg><span>Sign out</span>
@@ -1773,7 +1773,7 @@ try{
     <button class="btn btn-primary" id="new-btn" onclick="openNewModalCurrent()">
       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New
     </button>
-    <button class="tab-btn" onclick="toggleTheme()" id="theme-btn" data-tip="Dark mode" aria-label="Switch to dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
+    <button class="tab-btn" onclick="toggleTheme()" id="theme-btn" data-tip="Light mode" aria-label="Switch to light mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></button>
   </div>
 </div>
 
