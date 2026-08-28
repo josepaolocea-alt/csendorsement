@@ -1474,8 +1474,9 @@ textarea.fc:focus,.note-area:focus{border:0;background:var(--bg2);box-shadow:var
 .table-scroll{width:100%;max-width:100%;min-width:0;border-radius:15px;max-height:calc(100dvh - 260px);overflow-x:auto;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;touch-action:pan-x pan-y;}
 #main-table-wrap{min-width:0;max-width:100%;}
 #main-table-wrap .table-scroll{padding-bottom:4px;scrollbar-color:color-mix(in srgb,var(--accent) 48%,var(--bg4)) transparent;}
-.table-pan{display:none;grid-template-columns:34px minmax(120px,1fr) 34px auto;align-items:center;gap:10px;margin:10px 2px 1px;padding:8px 10px;border-radius:14px;background:var(--bg2);box-shadow:var(--neo-pressed);}
+.table-pan{display:none;grid-template-columns:34px minmax(120px,1fr) 34px auto;align-items:center;gap:10px;margin:0 2px;padding:0 10px;max-height:0;border-radius:14px;background:var(--bg2);box-shadow:var(--neo-pressed);opacity:0;overflow:hidden;pointer-events:none;transform:translateY(-5px) scaleY(.96);transform-origin:top;transition:opacity .18s ease,transform .2s ease,max-height .22s ease,margin .22s ease,padding .22s ease;}
 .table-pan.is-needed{display:grid;}
+.table-pan.is-needed.is-active,.table-pan.is-needed:focus-within{margin:10px 2px 1px;padding:8px 10px;max-height:58px;opacity:1;overflow:visible;pointer-events:auto;transform:none;}
 .table-pan-btn{width:34px;height:34px;display:grid;place-items:center;padding:0;border:0;border-radius:10px;background:var(--bg2);color:var(--text2);box-shadow:var(--neo-raised-sm);font:800 20px/1 var(--sf);cursor:pointer;transition:transform .15s,box-shadow .15s,color .15s;}
 .table-pan-btn:hover:not(:disabled){color:var(--accent);transform:translateY(-1px);}
 .table-pan-btn:active:not(:disabled){transform:none;box-shadow:var(--neo-pressed);}
@@ -1489,6 +1490,7 @@ textarea.fc:focus,.note-area:focus{border:0;background:var(--bg2);box-shadow:var
 .table-pan-range::-moz-range-thumb{width:24px;height:24px;border:0;border-radius:50%;background:var(--bg2);box-shadow:4px 4px 9px var(--surface-shadow),-4px -4px 9px var(--surface-highlight),inset 0 0 0 5px var(--accent);}
 .table-pan-range:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 32%,transparent);outline-offset:4px;border-radius:999px;}
 .table-pan-status{min-width:70px;color:var(--text3);font-size:10px;font-weight:800;letter-spacing:.05em;text-align:right;text-transform:uppercase;white-space:nowrap;}
+@media (prefers-reduced-motion:reduce){.table-pan{transition:none;}}
 body.logo-stats-layout .table-scroll{max-height:calc(100dvh - 214px);}
 table{border-collapse:separate;border-spacing:0;background:transparent;}
 table thead,.admin-table thead,.log-table thead{background:var(--bg3);}
@@ -1640,7 +1642,8 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
   .cal-head-actions{align-items:stretch;flex-direction:column;}
   .cal-head .cal-viewsw{width:100%;height:auto;display:grid;grid-template-columns:repeat(4,1fr);}
   .cal-head .cal-new-event{width:100%;justify-content:center;}
-  .table-pan{grid-template-columns:38px minmax(90px,1fr) 38px;padding:8px;}
+  .table-pan{grid-template-columns:38px minmax(90px,1fr) 38px;padding-left:8px;padding-right:8px;}
+  .table-pan.is-needed.is-active,.table-pan.is-needed:focus-within{padding:8px;}
   .table-pan-btn{width:38px;height:38px;}
   .table-pan-status{display:none;}
   .modal-ov{padding:10px;}
@@ -1670,7 +1673,7 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
 <body class="entry-compact logo-stats-layout">
 <script src="./premium-dropdown.js?v=31"></script>
 <script src="./premium-datetime.js?v=31"></script>
-<script src="./table-scroll.js?v=31"></script>
+<script src="./table-scroll.js?v=34"></script>
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
