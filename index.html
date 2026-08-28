@@ -8733,17 +8733,63 @@ var _pendingComments=[]; // buffer for comments on unsaved new entries
 var _pendingDIDComments=[]; // buffer for DID comments on unsaved new entries
 
 // ─── UNREAD COMMENT TRACKING ─────────────────────────────────
-// Stores: { recordId: lastReadTimestamp } in localStorage per user
-function _unreadKey(){return 'unread_'+((_currentUser&&_currentUser.email)||'anon');}
-function getReadTimes(){try{return JSON.parse(localStorage.getItem(_unreadKey())||'{}');}catch(e){return {};}}
-function markRead(recordId){var rt=getReadTimes();rt[String(recordId)]=Date.now();localStorage.setItem(_unreadKey(),JSON.stringify(rt));}
+// Stores a per-record marker for the exact newest comment that was read.
+// Older installs stored only a timestamp; getUnreadCount still supports it.
+function _unreadKey(){return 'unread_'+normalizeEmail((_currentUser&&_currentUser.email)||'anon');}
+function getReadTimes(){
+  try{
+    var key=_unreadKey();
+    var rawKey='unread_'+((_currentUser&&_currentUser.email)||'anon');
+    var saved=localStorage.getItem(key);
+    if(!saved&&rawKey!==key)saved=localStorage.getItem(rawKey);
+    return JSON.parse(saved||'{}');
+  }catch(e){return {};}
+}
+function commentTimeValue(ts){
+  if(typeof ts==='number')return isFinite(ts)?ts:0;
+  if(ts&&typeof ts.toMillis==='function')return ts.toMillis();
+  if(ts&&typeof ts.seconds==='number')return ts.seconds*1000+Math.floor((ts.nanoseconds||0)/1000000);
+  var parsed=Date.parse(ts||'');
+  return isNaN(parsed)?0:parsed;
+}
+function commentReadSignature(cm){
+  if(!cm)return '';
+  var attachments=Array.isArray(cm.attachments)?cm.attachments:[];
+  var source=normalizeEmail(cm.user)+'|'+commentTimeValue(cm.ts)+'|'+String(cm.text||'')+'|'+attachments.map(function(a){return String((a&&a.name)||'')+':'+String((a&&a.size)||'');}).join(',');
+  var hash=2166136261;
+  for(var i=0;i<source.length;i++){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619);}
+  return commentTimeValue(cm.ts)+'|'+normalizeEmail(cm.user)+'|'+(hash>>>0).toString(36);
+}
+function markRead(recordId){
+  var rt=getReadTimes();
+  var record=typeof findDataRecord==='function'?findDataRecord(recordId):null;
+  var comments=record&&Array.isArray(record.comments)?record.comments:[];
+  var latest=comments.length?comments[comments.length-1]:null;
+  rt[String(recordId)]={v:2,at:Date.now(),count:comments.length,last:commentReadSignature(latest)};
+  try{localStorage.setItem(_unreadKey(),JSON.stringify(rt));}catch(e){}
+}
 function getUnreadCount(r){
   if(!r.comments||!r.comments.length) return 0;
-  var myEmail=_currentUser?_currentUser.email:'';
+  var myEmail=normalizeEmail(_currentUser?_currentUser.email:'');
   var rt=getReadTimes();
-  var lastRead=rt[String(r.id)]||0;
-  return r.comments.filter(function(cm){
-    return cm.user!==myEmail && cm.ts>lastRead;
+  var marker=rt[String(r.id)]||0;
+  var candidates=r.comments;
+  if(marker&&typeof marker==='object'&&marker.v===2){
+    var markerIndex=-1;
+    if(marker.last){
+      for(var i=r.comments.length-1;i>=0;i--){
+        if(commentReadSignature(r.comments[i])===marker.last){markerIndex=i;break;}
+      }
+    }
+    if(markerIndex>=0)candidates=r.comments.slice(markerIndex+1);
+    else if(Number.isFinite(Number(marker.count)))candidates=r.comments.slice(Math.max(0,Number(marker.count)));
+    else candidates=r.comments.filter(function(cm){return commentTimeValue(cm.ts)>Number(marker.at||0);});
+  }else{
+    var lastRead=Number(marker)||0;
+    candidates=r.comments.filter(function(cm){return commentTimeValue(cm.ts)>lastRead;});
+  }
+  return candidates.filter(function(cm){
+    return normalizeEmail(cm.user)!==myEmail;
   }).length;
 }
 
