@@ -748,7 +748,7 @@ textarea.fc{resize:vertical;min-height:70px;}
 .login-err{color:#f87171;font-size:12px;text-align:center;min-height:18px;margin-bottom:6px;}
 .user-chip{display:flex;align-items:center;justify-content:center;padding:4px;background:var(--bg3);border:1px solid var(--border);border-radius:50%;color:var(--text2);}
 .user-avatar{width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
-.split-actions{display:none;position:relative;flex:0 0 auto;}
+.split-actions{display:inline-flex;align-items:center;position:relative;flex:0 0 auto;}
 .split-actions-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;width:230px;padding:7px;background:var(--bg2);border:1px solid var(--border2);border-radius:11px;box-shadow:var(--shadow-elevated);z-index:1000;}
 .split-actions.open .split-actions-menu{display:block;animation:splitMenuIn .14s ease-out;}
 .split-menu-user{display:flex;align-items:center;gap:9px;padding:8px 9px 10px;margin-bottom:5px;border-bottom:1px solid var(--border);min-width:0;}
@@ -898,6 +898,13 @@ tr.rr-disregard-row td{color:var(--text3)!important;text-decoration:line-through
 td.rr-remarks-cell{position:relative;padding:0;min-width:180px;}
 td.rr-remarks-cell>.rr-remarks-inner{position:absolute;inset:0;overflow:hidden;padding:8px 12px;white-space:normal;color:var(--text2);font-size:12px;line-height:1.45;}
 body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;padding-bottom:3px;}
+/* Pending RR/RO Priority column is icon-only (⚡ Critical, ⚠️ Urgent, 🟢 Normal); full word shows on hover. */
+.badge.rr-pri-icon{padding:3px 7px;font-size:14px;line-height:1;min-width:0;letter-spacing:0;}
+/* Normal RR/RO priority = a quiet gray dot (no badge), so ⚡ Critical / ⚠️ Urgent stand out. */
+.rr-pri-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--text3);vertical-align:middle;}
+/* When the RR/RO table is wider than the screen, drop the Remarks column so rows stop scrolling sideways.
+   The remarks text stays fully available in the entry editor and via the Subject cell. */
+@media (max-width:1400px){#main-table th.rr-col-remarks,#main-table td.rr-col-remarks{display:none;}}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 
 @media (prefers-reduced-motion:reduce){
@@ -1746,24 +1753,24 @@ try{
   <div class="divider" id="cal-divider" style="display:none"></div>
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <button class="tab-btn" id="notepad-tab-btn" style="display:none" data-tip="Notepad" aria-label="Notepad" onclick="switchTab('notepad',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9.5 8h5"/><path d="M9.5 12H16"/><path d="M9.5 16H14"/></svg></button>
-  <button class="tab-btn" id="notes-tab-btn" style="display:none" data-tip="Notes" aria-label="Notes (opens in a new tab)" onclick="openNotesProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11l5-5V5a2 2 0 0 0-2-2Z"/><path d="M15 21v-5a1 1 0 0 1 1-1h5"/></svg></button>
+  <button class="tab-btn nav-tab" id="notes-tab-btn" style="display:none" data-tip="Notes (opens in a new tab)" aria-label="Notes (opens in a new tab)" onclick="openNotesProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11l5-5V5a2 2 0 0 0-2-2Z"/><path d="M15 21v-5a1 1 0 0 1 1-1h5"/></svg><span class="tab-label">Notes</span></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <button class="tab-btn timer-center-btn" id="timer-center-btn" data-tip="Task Alerts" aria-label="Open task alerts" onclick="openTaskAlertCenter()" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
       <span class="timer-center-count" id="timer-center-count">0</span>
     </button>
+    <button class="btn btn-primary" id="new-btn" onclick="openNewModalCurrent()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New
+    </button>
     <div class="split-actions" id="split-actions" onclick="event.stopPropagation()">
-      <button class="tab-btn" id="split-menu-btn" type="button" data-tip="More actions" aria-label="Open account and app actions" aria-haspopup="menu" aria-expanded="false" onclick="toggleSplitActionMenu(event)">
-        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      <button class="tab-btn" id="split-menu-btn" type="button" data-tip="Menu" aria-label="Open account and app menu" aria-haspopup="menu" aria-expanded="false" onclick="toggleSplitActionMenu(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="split-actions-menu" id="split-actions-menu" role="menu">
         <div class="split-menu-user">
           <div class="user-avatar" id="split-user-avatar">?</div>
           <div class="split-menu-user-text"><strong>Signed in</strong><span id="split-user-email">—</span></div>
         </div>
-        <button class="split-menu-item" id="split-new-action" type="button" role="menuitem" onclick="splitMenuNew()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>New entry</span>
-        </button>
         <button class="split-menu-item" id="split-theme-action" type="button" role="menuitem" onclick="splitMenuTheme()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><span id="split-theme-label">Switch to light mode</span>
         </button>
@@ -1772,14 +1779,6 @@ try{
         </button>
       </div>
     </div>
-    <div class="user-chip" id="user-chip" style="display:none">
-      <div class="user-avatar" id="user-avatar">?</div>
-    </div>
-    <button class="tab-btn" id="logout-btn" data-tip="Sign Out" aria-label="Sign Out" onclick="doLogout()" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
-    <button class="btn btn-primary" id="new-btn" onclick="openNewModalCurrent()">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New
-    </button>
-    <button class="tab-btn" onclick="toggleTheme()" id="theme-btn" data-tip="Light mode" aria-label="Switch to light mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></button>
   </div>
 </div>
 
@@ -3434,16 +3433,12 @@ function showLoginScreen(){
   var archiveModal=document.getElementById('archive-modal');
   if(archiveModal)archiveModal.classList.add('hidden');
   document.getElementById('login-screen').style.display='flex';
-  document.getElementById('user-chip').style.display='none';
-  document.getElementById('logout-btn').style.display='none';
   closeLogoStatsMenu();
   closeSplitActionMenu();
   resetTaskAlertCenterSession();
 }
 function hideLoginScreen(){
   document.getElementById('login-screen').style.display='none';
-  document.getElementById('user-chip').style.display='flex';
-  document.getElementById('logout-btn').style.display='';
 }
 
 function doLogin(){
@@ -3509,10 +3504,6 @@ function setUserDisplay(user){
   _currentUser=user;
   var email=normalizeEmail(user.email||'');
   var initial=email.charAt(0).toUpperCase()||'?';
-  document.getElementById('user-avatar').textContent=initial;
-  var userChip=document.getElementById('user-chip');
-  userChip.title=email;
-  userChip.setAttribute('aria-label',email?'Signed in as '+email:'Signed in user');
   var splitAvatar=document.getElementById('split-user-avatar');if(splitAvatar)splitAvatar.textContent=initial;
   var splitEmail=document.getElementById('split-user-email');if(splitEmail)splitEmail.textContent=email||'Signed-in user';
   loadTaskAlertQueue();
@@ -3859,9 +3850,11 @@ function toggleTheme(){
   var sun='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
   var moon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
   var btn=document.getElementById('theme-btn');
-  btn.innerHTML=isDark?moon:sun;
-  btn.setAttribute('data-tip',isDark?'Dark mode':'Light mode');
-  btn.setAttribute('aria-label',isDark?'Switch to dark mode':'Switch to light mode');
+  if(btn){
+    btn.innerHTML=isDark?moon:sun;
+    btn.setAttribute('data-tip',isDark?'Dark mode':'Light mode');
+    btn.setAttribute('aria-label',isDark?'Switch to dark mode':'Switch to light mode');
+  }
   syncSplitActionMenu();
 }
 
@@ -6520,6 +6513,11 @@ var RR_POSTED=['None','Not Yet','Posted MRC','Removed MRC'];
 var RR_INV=['None','Not Yet','Done'];
 
 function rrBadge(val,type){
+  if(type==='pri'){
+    if(val==='Critical') return '<span class="badge rr-notyet rr-pri-icon" title="Critical" aria-label="Critical priority">⚡</span>';
+    if(val==='Urgent') return '<span class="badge rr-yellow rr-pri-icon" title="Urgent" aria-label="Urgent priority">⚠️</span>';
+    return '<span class="rr-pri-dot" title="Normal" aria-label="Normal priority"></span>';
+  }
   if(!val||val==='None')return '<span class="badge rr-gray">'+(val||'—')+'</span>';
   if(type==='status') return val==='Done'?'<span class="badge rr-done">Done</span>':'<span class="badge rr-notyet">Not Yet</span>';
   if(type==='advised'){
@@ -6558,9 +6556,9 @@ function rrBadge(val,type){
 var RR_THEAD='<tr>'
   +'<th style="width:30px;color:var(--text3);font-size:11px">#</th>'
   +'<th style="width:36px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>'
-  +'<th style="width:70px">Priority</th>'
+  +'<th style="width:44px;text-align:center" title="Priority">Prio</th>'
   +'<th style="min-width:200px">Subject</th>'
-  +'<th style="min-width:180px">Remarks</th>'
+  +'<th class="rr-col-remarks" style="min-width:180px">Remarks</th>'
   +'<th style="width:150px">RR Date</th>'
   +'<th style="width:130px">RR by</th>'
   +'<th style="width:120px">RO by</th>'
@@ -6630,9 +6628,9 @@ function renderRRRows(){
     return '<tr class="'+rowCls+'" id="row-'+r.id+'" data-record-id="'+rowDataId(r.id)+'" data-record-type="rr" style="'+rowStyle+'">'
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
-      +'<td>'+rrBadge(r.rrPriority,'pri')+'</td>'
+      +'<td style="text-align:center">'+rrBadge(r.rrPriority,'pri')+'</td>'
       +'<td class="copyable-cell" style="font-weight:600;max-width:220px;white-space:normal" title="'+escAttr(primaryCellTooltip(r,r.rrSubject))+'">'+(r.rrSubject||'')+copyCellButton(r.id,'rrSubject')+'</td>'
-      +'<td class="rr-remarks-cell" title="'+(r.rrRemarks||'').replace(/"/g,'&quot;')+'"><div class="rr-remarks-inner">'+(r.rrRemarks||'')+'</div></td>'
+      +'<td class="rr-remarks-cell rr-col-remarks" title="'+(r.rrRemarks||'').replace(/"/g,'&quot;')+'"><div class="rr-remarks-inner">'+(r.rrRemarks||'')+'</div></td>'
       +'<td>'+fmtRRDate(r.rrDate)+'</td>'
       +'<td>'+rrBadge(r.rrBy||'','rrby')+'</td>'
       +'<td>'+rrBadge(r.roBy||'','roby')+rrRoAlertBadge(r)+'</td>'
