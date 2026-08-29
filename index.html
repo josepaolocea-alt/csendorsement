@@ -1480,7 +1480,11 @@ textarea.fc:focus,.note-area:focus{border:0;background:var(--bg2);box-shadow:var
 }
 .table-scroll{width:100%;max-width:100%;min-width:0;border-radius:15px;max-height:calc(100dvh - 260px);overflow-x:auto;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;touch-action:pan-x pan-y;}
 #main-table-wrap{min-width:0;max-width:100%;}
-#main-table-wrap .table-scroll{padding-bottom:4px;scrollbar-color:color-mix(in srgb,var(--accent) 48%,var(--bg4)) transparent;}
+#main-table-wrap .table-scroll{padding-bottom:4px;scrollbar-color:color-mix(in srgb,var(--accent) 48%,var(--bg4)) transparent;touch-action:pan-y;}
+/* Horizontal navigation is via the pan-rail slider under the table; a sideways finger-drag now acts
+   on the ROW (swipe-right = mark read, swipe-left = delete) instead of scrolling. So hide the native
+   horizontal scrollbar at the bottom and stop it from swallowing the row swipe. Vertical scroll stays. */
+#main-table-wrap .table-scroll::-webkit-scrollbar:horizontal{display:none;height:0;}
 .table-pan{display:none;grid-template-columns:34px minmax(120px,1fr) 34px auto;align-items:center;gap:10px;margin:0 2px;padding:0 10px;max-height:0;border-radius:14px;background:var(--bg2);box-shadow:var(--neo-pressed);opacity:0;overflow:hidden;pointer-events:none;transform:translateY(-5px) scaleY(.96);transform-origin:top;transition:opacity .18s ease,transform .2s ease,max-height .22s ease,margin .22s ease,padding .22s ease;}
 .table-pan.is-needed{display:grid;}
 .table-pan.is-needed.is-active,.table-pan.is-needed:focus-within{margin:10px 2px 1px;padding:8px 10px;max-height:58px;opacity:1;overflow:visible;pointer-events:auto;transform:none;}
@@ -12499,15 +12503,10 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     if(!state.dragging){
       if(Math.abs(moveY)>START_PX&&Math.abs(moveY)>Math.abs(moveX)+5){state=null;return;}
       if(Math.abs(moveX)<START_PX)return;
-      /* A leftward touch drag is first a request to pan the wide table. Only
-         reveal row actions after the table has actually reached its far edge. */
-      if(state.startOffset===0&&moveX<0&&scroll&&scroll.scrollWidth>scroll.clientWidth+1&&scroll.scrollLeft<scroll.scrollWidth-scroll.clientWidth-1){state=null;return;}
       if(Math.abs(moveX)<=Math.abs(moveY))return;
       if(!state.mode){
         if(moveX>0){
           if(!state.canRead){state=null;return;}
-          /* Preserve normal horizontal table panning until its left edge. */
-          if(scroll&&scroll.scrollLeft>1){state=null;return;}
           state.mode='read';
         }else{
           if(!state.canDelete){state=null;return;}
