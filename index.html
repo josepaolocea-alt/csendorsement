@@ -1746,6 +1746,7 @@ try{
   <div class="divider" id="cal-divider" style="display:none"></div>
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <button class="tab-btn" id="notepad-tab-btn" style="display:none" data-tip="Notepad" aria-label="Notepad" onclick="switchTab('notepad',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9.5 8h5"/><path d="M9.5 12H16"/><path d="M9.5 16H14"/></svg></button>
+  <button class="tab-btn" id="notes-tab-btn" style="display:none" data-tip="Notes" aria-label="Notes (opens in a new tab)" onclick="openNotesProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11l5-5V5a2 2 0 0 0-2-2Z"/><path d="M15 21v-5a1 1 0 0 1 1-1h5"/></svg></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <button class="tab-btn timer-center-btn" id="timer-center-btn" data-tip="Task Alerts" aria-label="Open task alerts" onclick="openTaskAlertCenter()" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
@@ -8663,6 +8664,21 @@ function confirmResolve(val){
   if(_confirmResolve){_confirmResolve(val);_confirmResolve=null;}
 }
 
+// Notes tab — opens the external Notes project (its own site + its own login) in a
+// dedicated browser tab, after an in-app confirmation that reuses the app's own
+// confirm dialog. Admin only: the button is hidden for non-admins and the role is
+// re-checked here as a guard. A fixed window name reuses the same Notes tab instead
+// of piling up a new one on every click, and the Endorsement App stays open here.
+var NOTES_PROJECT_URL='https://josepaolocea-alt.github.io/Template/';
+function openNotesProject(){
+  if(_currentUserRole!=='Admin')return;
+  appConfirm('Open the Notes project in a separate browser tab? Your Endorsement App stays open right here — switch back to it any time.','Open Notes').then(function(ok){
+    if(!ok)return;
+    var w=window.open(NOTES_PROJECT_URL,'cynNotesProject');
+    if(!w){toast('Your browser blocked the pop-up. Please allow pop-ups for this site, then click Notes again.','info');}
+  });
+}
+
 function toast(msg,type){
   type=type||'info';
   var el=document.createElement('div');el.className='toast '+type;
@@ -9456,6 +9472,10 @@ function applyRolePermissions(role){
   // Notepad tab: Admin only (shares the calendar divider)
   var noteTabBtn = document.getElementById('notepad-tab-btn');
   if(noteTabBtn) noteTabBtn.style.display = isAdmin ? '' : 'none';
+
+  // Notes tab (external project): Admin only (shares the calendar divider)
+  var notesTabBtn = document.getElementById('notes-tab-btn');
+  if(notesTabBtn) notesTabBtn.style.display = isAdmin ? '' : 'none';
 
   // Settings button: Admin only
   var settingsBtn = document.getElementById('auto-toggle-btn');
@@ -12163,6 +12183,7 @@ window.openEditRR=openEditRR;
 window.openLightbox=openLightbox;
 window.openNewDIDModal=openNewDIDModal;
 window.openNewModal=openNewModal;
+window.openNotesProject=openNotesProject;
 window.openNewModalCurrent=openNewModalCurrent;
 window.openNewRRModal=openNewRRModal;
 window.playAlert=playAlert;
