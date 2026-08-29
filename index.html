@@ -2253,7 +2253,7 @@ try{
     <div class="admin-section">
       <div class="admin-toolbar" style="margin-bottom:14px">
         <span class="admin-ctitle">Daily Activity — Last 14 Days</span>
-        <span style="font-size:11px;color:var(--text3)">Tracked team activity per day (excludes Admin)</span>
+        <span style="font-size:11px;color:var(--text3)">Tracked app activity per day</span>
       </div>
       <div class="dash-chart" id="dash-chart"></div>
     </div>
@@ -2278,7 +2278,7 @@ try{
         <span class="admin-ctitle">User Engagement — Interactions per User</span>
         <span id="dash-eng-period" style="font-size:11px;color:var(--text3)"></span>
       </div>
-      <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Admin activity is excluded from every figure on this page. Counts are stored in persistent analytics summaries. Clearing Activity Logs does not reset these figures. Last Active is all-time.</p>
+      <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Counts are stored in persistent analytics summaries. Clearing Activity Logs does not reset these figures. Last Active is all-time and is not shown for the Admin.</p>
       <div class="admin-tbl-wrap">
         <div class="admin-tbl-scroll" style="max-height:420px">
           <table class="admin-table">
@@ -11570,34 +11570,13 @@ function dashAnalyticsForPeriod(startTs){
   return out;
 }
 
-// ─── ADMIN EXCLUDED FROM THE DASHBOARD ───────────────────────
-// The Dashboard measures the TEAM, not the person reviewing it, so every
-// interaction figure below ignores the Admin: the engagement row, the
-// "New Entries" / "Comments" / "Active Users" cards and the 14-day chart.
-// Workload cards (Open Tasks, DID In Progress, Pending RR/RO, Completed, the
-// 7-days-stale count, and the status / top-client breakdowns) still count every
-// record whoever raised it — those describe the queue, not who touched it, and
-// dropping admin-raised tickets would understate the real backlog.
-// Only PRIMARY_ADMIN_EMAIL may hold the Admin role (enforced on save), but the
-// role string is checked too so a hand-edited user doc can't slip back in.
-var DASH_ADMIN_KEY=analyticsUserKey(PRIMARY_ADMIN_EMAIL);
-function dashIsExcludedEmail(email){
+// The Admin is counted on the Dashboard exactly like everyone else — every card,
+// the chart and the engagement table all include them. The ONE exception is the
+// engagement table's "Last Active" cell, which is blanked to "—" for the Admin
+// (user request 2026-08-29: they did not want their own last-seen time on show).
+// Only the count is hidden from view; nothing is filtered out of the figures.
+function dashIsAdminEmail(email){
   return normalizeEmail(email)===PRIMARY_ADMIN_EMAIL;
-}
-function dashIsExcludedUser(email,role){
-  return dashIsExcludedEmail(email)||String(role||'')==='Admin';
-}
-// Analytics docs carry a pre-summed `totals` block that still includes the
-// Admin, so admin-free figures are re-summed from the per-user map instead.
-// Fall back to the sanitized doc key when an older entry has no `email` field.
-function dashSumUsers(bucket,metric){
-  var users=(bucket&&bucket.users)||{},n=0;
-  Object.keys(users).forEach(function(key){
-    var u=users[key]||{};
-    if(u.email?dashIsExcludedEmail(u.email):key===DASH_ADMIN_KEY)return;
-    n+=analyticsNum(u[metric]);
-  });
-  return n;
 }
 
 function renderDashboard(){
@@ -11622,7 +11601,6 @@ function renderDashboard(){
   function bump(email,key,ts){
     email=normalizeEmail(email);
     if(!email||email==='system'||email==='unknown') return;
-    if(dashIsExcludedEmail(email)) return;   // Admin is not measured here
     ts=dashTimestamp(ts);
     var s=stats[email];
     if(!s) s=stats[email]={created:0,updated:0,deleted:0,exports:0,logins:0,comments:0,lastActive:0};
@@ -11633,7 +11611,6 @@ function renderDashboard(){
     Object.keys(analyticsView.users||{}).forEach(function(key){
       var src=analyticsView.users[key]||{},email=normalizeEmail(src.email);
       if(!email)return;
-      if(dashIsExcludedEmail(email)||key===DASH_ADMIN_KEY)return;   // Admin is not measured here
       stats[email]={created:analyticsNum(src.created),updated:analyticsNum(src.updated),deleted:analyticsNum(src.deleted),exports:analyticsNum(src.exports),logins:analyticsNum(src.logins),comments:analyticsNum(src.comments),lastActive:analyticsNum(src.lastActive)};
     });
   }else{
@@ -11678,7 +11655,6 @@ function renderDashboard(){
   _dashUsers.forEach(function(u){
     if(!u.email) return;
     var email=normalizeEmail(u.email);
-    if(dashIsExcludedUser(email,u.role)) return;   // Admin gets no engagement row
     roster[email]={name:u.nickname||((u.name&&normalizeEmail(u.name)!==email)?u.name:email.split('@')[0]),role:u.role||'Viewer'};
   });
   Object.keys(stats).forEach(function(e){
@@ -11723,7 +11699,7 @@ function renderDashboard(){
           +'<td style="text-align:right">'+num(r.s.exports)+'</td>'
           +'<td style="text-align:right">'+num(r.s.logins)+'</td>'
           +'<td style="text-align:right;font-weight:700;color:var(--accent)">'+r.total+'</td>'
-          +'<td style="color:var(--text2);white-space:nowrap">'+dashRelTime(r.s.lastActive)+'</td>'
+          +'<td style="color:var(--text2);white-space:nowrap">'+(dashIsAdminEmail(r.email)?'<span style="color:var(--text3)">—</span>':dashRelTime(r.s.lastActive))+'</td>'
           +'<td>'+badge+'</td>'
           +'</tr>';
       }).join('');
@@ -11742,13 +11718,10 @@ function renderDashboard(){
     (r.comments||[]).forEach(function(c){if(c&&c.ts>lastTouch)lastTouch=c.ts;});
     if(lastTouch&&(now-lastTouch)>WEEK) stale++;
   });
-  // Re-summed per user (not read off `totals`) so the Admin's own entries and
-  // comments stay out of these two cards.
   var newInPeriod=0;
-  if(_analyticsReady)newInPeriod=dashSumUsers(analyticsView,'created');
-  else LOGS.forEach(function(l){if(l.ts>=startTs&&l.action==='created'&&!dashIsExcludedEmail(l.user))newInPeriod++;});
-  var cmInPeriod=_analyticsReady?dashSumUsers(analyticsView,'comments')
-    :comments.filter(function(c){return c.ts>=startTs&&!dashIsExcludedEmail(c.user);}).length;
+  if(_analyticsReady)newInPeriod=analyticsNum(analyticsView.totals.created);
+  else LOGS.forEach(function(l){if(l.ts>=startTs&&l.action==='created')newInPeriod++;});
+  var cmInPeriod=_analyticsReady?analyticsNum(analyticsView.totals.comments):comments.filter(function(c){return c.ts>=startTs;}).length;
   var activeUsers=rows.filter(function(r){return r.total>0;}).length;
   var cards=[
     {n:openEnd,l:'Open Tasks'},
@@ -11779,17 +11752,15 @@ function renderDashboard(){
   }
   if(_analyticsReady){
     _dashAnalyticsDays.forEach(function(day){
-      // Summed per user rather than from day.totals.activity, so the bars show
-      // team activity only.
-      var ts=dashTimestamp(day.dayStart),count=dashSumUsers(day,'activity');
+      var ts=dashTimestamp(day.dayStart),count=analyticsNum(day.totals&&day.totals.activity);
       if(!count)return;
       for(var j=0;j<days.length;j++){
         if(ts>=days[j].start&&ts<days[j].end){days[j].count+=count;break;}
       }
     });
   }else{
-    LOGS.forEach(function(l){if(l.action!=='login'&&!dashIsExcludedEmail(l.user))bumpDay(l.ts);});
-    comments.forEach(function(c){if(!dashIsExcludedEmail(c.user))bumpDay(c.ts);});
+    LOGS.forEach(function(l){if(l.action!=='login')bumpDay(l.ts);});
+    comments.forEach(function(c){bumpDay(c.ts);});
   }
   var maxDay=1;
   days.forEach(function(d){if(d.count>maxDay)maxDay=d.count;});
