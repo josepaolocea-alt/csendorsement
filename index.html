@@ -1727,18 +1727,21 @@ try{
     </div>
   </div>
   <div class="divider"></div>
+  <!-- Dashboard leads the tab bar and is where the app lands on open (Admin only —
+       it stays hidden for other roles, who land on All Tasks instead). -->
+  <button class="tab-btn" id="dashboard-tab-btn" style="display:none" data-tip="Dashboard" aria-label="Dashboard" onclick="switchTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></button>
   <button class="tab-btn active" id="tab-btn-all" data-tip="All Tasks" aria-label="All Tasks" onclick="switchTab('all',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></button>
   <button class="tab-btn" id="tab-btn-did" data-tip="DID Order / Cancel" aria-label="DID Order / Cancel" onclick="switchTab('did',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></button>
-  <button class="tab-btn" id="tab-btn-done" data-tip="Done / Resolved" aria-label="Done / Resolved" onclick="switchTab('done',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></button>
   <button class="tab-btn" id="tab-btn-mine" data-tip="Pending RR / RO" aria-label="Pending RR / RO" onclick="switchTab('mine',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+  <button class="tab-btn" id="tab-btn-done" data-tip="Done / Resolved" aria-label="Done / Resolved" onclick="switchTab('done',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></button>
   <button class="tab-btn nav-tab" id="notes-tab-btn" data-tip="Notes (opens in a new tab)" aria-label="Notes (opens in a new tab)" onclick="openNotesProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11l5-5V5a2 2 0 0 0-2-2Z"/><path d="M15 21v-5a1 1 0 0 1 1-1h5"/></svg><span class="tab-label">Notes</span></button>
   <button class="tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
-  <div class="divider" id="management-divider" style="display:none"></div>
-  <button class="tab-btn" id="dashboard-tab-btn" style="display:none" data-tip="Dashboard" aria-label="Dashboard" onclick="switchTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></button>
-  <button class="tab-btn" id="admin-tab-btn" style="display:none" data-tip="Admin" aria-label="Admin" onclick="switchTab('admin',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
+  <!-- Admin-only group, in order: Calendar, Notepad, then Admin last. -->
   <div class="divider" id="cal-divider" style="display:none"></div>
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <button class="tab-btn" id="notepad-tab-btn" style="display:none" data-tip="Notepad" aria-label="Notepad" onclick="switchTab('notepad',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9.5 8h5"/><path d="M9.5 12H16"/><path d="M9.5 16H14"/></svg></button>
+  <div class="divider" id="management-divider" style="display:none"></div>
+  <button class="tab-btn" id="admin-tab-btn" style="display:none" data-tip="Admin" aria-label="Admin" onclick="switchTab('admin',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
   <div class="ml-auto" style="display:flex;gap:8px;align-items:center">
     <button class="tab-btn timer-center-btn" id="timer-center-btn" data-tip="Task Alerts" aria-label="Open task alerts" onclick="openTaskAlertCenter()" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
@@ -2246,13 +2249,36 @@ try{
     <!-- SUMMARY CARDS -->
     <div id="dash-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px"></div>
 
-    <!-- USER ENGAGEMENT -->
+    <!-- DAILY ACTIVITY CHART -->
     <div class="admin-section">
+      <div class="admin-toolbar" style="margin-bottom:14px">
+        <span class="admin-ctitle">Daily Activity — Last 14 Days</span>
+        <span style="font-size:11px;color:var(--text3)">Tracked team activity per day (excludes Admin)</span>
+      </div>
+      <div class="dash-chart" id="dash-chart"></div>
+    </div>
+
+    <!-- STATUS BREAKDOWN + TOP CLIENTS -->
+    <!-- margin-bottom here because .dash-split-grid>.admin-section zeroes the
+         children's own margin, and this grid is no longer the last block. -->
+    <div class="dash-split-grid" style="margin-bottom:14px">
+      <div class="admin-section">
+        <div class="admin-toolbar"><span class="admin-ctitle">Open Tasks by Status</span></div>
+        <div id="dash-status"></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-toolbar"><span class="admin-ctitle">Top Clients — Open Tasks</span></div>
+        <div id="dash-clients"></div>
+      </div>
+    </div>
+
+    <!-- USER ENGAGEMENT (kept last: the detail table people scroll down to) -->
+    <div class="admin-section" style="margin-bottom:0">
       <div class="admin-toolbar" style="margin-bottom:4px">
         <span class="admin-ctitle">User Engagement — Interactions per User</span>
         <span id="dash-eng-period" style="font-size:11px;color:var(--text3)"></span>
       </div>
-      <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Counts are stored in persistent analytics summaries. Clearing Activity Logs does not reset these figures. Last Active is all-time.</p>
+      <p style="font-size:11px;color:var(--text3);margin:0 0 10px">Admin activity is excluded from every figure on this page. Counts are stored in persistent analytics summaries. Clearing Activity Logs does not reset these figures. Last Active is all-time.</p>
       <div class="admin-tbl-wrap">
         <div class="admin-tbl-scroll" style="max-height:420px">
           <table class="admin-table">
@@ -2275,27 +2301,6 @@ try{
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
-
-    <!-- DAILY ACTIVITY CHART -->
-    <div class="admin-section">
-      <div class="admin-toolbar" style="margin-bottom:14px">
-        <span class="admin-ctitle">Daily Activity — Last 14 Days</span>
-        <span style="font-size:11px;color:var(--text3)">Tracked app activity per day</span>
-      </div>
-      <div class="dash-chart" id="dash-chart"></div>
-    </div>
-
-    <!-- STATUS BREAKDOWN + TOP CLIENTS -->
-    <div class="dash-split-grid">
-      <div class="admin-section" style="margin-bottom:0">
-        <div class="admin-toolbar"><span class="admin-ctitle">Open Tasks by Status</span></div>
-        <div id="dash-status"></div>
-      </div>
-      <div class="admin-section" style="margin-bottom:0">
-        <div class="admin-toolbar"><span class="admin-ctitle">Top Clients — Open Tasks</span></div>
-        <div id="dash-clients"></div>
       </div>
     </div>
 
@@ -9428,6 +9433,7 @@ async function startFirestore(){
   }
 }
 
+var _initialLandingDone = false;   // one-shot guard for the Dashboard landing below
 function applyRolePermissions(role){
   var isAdmin   = role==='Admin';
   var isSemi    = role==='Semi-Admin';
@@ -9468,6 +9474,18 @@ function applyRolePermissions(role){
   window._canEdit = !isViewer;   // Admin + Semi-Admin can edit/delete
   window._canAdd  = !isViewer;   // Admin + Semi-Admin can add
   updateDoneSubtabs();
+
+  // Land on the Dashboard when the app opens. Only the Admin can see that tab, so
+  // every other role stays on the All Tasks default already set in the markup.
+  // This runs ONCE per app session: applyRolePermissions is also called on a role
+  // change / settings sync, and re-landing then would yank the user out of
+  // whatever tab they were working in. The records snapshot re-renders the
+  // dashboard when it arrives, so landing before DATA loads is fine.
+  if(!_initialLandingDone){
+    _initialLandingDone = true;
+    var landingBtn = isAdmin ? document.getElementById('dashboard-tab-btn') : null;
+    if(landingBtn) switchTab('dashboard', landingBtn);
+  }
 }
 
 var _clientGridExpanded=false;
@@ -11552,6 +11570,36 @@ function dashAnalyticsForPeriod(startTs){
   return out;
 }
 
+// ─── ADMIN EXCLUDED FROM THE DASHBOARD ───────────────────────
+// The Dashboard measures the TEAM, not the person reviewing it, so every
+// interaction figure below ignores the Admin: the engagement row, the
+// "New Entries" / "Comments" / "Active Users" cards and the 14-day chart.
+// Workload cards (Open Tasks, DID In Progress, Pending RR/RO, Completed, the
+// 7-days-stale count, and the status / top-client breakdowns) still count every
+// record whoever raised it — those describe the queue, not who touched it, and
+// dropping admin-raised tickets would understate the real backlog.
+// Only PRIMARY_ADMIN_EMAIL may hold the Admin role (enforced on save), but the
+// role string is checked too so a hand-edited user doc can't slip back in.
+var DASH_ADMIN_KEY=analyticsUserKey(PRIMARY_ADMIN_EMAIL);
+function dashIsExcludedEmail(email){
+  return normalizeEmail(email)===PRIMARY_ADMIN_EMAIL;
+}
+function dashIsExcludedUser(email,role){
+  return dashIsExcludedEmail(email)||String(role||'')==='Admin';
+}
+// Analytics docs carry a pre-summed `totals` block that still includes the
+// Admin, so admin-free figures are re-summed from the per-user map instead.
+// Fall back to the sanitized doc key when an older entry has no `email` field.
+function dashSumUsers(bucket,metric){
+  var users=(bucket&&bucket.users)||{},n=0;
+  Object.keys(users).forEach(function(key){
+    var u=users[key]||{};
+    if(u.email?dashIsExcludedEmail(u.email):key===DASH_ADMIN_KEY)return;
+    n+=analyticsNum(u[metric]);
+  });
+  return n;
+}
+
 function renderDashboard(){
   var startTs=dashPeriodStart();
   var sel=document.getElementById('dash-period');
@@ -11574,6 +11622,7 @@ function renderDashboard(){
   function bump(email,key,ts){
     email=normalizeEmail(email);
     if(!email||email==='system'||email==='unknown') return;
+    if(dashIsExcludedEmail(email)) return;   // Admin is not measured here
     ts=dashTimestamp(ts);
     var s=stats[email];
     if(!s) s=stats[email]={created:0,updated:0,deleted:0,exports:0,logins:0,comments:0,lastActive:0};
@@ -11584,6 +11633,7 @@ function renderDashboard(){
     Object.keys(analyticsView.users||{}).forEach(function(key){
       var src=analyticsView.users[key]||{},email=normalizeEmail(src.email);
       if(!email)return;
+      if(dashIsExcludedEmail(email)||key===DASH_ADMIN_KEY)return;   // Admin is not measured here
       stats[email]={created:analyticsNum(src.created),updated:analyticsNum(src.updated),deleted:analyticsNum(src.deleted),exports:analyticsNum(src.exports),logins:analyticsNum(src.logins),comments:analyticsNum(src.comments),lastActive:analyticsNum(src.lastActive)};
     });
   }else{
@@ -11628,6 +11678,7 @@ function renderDashboard(){
   _dashUsers.forEach(function(u){
     if(!u.email) return;
     var email=normalizeEmail(u.email);
+    if(dashIsExcludedUser(email,u.role)) return;   // Admin gets no engagement row
     roster[email]={name:u.nickname||((u.name&&normalizeEmail(u.name)!==email)?u.name:email.split('@')[0]),role:u.role||'Viewer'};
   });
   Object.keys(stats).forEach(function(e){
@@ -11691,10 +11742,13 @@ function renderDashboard(){
     (r.comments||[]).forEach(function(c){if(c&&c.ts>lastTouch)lastTouch=c.ts;});
     if(lastTouch&&(now-lastTouch)>WEEK) stale++;
   });
+  // Re-summed per user (not read off `totals`) so the Admin's own entries and
+  // comments stay out of these two cards.
   var newInPeriod=0;
-  if(_analyticsReady)newInPeriod=analyticsNum(analyticsView.totals.created);
-  else LOGS.forEach(function(l){if(l.ts>=startTs&&l.action==='created')newInPeriod++;});
-  var cmInPeriod=_analyticsReady?analyticsNum(analyticsView.totals.comments):comments.filter(function(c){return c.ts>=startTs;}).length;
+  if(_analyticsReady)newInPeriod=dashSumUsers(analyticsView,'created');
+  else LOGS.forEach(function(l){if(l.ts>=startTs&&l.action==='created'&&!dashIsExcludedEmail(l.user))newInPeriod++;});
+  var cmInPeriod=_analyticsReady?dashSumUsers(analyticsView,'comments')
+    :comments.filter(function(c){return c.ts>=startTs&&!dashIsExcludedEmail(c.user);}).length;
   var activeUsers=rows.filter(function(r){return r.total>0;}).length;
   var cards=[
     {n:openEnd,l:'Open Tasks'},
@@ -11725,15 +11779,17 @@ function renderDashboard(){
   }
   if(_analyticsReady){
     _dashAnalyticsDays.forEach(function(day){
-      var ts=dashTimestamp(day.dayStart),count=analyticsNum(day.totals&&day.totals.activity);
+      // Summed per user rather than from day.totals.activity, so the bars show
+      // team activity only.
+      var ts=dashTimestamp(day.dayStart),count=dashSumUsers(day,'activity');
       if(!count)return;
       for(var j=0;j<days.length;j++){
         if(ts>=days[j].start&&ts<days[j].end){days[j].count+=count;break;}
       }
     });
   }else{
-    LOGS.forEach(function(l){if(l.action!=='login')bumpDay(l.ts);});
-    comments.forEach(function(c){bumpDay(c.ts);});
+    LOGS.forEach(function(l){if(l.action!=='login'&&!dashIsExcludedEmail(l.user))bumpDay(l.ts);});
+    comments.forEach(function(c){if(!dashIsExcludedEmail(c.user))bumpDay(c.ts);});
   }
   var maxDay=1;
   days.forEach(function(d){if(d.count>maxDay)maxDay=d.count;});
