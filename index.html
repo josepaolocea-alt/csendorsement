@@ -902,9 +902,9 @@ body.density-compact td.rr-remarks-cell>.rr-remarks-inner{padding-top:3px;paddin
 .badge.rr-pri-icon{padding:3px 7px;font-size:14px;line-height:1;min-width:0;letter-spacing:0;}
 /* Normal RR/RO priority = a quiet gray dot (no badge), so ⚡ Critical / ⚠️ Urgent stand out. */
 .rr-pri-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--text3);vertical-align:middle;}
-/* When the RR/RO table is wider than the screen, drop the Remarks column so rows stop scrolling sideways.
-   The remarks text stays fully available in the entry editor and via the Subject cell. */
-@media (max-width:1400px){#main-table th.rr-col-remarks,#main-table td.rr-col-remarks{display:none;}}
+/* Remarks column is completely hidden from the RR/RO table; the remarks text now shows on Subject
+   hover (title tooltip) and in the entry editor. */
+#main-table th.rr-col-remarks,#main-table td.rr-col-remarks{display:none;}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 
 @media (prefers-reduced-motion:reduce){
@@ -6629,7 +6629,7 @@ function renderRRRows(){
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="text-align:center">'+rrBadge(r.rrPriority,'pri')+'</td>'
-      +'<td class="copyable-cell" style="font-weight:600;max-width:220px;white-space:normal" title="'+escAttr(primaryCellTooltip(r,r.rrSubject))+'">'+(r.rrSubject||'')+copyCellButton(r.id,'rrSubject')+'</td>'
+      +'<td class="copyable-cell" style="font-weight:600;max-width:220px;white-space:normal" title="'+escAttr(r.rrRemarks||'')+'">'+(r.rrSubject||'')+copyCellButton(r.id,'rrSubject')+'</td>'
       +'<td class="rr-remarks-cell rr-col-remarks" title="'+(r.rrRemarks||'').replace(/"/g,'&quot;')+'"><div class="rr-remarks-inner">'+(r.rrRemarks||'')+'</div></td>'
       +'<td>'+fmtRRDate(r.rrDate)+'</td>'
       +'<td>'+rrBadge(r.rrBy||'','rrby')+'</td>'
@@ -12457,12 +12457,21 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     var record=findRecord(row);
     if(!record||!window._canEdit||currentTab==='trash'){closeOpen(false);return;}
     _rowSwipeSuppressUntil=Date.now()+800;
+    // A swipe-delete is easy to trigger by accident, so always confirm first. Hold the row open at
+    // its revealed position while the dialog is up (openRow cleared so a tap on the dialog doesn't
+    // close it). Cancel snaps the row back; confirm slides it out to Trash.
     openRow=null;
-    if(action){action.classList.add('swipe-commit');action.style.pointerEvents='none';}
     row.classList.remove('swipe-dragging');
-    row.classList.add('swipe-deleting','swipe-active');
-    row.style.setProperty('--swipe-x',(-Math.max(scroll.clientWidth,360))+'px');
-    setTimeout(function(){removeAction();softDelete([record]);},205);
+    paint(row,REVEAL_PX,false,'delete');
+    appConfirm('Move this entry to Trash? You can restore it from the Trash tab.','Delete').then(function(ok){
+      _rowSwipeSuppressUntil=Date.now()+800;
+      if(!ok){resetRow(row,false);removeActionSoon();return;}
+      if(action){action.classList.add('swipe-commit');action.style.pointerEvents='none';}
+      row.classList.remove('swipe-dragging');
+      row.classList.add('swipe-deleting','swipe-active');
+      row.style.setProperty('--swipe-x',(-Math.max(scroll.clientWidth,360))+'px');
+      setTimeout(function(){removeAction();softDelete([record]);},205);
+    });
   }
 
   document.addEventListener('pointerdown',function(e){
