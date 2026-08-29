@@ -275,6 +275,8 @@ tr.lp-arming>td{background:color-mix(in srgb,var(--accent) 16%,transparent)!impo
 .row-swipe-delete,.row-swipe-read{position:absolute;z-index:8;display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;padding:0 12px;border:0;border-radius:0;color:#fff;font:700 12px/1 var(--sf);letter-spacing:.15px;white-space:nowrap;overflow:hidden;cursor:pointer;transition:width .18s cubic-bezier(.22,.75,.3,1),left .18s cubic-bezier(.22,.75,.3,1),background .15s,filter .15s;}
 .row-swipe-delete{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:inset 1px 0 0 rgba(255,255,255,.16);}
 .row-swipe-read{background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:inset -1px 0 0 rgba(255,255,255,.18);}
+/* Same swipe, nothing to mark: the row still answers the finger, it just says so. */
+.row-swipe-read.is-noop{background:linear-gradient(135deg,var(--bg4),var(--bg3));color:var(--text2);}
 .row-swipe-delete svg,.row-swipe-read svg{width:17px;height:17px;flex:0 0 auto;}
 .row-swipe-delete.swipe-dragging,.row-swipe-read.swipe-dragging{transition:none;pointer-events:none;}
 .row-swipe-delete.swipe-commit{background:linear-gradient(135deg,#f43f5e,#b91c1c);filter:saturate(1.12);}
@@ -12363,16 +12365,24 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
 // ─── SWIPE A ROW → MARK COMMENTS READ / DELETE ──────────────
 // Swipe right to mark another user's new comments as read. Swipe left to
 // reveal Delete; continue past its commit threshold to soft-delete with Undo.
+// Every record tab — All Tasks, DID Order/Cancel, Done/Resolved and Pending
+// RR/RO — draws into this one #main-table, so wiring the gesture here covers
+// all of them. Trash and the Admin archive are deliberately left out: those
+// rows are not live records (they live in TRASH_DATA / ARCHIVE_DATA, carry no
+// data-record-id and have no unread state to clear).
 (function(){
   if(!window.PointerEvent)return;
   var REVEAL_PX=96;
   var START_PX=9;
   var SNAP_PX=44;
   var READ_COMMIT_PX=64;
+  var GIVE_UP_Y=16;      // vertical travel that hands the gesture back to scrolling
   var state=null;
   var openRow=null;
   var action=null;
+  var readUnread=false;  // does the row being swiped right actually have unread comments?
   var scroll=document.querySelector('#main-table-wrap .table-scroll');
+  var tbody=document.getElementById('main-tbody');
   var trashSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
   var readSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
 
@@ -12380,6 +12390,29 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
   function decodedRowId(row){
     var value=row&&row.dataset.recordId||'';
     try{return decodeURIComponent(value);}catch(_){return value;}
+  }
+  /* A table re-render replaces every <tr> — a timer tick crossing a threshold, another
+     user's edit arriving over Firestore, a filter refresh. A swipe in mid-air used to
+     die there (the finger kept moving a row that had left the document), which is the
+     main reason the gesture felt like it only worked sometimes. Re-find the row that
+     now stands for the same record instead of giving up. */
+  function liveRow(row){
+    if(!row)return null;
+    if(row.isConnected)return row;
+    var key=row.dataset&&row.dataset.recordId;
+    if(!key||!tbody)return null;
+    var rows=tbody.querySelectorAll('tr[data-record-id]');
+    for(var i=0;i<rows.length;i++)if(rows[i].dataset.recordId===key)return rows[i];
+    return null;
+  }
+  function adoptRow(row){
+    var fresh=liveRow(row);
+    if(!fresh||fresh===row)return fresh;
+    resetRow(row,true);
+    if(action&&action._swipeRow===row)action._swipeRow=fresh;
+    if(openRow===row)openRow=fresh;
+    if(state&&state.row===row)state.row=fresh;
+    return fresh;
   }
   function removeAction(){
     if(action&&action.parentNode)action.parentNode.removeChild(action);
@@ -12401,15 +12434,22 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     resetRow(row,!!immediate);
     if(immediate)removeAction();else setTimeout(function(){if(!openRow)removeAction();},190);
   }
+  /* Every record row answers a right-swipe, whether or not it is holding something
+     new — a row that silently refused to move was indistinguishable from a broken
+     gesture. One that has nothing to mark just says so and snaps back. */
+  function readLabel(isCommit){
+    if(!readUnread)return 'Already read';
+    return isCommit?'Release to mark read':'Mark read';
+  }
   function ensureAction(row,kind){
     if(action&&action._swipeRow===row&&action._swipeKind===kind)return action;
     removeAction();
     action=document.createElement('button');
     action.type='button';
-    action.className=kind==='read'?'row-swipe-read':'row-swipe-delete';
+    action.className=kind==='read'?('row-swipe-read'+(readUnread?'':' is-noop')):'row-swipe-delete';
     action._swipeRow=row;
     action._swipeKind=kind;
-    action.innerHTML=(kind==='read'?readSvg:trashSvg)+'<span>'+(kind==='read'?'Mark read':'Delete')+'</span>';
+    action.innerHTML=(kind==='read'?readSvg:trashSvg)+'<span>'+(kind==='read'?readLabel(false):'Delete')+'</span>';
     action.setAttribute('aria-label',kind==='read'?'Mark comments as read':'Delete this entry');
     action.addEventListener('pointerdown',function(e){e.stopPropagation();});
     action.addEventListener('click',function(e){
@@ -12433,8 +12473,9 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     el.style.width=visibleWidth+'px';
     el.style.height=Math.round(rowRect.height)+'px';
     el.classList.toggle('swipe-dragging',!!isDragging);
-    el.classList.toggle('swipe-commit',!!isCommit);
-    el.querySelector('span').textContent=isCommit?(kind==='read'?'Release to mark read':'Release to delete'):(kind==='read'?'Mark read':'Delete');
+    el.classList.toggle('swipe-commit',!!isCommit&&(kind!=='read'||readUnread));
+    if(kind==='read')el.classList.toggle('is-noop',!readUnread);
+    el.querySelector('span').textContent=kind==='read'?readLabel(isCommit):(isCommit?'Release to delete':'Delete');
   }
   function paint(row,amount,isDragging,kind){
     var limit=kind==='read'?READ_COMMIT_PX+48:commitPx()+42;
@@ -12447,17 +12488,30 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     return ready;
   }
   function findRecord(row){return findDataRecord(decodedRowId(row));}
+  function hasUnread(record){try{return !!record&&getUnreadCount(record)>0;}catch(_){return false;}}
   function markRowCommentsRead(row){
+    row=adoptRow(row)||row;
     var record=findRecord(row);
-    if(!record||getUnreadCount(record)<1){openRow=null;resetRow(row,false);removeActionSoon();return;}
     _rowSwipeSuppressUntil=Date.now()+800;
-    markRead(record.id);
-    row.classList.remove('has-new-comment','swipe-dragging');
     openRow=null;
+    if(record&&hasUnread(record)){
+      markRead(record.id);
+      /* Clear the unread stripe on every rendered copy of this record, not just the
+         element the finger happened to be holding — that one may already have been
+         replaced by a re-render, which used to leave the marker sitting there and
+         make a successful swipe look like it had done nothing. */
+      var key=row.dataset&&row.dataset.recordId;
+      if(tbody&&key)Array.prototype.forEach.call(tbody.querySelectorAll('tr[data-record-id]'),function(tr){
+        if(tr.dataset.recordId===key)tr.classList.remove('has-new-comment');
+      });
+      try{toast('Comments marked as read','success');}catch(_){}
+    }
+    row.classList.remove('has-new-comment','swipe-dragging');
     resetRow(row,false);
     removeActionSoon();
   }
   function deleteSwipedRow(row){
+    row=adoptRow(row)||row;
     var record=findRecord(row);
     if(!record||!window._canEdit||currentTab==='trash'){closeOpen(false);return;}
     _rowSwipeSuppressUntil=Date.now()+800;
@@ -12478,22 +12532,37 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     });
   }
 
+  /* Text fields, dropdowns, links and the column resizer own a horizontal drag, so a
+     swipe never starts on one of those. Buttons and checkboxes do NOT own one — and on
+     touch screens the cell Copy button is permanently visible right in the middle of
+     the widest column (Concern / Description / Subject), so refusing to start there
+     killed the swipe on exactly the spot a thumb lands. Those now start the gesture,
+     and the click they would otherwise fire is swallowed once it becomes a real drag. */
+  function ownsHorizontalDrag(target){
+    if(!target||!target.closest)return true;
+    return !!(target.closest('select,textarea,a,label,.col-rz')||target.closest('input:not([type="checkbox"])'));
+  }
   document.addEventListener('pointerdown',function(e){
     if(openRow&&(!openRow.contains(e.target))&&(!action||!action.contains(e.target)))closeOpen(false);
+  },true);
+  /* A claimed swipe must not also press whatever sat under the finger. Capture phase,
+     so the row's inline onclick handlers (copy, timer start/stop, the checkbox) never
+     see the click that follows the drag. */
+  document.addEventListener('click',function(e){
+    if(Date.now()>=_rowSwipeSuppressUntil)return;
+    if(!e.target.closest||!e.target.closest('#main-tbody'))return;
+    e.preventDefault();e.stopPropagation();
   },true);
 
   _mainTable.addEventListener('pointerdown',function(e){
     if(e.isPrimary===false||(e.pointerType==='mouse'&&e.button!==0))return;
     if(currentTab==='trash')return;
-    if(e.target.closest('button,input,select,textarea,a,label,.col-rz'))return;
+    if(ownsHorizontalDrag(e.target))return;
     var row=e.target.closest('tbody tr[data-record-id]');
     var record=row&&this.contains(row)?findRecord(row):null;
     if(!row||!record)return;
     var startOffset=row===openRow?REVEAL_PX:0;
-    var canDelete=!!window._canEdit;
-    var canRead=getUnreadCount(record)>0;
-    if(!canDelete&&!canRead)return;
-    state={pointerId:e.pointerId,row:row,startX:e.clientX,startY:e.clientY,startOffset:startOffset,amount:startOffset,dragging:false,mode:startOffset?'delete':'',canDelete:canDelete,canRead:canRead};
+    state={pointerId:e.pointerId,row:row,startX:e.clientX,startY:e.clientY,startOffset:startOffset,amount:startOffset,dragging:false,mode:startOffset?'delete':'',canDelete:!!window._canEdit,unread:hasUnread(record)};
   });
 
   document.addEventListener('pointermove',function(e){
@@ -12501,19 +12570,22 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     var moveX=e.clientX-state.startX;
     var moveY=e.clientY-state.startY;
     if(!state.dragging){
-      if(Math.abs(moveY)>START_PX&&Math.abs(moveY)>Math.abs(moveX)+5){state=null;return;}
+      /* A finger swipe always arcs a little on its way across, so only hand the
+         gesture back to the scroller once the movement is clearly vertical. The old
+         "5px more vertical than horizontal" rule cancelled plenty of honest sideways
+         swipes before they ever started. */
+      if(Math.abs(moveY)>GIVE_UP_Y&&Math.abs(moveY)>Math.abs(moveX)*1.6){state=null;return;}
       if(Math.abs(moveX)<START_PX)return;
       if(Math.abs(moveX)<=Math.abs(moveY))return;
       if(!state.mode){
-        if(moveX>0){
-          if(!state.canRead){state=null;return;}
-          state.mode='read';
-        }else{
+        if(moveX>0)state.mode='read';
+        else{
           if(!state.canDelete){state=null;return;}
           state.mode='delete';
         }
       }
       state.dragging=true;
+      readUnread=!!state.unread;
       openRow=state.mode==='delete'?state.row:null;
       _rowSwipeSuppressUntil=Date.now()+800;
       try{state.row.setPointerCapture(e.pointerId);}catch(_){}
@@ -12521,6 +12593,7 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
       _selCells.clear();_dragging=false;_cellStart=null;
     }
     e.preventDefault();
+    if(!adoptRow(state.row)){state=null;removeAction();return;}
     state.amount=state.mode==='read'?Math.max(0,moveX):Math.max(0,state.startOffset-moveX);
     paint(state.row,state.amount,true,state.mode);
   },{passive:false});
@@ -12531,31 +12604,51 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     if(!finished.dragging)return;
     _rowSwipeSuppressUntil=Date.now()+800;
     try{finished.row.releasePointerCapture(e.pointerId);}catch(_){}
+    var row=adoptRow(finished.row)||finished.row;
     if(finished.mode==='read'){
-      if(finished.amount>=READ_COMMIT_PX)markRowCommentsRead(finished.row);
-      else{openRow=null;resetRow(finished.row,false);removeActionSoon();}
+      if(finished.amount>=READ_COMMIT_PX)markRowCommentsRead(row);
+      else{openRow=null;resetRow(row,false);removeActionSoon();}
       return;
     }
-    if(finished.amount>=commitPx()){deleteSwipedRow(finished.row);return;}
+    if(finished.amount>=commitPx()){deleteSwipedRow(row);return;}
     if(finished.amount>=SNAP_PX){
-      openRow=finished.row;
-      paint(finished.row,REVEAL_PX,false,'delete');
+      openRow=row;
+      paint(row,REVEAL_PX,false,'delete');
     }else{
       openRow=null;
-      resetRow(finished.row,false);
+      resetRow(row,false);
       removeActionSoon();
     }
   });
 
   document.addEventListener('pointercancel',function(e){
     if(!state||e.pointerId!==state.pointerId)return;
-    var row=state.row;state=null;openRow=null;resetRow(row,false);removeActionSoon();
+    var finished=state;state=null;
+    var row=adoptRow(finished.row)||finished.row;
+    /* The browser cancels a pointer for reasons that have nothing to do with intent —
+       the captured row was re-rendered out from under it, the OS claimed the gesture.
+       A swipe that had already crossed the commit line is honoured rather than thrown
+       away; only an unfinished one snaps back. */
+    if(finished.dragging&&finished.mode==='read'&&finished.amount>=READ_COMMIT_PX){markRowCommentsRead(row);return;}
+    openRow=null;resetRow(row,false);removeActionSoon();
   });
-  if(scroll)scroll.addEventListener('scroll',function(){if(state){state=null;}if(openRow)closeOpen(true);}, {passive:true});
-  new MutationObserver(function(){
-    if(openRow&&!openRow.isConnected){openRow=null;removeAction();}
-    if(state&&!state.row.isConnected){state=null;removeAction();}
-  }).observe(document.getElementById('main-tbody'),{childList:true});
+  // Our own drag moves the row, not the table — don't let a stray scroll event cancel it.
+  if(scroll)scroll.addEventListener('scroll',function(){
+    if(state&&state.dragging)return;
+    if(state)state=null;
+    if(openRow)closeOpen(true);
+  },{passive:true});
+  if(tbody)new MutationObserver(function(){
+    if(state){
+      if(!adoptRow(state.row)){state=null;removeAction();}
+      else if(state.dragging)paint(state.row,state.amount,true,state.mode);
+    }
+    if(openRow){
+      if(!adoptRow(openRow))
+        {openRow=null;removeAction();}
+      else paint(openRow,REVEAL_PX,false,'delete');
+    }
+  }).observe(tbody,{childList:true});
 })();
 
 // ─── LONG-PRESS A ROW → OPEN ITS COMMENTS ───────────────────
@@ -12569,7 +12662,9 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
 // preventDefault, so a finger swipe still scrolls the table.
 (function(){
   var HOLD_MS = 500;   // hold this long (ms) before comments open
-  var MOVE_PX = 10;    // if the pointer/finger wanders more than this, treat as a drag/scroll → cancel
+  var MOVE_PX = 8;     // if the pointer/finger wanders more than this, treat as a drag/scroll → cancel
+                       // (stays under the row-swipe's 9px claim, so a slow swipe can never
+                       //  also pop the Comments box open on top of itself)
   var timer = null, armedRow = null, startX = 0, startY = 0;
 
   function disarm(){
