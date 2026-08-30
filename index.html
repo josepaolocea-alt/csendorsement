@@ -3449,6 +3449,9 @@ function doLogout(){
     if(_dropdownUnsub){_dropdownUnsub();_dropdownUnsub=null;}
     if(_calUnsub){_calUnsub();_calUnsub=null;}
     if(_noteUnsub){_noteUnsub();_noteUnsub=null;}
+    try{flushReadMarks();}catch(e){}                       // push any just-read markers before we drop the session
+    if(_readSyncUnsub){_readSyncUnsub();_readSyncUnsub=null;}
+    _readMarks=null;_readMarksUser='';                     // next account loads its own read state
     _fbReady=false;DATA=[];filteredData=[];
     signOut(auth);
   });
@@ -3524,6 +3527,8 @@ onAuthStateChanged(auth, function(user){
     showLoginScreen();
     hideLoader();
     // Clear data on logout
+    if(_readSyncUnsub){_readSyncUnsub();_readSyncUnsub=null;}
+    _readMarks=null;_readMarksUser='';   // the next account must not inherit this one's read state
     DATA=[];filteredData=[];
     document.getElementById('stats-row').innerHTML='';
     document.getElementById('main-tbody').innerHTML='';
@@ -8701,18 +8706,104 @@ var _pendingComments=[]; // buffer for comments on unsaved new entries
 var _pendingDIDComments=[]; // buffer for DID comments on unsaved new entries
 
 // ─── UNREAD COMMENT TRACKING ─────────────────────────────────
-// Stores a per-record marker for the exact newest comment that was read.
+// Read state follows the ACCOUNT, not the browser. Every "mark read" is stored in
+// Firestore under comment_reads/<sanitized-email> and mirrored to localStorage, so
+// signing in from a second browser, PC or phone shows the same read/unread state
+// instead of every old comment coming back as new. localStorage stays as the
+// instant/offline cache and as the fallback when the write cannot go through.
+// Each record keeps a marker for the exact newest comment that was read.
 // Older installs stored only a timestamp; getUnreadCount still supports it.
+var _readMarks=null;         // in-memory map {recordId:marker} — the live source of truth
+var _readMarksUser='';       // which account _readMarks currently belongs to
+var _readSyncUnsub=null;     // Firestore listener for this account's read state
+var _readPendingWrite={};    // markers changed here that still need pushing
+var _readWriteTimer=null;    // debounce handle for the Firestore write
+var READ_MARK_LIMIT=800;     // cap the first upload so the doc can never balloon
+
 function _unreadKey(){return 'unread_'+normalizeEmail((_currentUser&&_currentUser.email)||'anon');}
-function getReadTimes(){
+// Same id shape the app uses for user docs, so the Firestore rule can check
+// "this doc belongs to the signed-in email" (see firestore.rules).
+function readStateDocId(){return normalizeEmail((_currentUser&&_currentUser.email)||'anon').replace(/[^a-z0-9]/g,'_');}
+function _loadLocalReadMarks(){
   try{
     var key=_unreadKey();
     var rawKey='unread_'+((_currentUser&&_currentUser.email)||'anon');
     var saved=localStorage.getItem(key);
     if(!saved&&rawKey!==key)saved=localStorage.getItem(rawKey);
-    return JSON.parse(saved||'{}');
+    var parsed=JSON.parse(saved||'{}');
+    return (parsed&&typeof parsed==='object')?parsed:{};
   }catch(e){return {};}
 }
+function getReadTimes(){
+  var who=normalizeEmail((_currentUser&&_currentUser.email)||'anon');
+  if(!_readMarks||_readMarksUser!==who){   // first use, or a different account signed in
+    _readMarks=_loadLocalReadMarks();
+    _readMarksUser=who;
+  }
+  return _readMarks;
+}
+function _saveLocalReadMarks(){
+  try{localStorage.setItem(_unreadKey(),JSON.stringify(getReadTimes()));}catch(e){}
+}
+// When the same record was marked read on two devices, the later mark wins.
+function _readMarkStamp(m){
+  if(m&&typeof m==='object')return Number(m.at)||0;
+  return Number(m)||0;
+}
+// Writes are debounced and carry ONLY the markers that changed, so opening a
+// record costs one tiny merge write instead of rewriting the whole map.
+function _queueReadMarkSync(id,mark){
+  _readPendingWrite[id]=mark;
+  if(!_currentUser)return;                 // signed out — localStorage still holds it
+  clearTimeout(_readWriteTimer);
+  _readWriteTimer=setTimeout(flushReadMarks,900);
+}
+function flushReadMarks(){
+  clearTimeout(_readWriteTimer);_readWriteTimer=null;
+  if(!_currentUser)return;
+  var payload=_readPendingWrite;
+  if(!Object.keys(payload).length)return;
+  _readPendingWrite={};
+  setDoc(doc(db,'comment_reads',readStateDocId()),
+    {owner:normalizeEmail(_currentUser.email),updatedAt:Date.now(),marks:payload},{merge:true})
+    .catch(function(err){
+      console.error('Read-state sync error',err);
+      // Put them back so the next mark (or the next sign-in) retries the upload.
+      Object.keys(payload).forEach(function(k){if(!_readPendingWrite[k])_readPendingWrite[k]=payload[k];});
+    });
+}
+// Live-sync this account's read state. The listener also publishes anything this
+// browser read before the sync existed (or while offline), which is what lets an
+// older browser's history reach a freshly signed-in one.
+function startReadStateSync(){
+  if(_readSyncUnsub||!_currentUser)return;
+  _readSyncUnsub=onSnapshot(doc(db,'comment_reads',readStateDocId()),function(snap){
+    var data=snap.exists()?(snap.data()||{}):{};
+    var remote=(data.marks&&typeof data.marks==='object')?data.marks:{};
+    var local=getReadTimes();
+    var upload={},changed=false;
+    Object.keys(remote).forEach(function(id){
+      if(_readMarkStamp(remote[id])>_readMarkStamp(local[id])){local[id]=remote[id];changed=true;}
+    });
+    Object.keys(local).forEach(function(id){
+      if(_readMarkStamp(local[id])>_readMarkStamp(remote[id]))upload[id]=local[id];
+    });
+    if(changed){
+      _saveLocalReadMarks();
+      try{applyFilters();}catch(e){}          // drop the "new comment" stripes that were already read elsewhere
+    }
+    var ids=Object.keys(upload);
+    if(ids.length){
+      ids.sort(function(a,b){return _readMarkStamp(upload[b])-_readMarkStamp(upload[a]);});
+      ids.slice(0,READ_MARK_LIMIT).forEach(function(id){
+        if(!_readPendingWrite[id])_readPendingWrite[id]=upload[id];
+      });
+      flushReadMarks();
+    }
+  },function(err){console.error('Read-state sync error',err);});
+}
+// Don't lose a mark made in the last second before the tab closes.
+window.addEventListener('pagehide',function(){try{flushReadMarks();}catch(e){}});
 function commentTimeValue(ts){
   if(typeof ts==='number')return isFinite(ts)?ts:0;
   if(ts&&typeof ts.toMillis==='function')return ts.toMillis();
@@ -8733,8 +8824,10 @@ function markRead(recordId){
   var record=typeof findDataRecord==='function'?findDataRecord(recordId):null;
   var comments=record&&Array.isArray(record.comments)?record.comments:[];
   var latest=comments.length?comments[comments.length-1]:null;
-  rt[String(recordId)]={v:2,at:Date.now(),count:comments.length,last:commentReadSignature(latest)};
-  try{localStorage.setItem(_unreadKey(),JSON.stringify(rt));}catch(e){}
+  var mark={v:2,at:Date.now(),count:comments.length,last:commentReadSignature(latest)};
+  rt[String(recordId)]=mark;
+  _saveLocalReadMarks();
+  _queueReadMarkSync(String(recordId),mark);   // → same account, every other browser
 }
 function getUnreadCount(r){
   if(!r.comments||!r.comments.length) return 0;
@@ -9390,6 +9483,9 @@ async function startFirestore(){
       try{updateCalBadge(true);}catch(e){}
     }, function(err){console.error('Calendar sync error',err);});
   }
+  // Live-sync which comments this account has already read (every role). One small
+  // doc per user, so a second browser/device never shows old comments as new.
+  startReadStateSync();
   // Live-sync the Admin's private notepad across their devices. Only the Admin
   // account can read/write this doc (enforced by Firestore rules), so we attach
   // the listener just for that account to avoid a permission error for others.
