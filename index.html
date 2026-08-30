@@ -1296,15 +1296,13 @@ td.empty::before,.cal-empty::before{content:"◇";display:block;width:38px;heigh
 
 /* ======================================================================
    CYN SOFTWORK UI
-   Restrained neumorphism inspired by the supplied reference. One material
-   system is shared by every tab: cards are raised, fields are inset, and
-   interactive controls visibly press into the surface. Radius rule:
-   22px primary containers, 14px inner controls, 12px compact actions.
+   Operational surface system. Tonal separation and crisp borders carry the
+   hierarchy; elevation is reserved for transient menus and dialogs.
    ====================================================================== */
 :root{
-  --radius-panel:22px;
-  --radius-control:14px;
-  --radius-action:12px;
+  --radius-panel:16px;
+  --radius-control:10px;
+  --radius-action:8px;
   --space-panel:20px;
   --ease-soft:cubic-bezier(.2,.75,.25,1);
 }
@@ -1314,19 +1312,21 @@ td.empty::before,.cal-empty::before{content:"◇";display:block;width:38px;heigh
   --bg3:#dce2eb;
   --bg4:#d2d9e4;
   --bg5:#c8d0dd;
-  --border:transparent;
-  --border2:transparent;
+  --border:#c8d0dc;
+  --border2:#aeb9c9;
   --text:#202838;
   --text2:#566176;
   --text3:#5e6a80;
   --accent:#4167d5;
   --accent2:#3155bd;
-  --shadow:9px 9px 20px rgba(166,176,193,.62),-9px -9px 20px rgba(255,255,255,.92);
-  --shadow-elevated:18px 18px 42px rgba(159,170,188,.64),-16px -16px 38px rgba(255,255,255,.92);
-  --neo-raised:9px 9px 20px rgba(166,176,193,.62),-9px -9px 20px rgba(255,255,255,.92);
-  --neo-raised-sm:5px 5px 12px rgba(166,176,193,.58),-5px -5px 12px rgba(255,255,255,.9);
-  --neo-pressed:inset 4px 4px 9px rgba(166,176,193,.62),inset -4px -4px 9px rgba(255,255,255,.88);
-  --neo-pressed-deep:inset 6px 6px 13px rgba(166,176,193,.68),inset -6px -6px 13px rgba(255,255,255,.9);
+  --primary-action:#3155bd;
+  --primary-action-hover:#27489f;
+  --shadow:0 1px 2px rgba(32,40,56,.10);
+  --shadow-elevated:0 20px 48px rgba(32,40,56,.22);
+  --neo-raised:0 0 0 1px var(--border);
+  --neo-raised-sm:0 0 0 1px var(--border);
+  --neo-pressed:inset 0 0 0 1px var(--border2);
+  --neo-pressed-deep:inset 0 0 0 1px var(--border2);
   --surface-highlight:rgba(255,255,255,.68);
   --surface-shadow:rgba(151,163,183,.6);
 }
@@ -1336,19 +1336,21 @@ td.empty::before,.cal-empty::before{content:"◇";display:block;width:38px;heigh
   --bg3:#202631;
   --bg4:#272e3a;
   --bg5:#303846;
-  --border:transparent;
-  --border2:transparent;
+  --border:#353e4c;
+  --border2:#4b586b;
   --text:#f0f3f8;
   --text2:#b4bdcb;
   --text3:#8f99aa;
   --accent:#7795ef;
   --accent2:#5f7fdc;
-  --shadow:9px 9px 20px rgba(7,9,13,.58),-8px -8px 18px rgba(45,52,65,.52);
-  --shadow-elevated:18px 18px 42px rgba(6,8,12,.66),-14px -14px 34px rgba(43,50,63,.48);
-  --neo-raised:9px 9px 20px rgba(7,9,13,.58),-8px -8px 18px rgba(45,52,65,.52);
-  --neo-raised-sm:5px 5px 12px rgba(7,9,13,.55),-5px -5px 11px rgba(45,52,65,.48);
-  --neo-pressed:inset 4px 4px 9px rgba(7,9,13,.62),inset -4px -4px 9px rgba(45,52,65,.44);
-  --neo-pressed-deep:inset 6px 6px 13px rgba(7,9,13,.67),inset -6px -6px 12px rgba(45,52,65,.42);
+  --primary-action:#4765b7;
+  --primary-action-hover:#3f5aa5;
+  --shadow:0 1px 2px rgba(0,0,0,.28);
+  --shadow-elevated:0 20px 48px rgba(0,0,0,.48);
+  --neo-raised:0 0 0 1px var(--border);
+  --neo-raised-sm:0 0 0 1px var(--border);
+  --neo-pressed:inset 0 0 0 1px var(--border2);
+  --neo-pressed-deep:inset 0 0 0 1px var(--border2);
   --surface-highlight:rgba(54,62,77,.58);
   --surface-shadow:rgba(7,9,13,.62);
 }
@@ -1415,10 +1417,10 @@ button,input,select,textarea{font-family:var(--sf);}
   border:0;background:var(--bg2);color:var(--accent);box-shadow:7px 7px 15px var(--surface-shadow),-7px -7px 15px var(--surface-highlight);transform:translateY(-2px);
 }
 .btn-primary{
-  border:0;background:linear-gradient(145deg,#6688e8,var(--accent2));color:#f8faff;
-  box-shadow:7px 7px 16px color-mix(in srgb,var(--accent2) 33%,transparent),-5px -5px 13px color-mix(in srgb,#fff 52%,transparent),inset 1px 1px 1px rgba(255,255,255,.35);
+  border:1px solid color-mix(in srgb,var(--primary-action) 82%,#000);background:var(--primary-action);color:#fff;
+  box-shadow:0 1px 2px color-mix(in srgb,var(--primary-action) 40%,transparent);
 }
-.btn-primary:hover{border:0;background:linear-gradient(145deg,#7190e9,var(--accent2));box-shadow:9px 9px 20px color-mix(in srgb,var(--accent2) 38%,transparent),-5px -5px 13px color-mix(in srgb,#fff 48%,transparent),inset 1px 1px 1px rgba(255,255,255,.38);transform:translateY(-2px);}
+.btn-primary:hover{border-color:color-mix(in srgb,var(--primary-action-hover) 82%,#000);background:var(--primary-action-hover);box-shadow:0 2px 5px color-mix(in srgb,var(--primary-action) 34%,transparent);transform:translateY(-1px);}
 .btn:active,.btn-icon:active,.toolbar-tools-trigger:active,.split-menu-item:active{transform:translateY(1px) scale(.985);box-shadow:var(--neo-pressed);}
 .btn-primary:active{box-shadow:inset 4px 4px 9px color-mix(in srgb,var(--accent2) 74%,#172449),inset -3px -3px 8px color-mix(in srgb,#fff 24%,var(--accent));}
 .btn:focus-visible,.btn-icon:focus-visible,.tab-btn:focus-visible,.fsel:focus-visible,.fc:focus-visible,.search-wrap:focus-within,.premium-select-trigger:focus-visible,.premium-date-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 38%,transparent);outline-offset:3px;}
@@ -1473,12 +1475,10 @@ textarea.fc:focus,.note-area:focus{border:0;background:var(--bg2);box-shadow:var
 }
 .table-scroll{width:100%;max-width:100%;min-width:0;border-radius:15px;max-height:calc(100dvh - 260px);overflow-x:auto;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;touch-action:pan-x pan-y;}
 #main-table-wrap{min-width:0;max-width:100%;}
-#main-table-wrap .table-scroll{padding-bottom:4px;scrollbar-color:color-mix(in srgb,var(--accent) 48%,var(--bg4)) transparent;touch-action:pan-y;}
-/* No visible horizontal bar under the table: native scrollbars are hidden app-wide and the old
-   pan-rail slider was removed. A sideways finger-drag acts on the ROW (swipe-right = mark read,
-   swipe-left = delete) instead of scrolling, so touch-action stays pan-y. Desktop still scrolls
-   sideways with shift+wheel or a trackpad; vertical scroll is unchanged. */
-#main-table-wrap .table-scroll::-webkit-scrollbar:horizontal{display:none;height:0;}
+#main-table-wrap .table-scroll{padding-bottom:8px;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--accent) 54%,var(--bg4)) var(--bg3);touch-action:pan-x pan-y;}
+#main-table-wrap .table-scroll::-webkit-scrollbar{display:block;width:10px;height:10px;}
+#main-table-wrap .table-scroll::-webkit-scrollbar-track{background:var(--bg3);border-radius:999px;}
+#main-table-wrap .table-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 54%,var(--bg4));border:2px solid var(--bg3);border-radius:999px;}
 body.logo-stats-layout .table-scroll{max-height:calc(100dvh - 214px);}
 table{border-collapse:separate;border-spacing:0;background:transparent;}
 table thead,.admin-table thead,.log-table thead{background:var(--bg3);}
@@ -1594,11 +1594,54 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
 .login-field{gap:8px;margin-bottom:18px;}
 .login-field label{font-size:10.5px;color:var(--text2);letter-spacing:.08em;}
 .login-card .btn-primary{min-height:46px;margin-top:5px;border-radius:var(--radius-action);}
+.password-field-wrap{position:relative;}
+.password-field-wrap .fc{width:100%;padding-right:78px;}
+.password-toggle{
+  position:absolute;right:4px;top:4px;bottom:4px;min-width:66px;min-height:44px;padding:0 12px;
+  border:0;border-left:1px solid var(--border);border-radius:0 7px 7px 0;background:transparent;
+  color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;
+}
+.password-toggle:hover{background:var(--bg3);}
+.password-toggle:focus-visible,.login-link-button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 38%,transparent);outline-offset:2px;}
+.login-link-button{min-height:44px;padding:8px 12px;border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:650;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+
+/* Clear hierarchy: persistent surfaces are flat; only transient UI floats. */
+.topbar,.toolbar,.table-wrap,.admin-section,.cal-wrap,.note-wrap,.dash-card,.stat-chip,.done-subtabs,.cal-viewsw,.note-tabs{
+  border:1px solid var(--border);box-shadow:none;
+}
+.btn,.btn-icon,.tab-btn,.toolbar-tools-trigger,.split-menu-item,.premium-calendar-action,.premium-calendar-nav{
+  border:1px solid var(--border);box-shadow:none;
+}
+.btn-secondary:hover,.btn-icon:hover,.toolbar-tools-trigger:hover,.split-menu-item:hover,.split-menu-item:focus,
+.tab-btn:hover,.done-subtab:hover,.cal-viewsw button:hover,.note-tab-pill:hover{
+  border-color:var(--border2);background:var(--bg3);box-shadow:none;transform:none;
+}
+.tab-btn.active,.tab-btn.active:hover,.done-subtab.active,.cal-viewsw button.active,.note-tab-pill.active{
+  border-color:color-mix(in srgb,var(--accent) 52%,var(--border));background:color-mix(in srgb,var(--accent) 12%,var(--bg2));box-shadow:none;
+}
+.search-wrap,.fc,.fsel,.premium-select-trigger,.premium-date-trigger,.premium-time-trigger,.premium-number,.premium-calendar-time-input,
+textarea.fc,.note-area{border:1px solid var(--border);box-shadow:none;}
+.search-wrap:focus-within,.fc:focus,.premium-select.is-open .premium-select-trigger,.premium-date.is-open .premium-date-trigger,
+textarea.fc:focus,.note-area:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);}
+.table-wrap tbody tr{box-shadow:none;}
+.table-wrap tbody tr:hover{background:color-mix(in srgb,var(--accent) 6%,transparent);box-shadow:none;transform:none;}
+.modal,.entry-modal,.toolbar-tools-menu,.split-actions-menu,.logo-stats-menu,.premium-select-menu,.premium-calendar,.premium-time-menu,.toast,.instant-table-tooltip{
+  border:1px solid var(--border);box-shadow:var(--shadow-elevated);
+}
+.modal-cls{border:1px solid var(--border);box-shadow:none;}
+.comments-section,.settings-sec,.comment-bubble,.archive-comment,.attach-zone{border:1px solid var(--border);box-shadow:none;}
+.split-menu-mobile-nav{display:none;}
+.split-menu-section-label{display:block;padding:8px 10px 5px;color:var(--text3);font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;}
+.mobile-nav-item{width:100%;justify-content:space-between;text-align:left;}
+.mobile-nav-item[aria-current="page"]{border-color:color-mix(in srgb,var(--accent) 45%,var(--border));background:color-mix(in srgb,var(--accent) 12%,var(--bg2));color:var(--accent);}
+.mobile-alert-count{min-width:22px;padding:2px 6px;border-radius:999px;background:var(--bg4);color:var(--text2);font:700 10px/1.4 var(--mono);text-align:center;}
+.mobile-cell-value{min-width:0;}
+.mobile-row-toggle-cell{display:none;}
 
 @media (hover:hover){
   .table-wrap tbody tr,.admin-table tbody tr,.comment-item,.cal-up-item,.dash-card,.admin-section{transition:transform .18s var(--ease-soft),box-shadow .18s var(--ease-soft),background .18s;}
-  .cal-up-item:hover,.dash-card:hover{transform:translateY(-2px);}
-  .comment-item:hover .comment-bubble{border:0;box-shadow:7px 7px 15px var(--surface-shadow),-7px -7px 15px var(--surface-highlight);}
+  .cal-up-item:hover,.dash-card:hover{transform:none;background:color-mix(in srgb,var(--accent) 5%,var(--bg2));box-shadow:none!important;}
+  .comment-item:hover .comment-bubble{border-color:var(--border2);box-shadow:none;}
 }
 
 @media (max-width:920px){
@@ -1612,15 +1655,39 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
   .cal-head .cal-viewsw{flex:1 1 auto;justify-content:center;}
 }
 @media (max-width:700px){
-  .topbar{height:62px;top:6px;width:calc(100% - 12px);margin-top:6px;padding-inline:max(8px,env(safe-area-inset-left));border-radius:17px;}
+  .topbar{height:62px;top:6px;width:calc(100% - 12px);margin-top:6px;padding-inline:max(8px,env(safe-area-inset-left));border-radius:15px;overflow:visible;scroll-padding-right:0;}
   .main{padding:18px max(10px,env(safe-area-inset-left)) 28px max(10px,env(safe-area-inset-right));}
   .tab-btn{min-width:42px;height:42px;}
+  #dashboard-tab-btn,#notes-tab-btn,#trash-tab-btn,#cal-tab-btn,#notepad-tab-btn,#admin-tab-btn,#cal-divider,#management-divider,#timer-center-btn{display:none!important;}
+  .topbar>.divider{display:none;}
+  .topbar .ml-auto{position:static;inset:auto;margin-left:auto;padding:0;background:transparent;box-shadow:none;flex:0 0 auto;}
+  .topbar>#tab-btn-all,.topbar>#tab-btn-did,.topbar>#tab-btn-mine,.topbar>#tab-btn-done{display:inline-flex!important;min-width:40px;width:40px;padding:0;flex:0 0 40px;}
+  #new-btn{min-height:40px;padding:8px 11px;}
+  .split-actions-menu{right:0;width:min(280px,calc(100vw - 24px));max-height:calc(100dvh - 88px);overflow:auto;}
+  .split-menu-mobile-nav{display:block;margin:4px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--border);}
   .toolbar{margin-bottom:18px;border-radius:18px;}
   .toolbar .premium-select{flex:1 1 160px;min-width:150px!important;}
   .toolbar>*{margin:0;}
   .search-wrap{width:100%;min-width:0;}
-  .table-wrap{padding:7px;border-radius:18px;}
-  .table-scroll,body.logo-stats-layout .table-scroll{max-height:calc(100dvh - 236px);}
+  .table-wrap{padding:7px;border-radius:14px;overflow:visible;}
+  #main-table-wrap .table-scroll,body.logo-stats-layout #main-table-wrap .table-scroll{max-height:none;padding:0;overflow:visible;scrollbar-gutter:auto;}
+  #main-table{display:block;width:100%!important;min-width:0!important;table-layout:auto!important;}
+  #main-table thead{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
+  #main-table tbody{display:grid;width:100%;gap:10px;}
+  #main-table tbody tr.mobile-table-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:2px 10px;position:relative;width:100%;min-height:108px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg2);box-shadow:none;}
+  #main-table tbody tr.mobile-table-row[data-record-id]{cursor:pointer;}
+  #main-table tbody tr.mobile-table-row:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 42%,transparent);outline-offset:3px;}
+  #main-table tbody tr.mobile-table-row>td{display:none!important;width:auto!important;min-width:0!important;max-width:none!important;height:auto!important;padding:7px 0!important;border:0!important;background:transparent!important;white-space:normal!important;overflow-wrap:anywhere;}
+  #main-table tbody tr.mobile-table-row>td.mobile-row-number{display:block!important;grid-column:1;grid-row:1;padding-top:9px!important;color:var(--text3);font:700 11px/1 var(--mono);}
+  #main-table tbody tr.mobile-table-row>td.mobile-select-cell{display:flex!important;grid-column:3;grid-row:1;align-items:flex-start;justify-content:flex-end;padding-top:5px!important;}
+  #main-table tbody tr.mobile-table-row>td.mobile-primary,
+  #main-table tbody tr.mobile-table-row.mobile-expanded>td.mobile-secondary{display:grid!important;grid-column:1/-1;grid-template-columns:minmax(92px,32%) minmax(0,1fr);gap:10px;align-items:start;border-top:1px solid color-mix(in srgb,var(--border) 72%,transparent)!important;}
+  #main-table tbody tr.mobile-table-row>td.mobile-primary::before,
+  #main-table tbody tr.mobile-table-row.mobile-expanded>td.mobile-secondary::before{content:attr(data-label);color:var(--text3);font-size:10px;font-weight:750;letter-spacing:.045em;text-transform:uppercase;}
+  #main-table tbody tr.mobile-table-row>td.mobile-row-toggle-cell{display:flex!important;grid-column:1/-1;justify-content:flex-end;padding:4px 0 0!important;border-top:1px solid var(--border)!important;}
+  .mobile-row-toggle{min-height:36px;padding:6px 10px;border:0;background:transparent;color:var(--accent);font-size:11px;font-weight:750;cursor:pointer;}
+  #main-table tbody tr:not(.mobile-table-row){display:block;width:100%;padding:28px 16px;border:1px solid var(--border);border-radius:12px;text-align:center;}
+  #main-table tbody tr:not(.mobile-table-row)>td{display:block;width:100%!important;border:0!important;}
   .admin-section,.cal-wrap,.note-wrap{padding:17px;border-radius:18px;margin-bottom:18px;}
   #admin-panel>.admin-section+.admin-section{margin-top:18px;}
   .dash-split-grid{gap:18px;}
@@ -1637,7 +1704,7 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
 }
 @media (max-width:480px){
   .topbar{gap:7px;}
-  .topbar .ml-auto{padding:4px 3px 4px 9px;background:var(--bg2);border-radius:12px;box-shadow:-12px 0 18px -9px var(--surface-shadow);}
+  .topbar .ml-auto{padding:0;background:transparent;border-radius:0;box-shadow:none;}
   .app-logo{gap:7px;}
   .app-title{display:none;}
   .main{padding-top:16px;}
@@ -1681,21 +1748,21 @@ try{
       <span class="login-logo-title">CYN Endorsement</span>
     </div>
     <div class="login-field">
-      <label>Email</label>
+      <label for="login-email">Email</label>
       <input class="fc" id="login-email" type="email" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
     <div class="login-field">
-      <label>Password</label>
-      <div style="position:relative">
-        <input class="fc" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:40px">
-        <button onclick="togglePassVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px" id="pass-eye">👁</button>
+      <label for="login-pass">Password</label>
+      <div class="password-field-wrap">
+        <input class="fc" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="password-toggle" type="button" onclick="togglePassVis()" id="pass-eye" aria-label="Show password" aria-pressed="false">Show</button>
       </div>
     </div>
-    <div class="login-err" id="login-err"></div>
-    <div id="login-success" style="color:#4ade80;font-size:12px;text-align:center;min-height:18px;margin-bottom:6px;display:none"></div>
+    <div class="login-err" id="login-err" role="alert" aria-live="polite"></div>
+    <div id="login-success" role="status" aria-live="polite" style="color:#4ade80;font-size:12px;text-align:center;min-height:18px;margin-bottom:6px;display:none"></div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doLogin()" id="login-btn">Sign In</button>
     <div style="text-align:center;margin-top:12px">
-      <button onclick="showForgotPassword()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline">Forgot password?</button>
+      <button class="login-link-button" type="button" onclick="showForgotPassword()">Forgot password?</button>
     </div>
     <p style="text-align:center;margin-top:8px;font-size:11px;color:var(--text3)">Contact your admin to get access</p>
   </div>
@@ -1726,7 +1793,7 @@ try{
   <button class="tab-btn" id="tab-btn-mine" data-tip="Pending RR / RO" aria-label="Pending RR / RO" onclick="switchTab('mine',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
   <button class="tab-btn" id="tab-btn-done" data-tip="Done / Resolved" aria-label="Done / Resolved" onclick="switchTab('done',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></button>
   <button class="tab-btn nav-tab" id="notes-tab-btn" data-tip="Notes (opens in a new tab)" aria-label="Notes (opens in a new tab)" onclick="openNotesProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11l5-5V5a2 2 0 0 0-2-2Z"/><path d="M15 21v-5a1 1 0 0 1 1-1h5"/></svg><span class="tab-label">Notes</span></button>
-  <button class="tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+  <button class="tab-btn" id="trash-tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
   <!-- Admin-only group, in order: Calendar, Notepad, then Admin last. -->
   <div class="divider" id="cal-divider" style="display:none"></div>
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
@@ -1749,6 +1816,16 @@ try{
         <div class="split-menu-user">
           <div class="user-avatar" id="split-user-avatar">?</div>
           <div class="split-menu-user-text"><strong>Signed in</strong><span id="split-user-email">—</span></div>
+        </div>
+        <div class="split-menu-mobile-nav" id="split-menu-mobile-nav" aria-label="More navigation">
+          <span class="split-menu-section-label">Navigate</span>
+          <button class="split-menu-item mobile-nav-item" id="mobile-dashboard-nav" type="button" role="menuitem" data-tab="dashboard" data-source="dashboard-tab-btn" onclick="mobileNavigate('dashboard','dashboard-tab-btn')">Dashboard</button>
+          <button class="split-menu-item mobile-nav-item" id="mobile-notes-nav" type="button" role="menuitem" onclick="mobileNavigate('notes','notes-tab-btn')">Notes</button>
+          <button class="split-menu-item mobile-nav-item" id="mobile-trash-nav" type="button" role="menuitem" data-tab="trash" data-source="trash-tab-btn" onclick="mobileNavigate('trash','trash-tab-btn')">Trash</button>
+          <button class="split-menu-item mobile-nav-item" id="mobile-calendar-nav" type="button" role="menuitem" data-tab="calendar" data-source="cal-tab-btn" onclick="mobileNavigate('calendar','cal-tab-btn')">Calendar</button>
+          <button class="split-menu-item mobile-nav-item" id="mobile-notepad-nav" type="button" role="menuitem" data-tab="notepad" data-source="notepad-tab-btn" onclick="mobileNavigate('notepad','notepad-tab-btn')">Notepad</button>
+          <button class="split-menu-item mobile-nav-item" id="mobile-admin-nav" type="button" role="menuitem" data-tab="admin" data-source="admin-tab-btn" onclick="mobileNavigate('admin','admin-tab-btn')">Admin</button>
+          <button class="split-menu-item mobile-nav-item" id="mobile-alerts-nav" type="button" role="menuitem" data-source="timer-center-btn" onclick="mobileOpenTaskAlerts()">Task alerts <span class="mobile-alert-count" id="mobile-alert-count">0</span></button>
         </div>
         <button class="split-menu-item" id="split-theme-action" type="button" role="menuitem" onclick="splitMenuTheme()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><span id="split-theme-label">Switch to light mode</span>
@@ -2147,11 +2224,11 @@ try{
   <div id="trash-info" style="display:none;margin:0 16px 8px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2)">Deleted entries are kept here for 30 days, then permanently removed automatically. Restore an entry to send it back to its original tab.</div>
 
   <div class="table-wrap" id="main-table-wrap">
-    <div class="table-scroll">
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Task records. Scroll horizontally when needed.">
       <table id="main-table" class="all-task-layout">
         <thead id="main-thead"><tr>
           <th style="color:var(--text3);font-size:11px">#</th>
-          <th><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>
+          <th><input type="checkbox" id="chk-all" aria-label="Select all visible records" onchange="toggleAll(this)" style="accent-color:var(--accent)"></th>
           <th onclick="sortBy('client')" id="th-client">Client / Vendor<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('service')" id="th-service">Service<div class="col-rz" onclick="event.stopPropagation()"></div></th>
           <th onclick="sortBy('concern')" id="th-concern">Concern<div class="col-rz" onclick="event.stopPropagation()"></div></th>
@@ -3460,8 +3537,11 @@ function doLogout(){
 function togglePassVis(){
   var p=document.getElementById('login-pass');
   var e=document.getElementById('pass-eye');
-  if(p.type==='password'){p.type='text';e.textContent='🙈';}
-  else{p.type='password';e.textContent='👁';}
+  var showing=p.type==='password';
+  p.type=showing?'text':'password';
+  e.textContent=showing?'Hide':'Show';
+  e.setAttribute('aria-label',showing?'Hide password':'Show password');
+  e.setAttribute('aria-pressed',showing?'true':'false');
 }
 
 function normalizeEmail(email){
@@ -3850,7 +3930,29 @@ function syncSplitActionMenu(){
   var newAction=document.getElementById('split-new-action');
   var sourceNew=document.getElementById('new-btn');
   if(newAction)newAction.style.display=window._canAdd&&sourceNew&&sourceNew.style.display!=='none'?'':'none';
+  syncMobileOverflowNav();
 }
+function syncMobileOverflowNav(){
+  var items=document.querySelectorAll('.mobile-nav-item[data-source]');
+  Array.prototype.forEach.call(items,function(item){
+    var source=document.getElementById(item.getAttribute('data-source'));
+    item.style.display=source&&source.style.display==='none'?'none':'';
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.mobile-nav-item[data-tab]'),function(item){
+    var active=item.getAttribute('data-tab')===currentTab;
+    item.classList.toggle('active',active);
+    if(active)item.setAttribute('aria-current','page');else item.removeAttribute('aria-current');
+  });
+  var mobileCount=document.getElementById('mobile-alert-count');
+  if(mobileCount)mobileCount.textContent=String(typeof _taskAlertQueue==='undefined'?0:_taskAlertQueue.length);
+}
+function mobileNavigate(tab,sourceId){
+  closeSplitActionMenu();
+  if(tab==='notes'){openNotesProject();return;}
+  var source=document.getElementById(sourceId);
+  if(source)switchTab(tab,source);
+}
+function mobileOpenTaskAlerts(){closeSplitActionMenu();openTaskAlertCenter();}
 function logoStatsAvailableTab(){return currentTab==='all'||currentTab==='did'||currentTab==='mine';}
 function logoStatsTabTitle(){return currentTab==='did'?'DID Order / Cancel':currentTab==='mine'?'Pending RR / RO':'All Tasks';}
 function syncLogoStatsAvailability(){
@@ -3899,7 +4001,10 @@ function toggleSplitActionMenu(e){
   syncSplitActionMenu();
   var open=wrap.classList.toggle('open');
   btn.setAttribute('aria-expanded',open?'true':'false');
-  if(open){var first=wrap.querySelector('.split-menu-item:not([style*="display: none"])');if(first)setTimeout(function(){first.focus();},0);}
+  if(open){
+    var first=Array.prototype.find.call(wrap.querySelectorAll('.split-menu-item'),function(item){return item.getClientRects().length>0&&!item.disabled;});
+    if(first)setTimeout(function(){first.focus();},0);
+  }
 }
 function closeSplitActionMenu(){
   var wrap=document.getElementById('split-actions'),btn=document.getElementById('split-menu-btn');
@@ -4125,6 +4230,85 @@ function initNavLabels(){
 }
 initNavLabels();
 
+// ─── ACCESSIBLE FORMS AND DIALOGS ───────────────────────────
+function initFormLabelAccessibility(){
+  var groups=document.querySelectorAll('.login-field,.fgrp,.auto-row,.cal-field,.comment-new');
+  Array.prototype.forEach.call(groups,function(group,index){
+    var control=group.querySelector('input:not([type="hidden"]),select,textarea');
+    if(!control||control.closest('label'))return;
+    if(!control.id)control.id='accessible-field-'+(index+1);
+    var directLabel=null;
+    Array.prototype.some.call(group.children,function(child){
+      if(child.tagName==='LABEL'&&!child.querySelector('input,select,textarea')){directLabel=child;return true;}
+      return false;
+    });
+    if(directLabel){directLabel.htmlFor=control.id;return;}
+    var textSource=group.querySelector('.auto-label,.settings-label,.cal-field-label');
+    if(textSource&&!control.hasAttribute('aria-label'))control.setAttribute('aria-label',(textSource.textContent||'').trim().replace(/:$/,''));
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input:not([type="hidden"]),select,textarea'),function(control){
+    if(control.labels&&control.labels.length)return;
+    if(control.hasAttribute('aria-label')||control.hasAttribute('aria-labelledby'))return;
+    var label=control.getAttribute('placeholder')||control.getAttribute('title')||control.getAttribute('name');
+    if(label)control.setAttribute('aria-label',String(label).replace(/[•]+/g,'Password').trim());
+  });
+}
+function dialogFocusable(overlay){
+  return Array.prototype.filter.call(overlay.querySelectorAll('button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])'),function(el){
+    return el.getClientRects().length>0&&el.getAttribute('aria-hidden')!=='true';
+  });
+}
+function initDialogAccessibility(){
+  var returnFocus=new WeakMap();
+  Array.prototype.forEach.call(document.querySelectorAll('.modal-ov'),function(overlay,index){
+    overlay.setAttribute('role','dialog');
+    overlay.setAttribute('aria-modal','true');
+    var title=overlay.querySelector('.modal-hdr h1,.modal-hdr h2,.modal-hdr h3,.entry-modal h1,.entry-modal h2,.entry-modal h3');
+    if(title){
+      if(!title.id)title.id='dialog-title-'+(index+1);
+      overlay.setAttribute('aria-labelledby',title.id);
+    }else if(!overlay.hasAttribute('aria-label')){
+      overlay.setAttribute('aria-label','Dialog');
+    }
+    Array.prototype.forEach.call(overlay.querySelectorAll('.modal-cls'),function(btn){
+      if(!btn.hasAttribute('aria-label'))btn.setAttribute('aria-label','Close dialog');
+      if(!btn.hasAttribute('type'))btn.type='button';
+    });
+    function syncDialogState(){
+      var open=!overlay.classList.contains('hidden')&&getComputedStyle(overlay).display!=='none';
+      overlay.setAttribute('aria-hidden',open?'false':'true');
+      if(open){
+        if(!returnFocus.has(overlay))returnFocus.set(overlay,document.activeElement);
+        setTimeout(function(){
+          if(overlay.classList.contains('hidden'))return;
+          var items=dialogFocusable(overlay);
+          var preferred=items.find(function(el){return el.matches('[autofocus],input:not([type="hidden"]),textarea,select');})||items[0];
+          if(preferred)preferred.focus();
+        },0);
+      }else if(returnFocus.has(overlay)){
+        var previous=returnFocus.get(overlay);returnFocus.delete(overlay);
+        if(previous&&previous.isConnected&&typeof previous.focus==='function')setTimeout(function(){previous.focus();},0);
+      }
+    }
+    overlay.addEventListener('keydown',function(event){
+      if(event.key==='Escape'){
+        var close=overlay.querySelector('.modal-cls');
+        if(close){event.preventDefault();close.click();}
+        return;
+      }
+      if(event.key!=='Tab')return;
+      var focusable=dialogFocusable(overlay);if(!focusable.length){event.preventDefault();return;}
+      var first=focusable[0],last=focusable[focusable.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    });
+    new MutationObserver(syncDialogState).observe(overlay,{attributes:true,attributeFilter:['class','style']});
+    syncDialogState();
+  });
+}
+initFormLabelAccessibility();
+initDialogAccessibility();
+
 // Native title tooltips wait before appearing and do not match the app. Replace
 // them with one immediate premium tooltip in tables, workspace panels, and the
 // signed-in account avatar.
@@ -4249,6 +4433,7 @@ function _doSwitchTab(tab,el){
   currentTab=tab;
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   el.classList.add('active');
+  syncMobileOverflowNav();
   var isAdmin=tab==='admin';
   var isTrash=tab==='trash';
   var isDash=tab==='dashboard';
@@ -5357,6 +5542,7 @@ function updateTaskAlertBadge(){
   count.textContent=total>99?'99+':String(total);
   btn.setAttribute('aria-label',total+' unhandled task '+(total===1?'alert':'alerts'));
   btn.setAttribute('data-tip',total?total+' Task '+(total===1?'Alert':'Alerts'):'Task Alerts');
+  syncMobileOverflowNav();
 }
 function renderTaskAlertCenter(){
   var list=document.getElementById('task-alert-center-list');
@@ -6545,7 +6731,7 @@ function renderMainPagination(total,page,pageSize,goFn,sizeFn){
   pgDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap">'
     +pageBtns
     +'<span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">Rows per page:'
-    +'<select class="fsel" style="font-size:12px" onchange="'+sizeFn+'(this.value)">'
+    +'<select class="fsel" aria-label="Rows per page" style="font-size:12px" onchange="'+sizeFn+'(this.value)">'
     +MAIN_PAGE_SIZES.map(function(size){return '<option value="'+size+'"'+(pageSize===size?' selected':'')+'>'+size+'</option>';}).join('')
     +'</select></span>'
     +'</div>';
@@ -6576,7 +6762,7 @@ function renderRRRows(){
   if(doneView)_doneRRPage=page;else _rrPage=page;
   var displayData=filteredData.slice(page*pageSize,(page+1)*pageSize);
   renderRRPagination(filteredData.length);
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">'+(isDoneRRView()?'No completed or disregarded RR/RO records found':'No pending RR/RO records found')+'</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="13" class="empty">'+(isDoneRRView()?'No completed or disregarded RR/RO records found':'No pending RR/RO records found')+'</td></tr>';decorateMainTableAccessibility();return;}
   tbody.innerHTML=displayData.map(function(r){
     var rowCls=(r.rrCompleted?'rr-completed-row ':'')+(r.rrDisregard?'rr-disregard-row':'');
     var _fx=rowFxParts(r);
@@ -6601,6 +6787,7 @@ function renderRRRows(){
       +'</tr>';
   }).join('');
   initResizers();
+  decorateMainTableAccessibility();
 }
 
 function toggleRRField(id,field,val){
@@ -6728,7 +6915,7 @@ function renderTrashRows(){
   var tbody=document.getElementById('main-tbody');
   var pgDiv=document.getElementById('main-pagination');
   if(pgDiv) pgDiv.innerHTML='';
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="8" class="empty">Trash is empty</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="8" class="empty">Trash is empty</td></tr>';decorateMainTableAccessibility();return;}
   var DAY=86400000;
   tbody.innerHTML=filteredData.map(function(r){
     var typeLabel=r._type==='did'?'DID':r._type==='rr'?'RR / RO':'Endorsement';
@@ -6752,6 +6939,7 @@ function renderTrashRows(){
       +'</tr>';
   }).join('');
   initResizers();
+  decorateMainTableAccessibility();
   var hdr=document.getElementById('chk-all');if(hdr&&window._lastCheckAll!==undefined)hdr.checked=window._lastCheckAll;
 }
 
@@ -7024,7 +7212,7 @@ function renderRows(){
   }else{
     if(pgDiv) pgDiv.innerHTML='';
   }
-  if(!displayData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No records found</td></tr>';return;}
+  if(!displayData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No records found</td></tr>';decorateMainTableAccessibility();return;}
   tbody.innerHTML=displayData.map(function(r){
     var _fx=rowFxParts(r);
     var agingCls=_fx.cls;
@@ -7062,6 +7250,7 @@ function renderRows(){
       +'</tr>';
   }).join('');
   initResizers();
+  decorateMainTableAccessibility();
   var hdr=document.getElementById('chk-all');if(hdr&&window._lastCheckAll!==undefined)hdr.checked=window._lastCheckAll;
 }
 
@@ -7125,6 +7314,110 @@ var DONE_THEAD='<tr>'
   +'<th>Timer<div class="col-rz" onclick="event.stopPropagation()"></div></th>'
   +'</tr>';
 
+function mainTableHeaderLabels(){
+  var labels=[];
+  var headers=document.querySelectorAll('#main-thead th');
+  Array.prototype.forEach.call(headers,function(th){
+    var clone=th.cloneNode(true);
+    Array.prototype.forEach.call(clone.querySelectorAll('.col-rz,input,button'),function(el){el.remove();});
+    var label=(clone.textContent||'').replace(/\s+/g,' ').trim();
+    var span=Math.max(1,Number(th.colSpan)||1);
+    for(var i=0;i<span;i++)labels.push(label);
+  });
+  return labels;
+}
+function decorateMainTableAccessibility(){
+  var table=document.getElementById('main-table');
+  var scroll=document.querySelector('#main-table-wrap .table-scroll');
+  if(!table||!scroll)return;
+  scroll.tabIndex=0;
+  scroll.setAttribute('role','region');
+  scroll.setAttribute('aria-label','Task records. Scroll horizontally when needed.');
+  var selectAll=document.getElementById('chk-all');
+  if(selectAll)selectAll.setAttribute('aria-label','Select all visible records');
+
+  Array.prototype.forEach.call(table.querySelectorAll('thead th'),function(th){
+    th.setAttribute('scope','col');
+    if(!th.hasAttribute('onclick'))return;
+    var label=(th.textContent||'').replace(/\s+/g,' ').trim();
+    th.tabIndex=0;
+    th.setAttribute('aria-label','Sort by '+label);
+    var field=(th.id||'').replace(/^th-/,'');
+    th.setAttribute('aria-sort',field===sortCol?(sortDir===1?'ascending':'descending'):'none');
+    if(th.dataset.keyboardSort)return;
+    th.dataset.keyboardSort='true';
+    th.addEventListener('keydown',function(event){
+      if(event.key==='Enter'||event.key===' '){event.preventDefault();th.click();}
+    });
+  });
+
+  var labels=mainTableHeaderLabels();
+  Array.prototype.forEach.call(table.querySelectorAll('tbody tr'),function(row){
+    if(row.querySelector('td.empty'))return;
+    row.classList.add('mobile-table-row');
+    var type=row.dataset.recordType||'trash';
+    var important=type==='rr'?['Prio','Priority','Subject','Status','Timer']:
+      type==='did'?['Client / Vendor','Description','Concern','Status','Priority','Timer']:
+      type==='end'?['Client / Vendor','Concern','Status','Priority','Timer']:
+      ['Type','Client / Subject','Detail','Status','Deleted','Actions'];
+    var column=0;
+    var cells=Array.prototype.slice.call(row.children);
+    cells.forEach(function(cell,index){
+      var label=labels[column]||'Details';
+      cell.dataset.label=label;
+      if(index===0)cell.classList.add('mobile-row-number');
+      else if(index===1)cell.classList.add('mobile-select-cell');
+      else{
+        cell.classList.add(important.indexOf(label)>-1?'mobile-primary':'mobile-secondary');
+        if(!cell.querySelector(':scope > .mobile-cell-value')){
+          var value=document.createElement('div');value.className='mobile-cell-value';
+          while(cell.firstChild)value.appendChild(cell.firstChild);
+          cell.appendChild(value);
+        }
+      }
+      column+=Math.max(1,Number(cell.colSpan)||1);
+    });
+
+    var summaryCell=cells.find(function(cell){return cell.classList.contains('mobile-primary');});
+    var summary=summaryCell?(summaryCell.textContent||'').replace(/\s+/g,' ').trim():'record';
+    var checkbox=row.querySelector('input[type="checkbox"]');
+    if(checkbox)checkbox.setAttribute('aria-label','Select '+summary);
+    if(row.dataset.recordId){
+      row.tabIndex=0;
+      row.setAttribute('aria-label','Open '+summary+'. Press Enter or Space to edit.');
+      row.setAttribute('aria-keyshortcuts','Enter Space');
+      row.setAttribute('aria-expanded','false');
+      row.addEventListener('keydown',function(event){
+        if((event.key!=='Enter'&&event.key!==' ')||event.target!==row)return;
+        event.preventDefault();
+        var id;try{id=decodeURIComponent(row.dataset.recordId);}catch(_){id=row.dataset.recordId;}
+        openRowEditor(id,row.dataset.recordType||'end');
+      });
+    }
+
+    var secondaryCount=cells.filter(function(cell){return cell.classList.contains('mobile-secondary');}).length;
+    if(!secondaryCount)return;
+    var toggleCell=document.createElement('td');
+    toggleCell.className='mobile-row-toggle-cell';
+    var toggle=document.createElement('button');
+    toggle.type='button';
+    toggle.className='mobile-row-toggle';
+    toggle.textContent='More details';
+    toggle.setAttribute('aria-expanded','false');
+    toggle.setAttribute('aria-label','Show more details for '+summary);
+    toggle.addEventListener('click',function(event){
+      event.preventDefault();event.stopPropagation();
+      var expanded=row.classList.toggle('mobile-expanded');
+      row.setAttribute('aria-expanded',expanded?'true':'false');
+      toggle.setAttribute('aria-expanded',expanded?'true':'false');
+      toggle.textContent=expanded?'Fewer details':'More details';
+      toggle.setAttribute('aria-label',(expanded?'Show fewer details for ':'Show more details for ')+summary);
+    });
+    toggleCell.appendChild(toggle);
+    row.appendChild(toggleCell);
+  });
+}
+
 function renderDIDPagination(total){
   _didPage=clampMainPage(total,_didPageSize,_didPage);
   renderMainPagination(total,_didPage,_didPageSize,'goDIDPage','changeDIDPageSize');
@@ -7139,7 +7432,7 @@ function renderDIDRows(){
   _didPage=clampMainPage(filteredData.length,_didPageSize,_didPage);
   var displayData=filteredData.slice(_didPage*_didPageSize,(_didPage+1)*_didPageSize);
   renderDIDPagination(filteredData.length);
-  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';return;}
+  if(!filteredData.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No DID records found</td></tr>';decorateMainTableAccessibility();return;}
   tbody.innerHTML=displayData.map(function(r){
     var isDone=DID_DONE_ST.indexOf(r.status)>-1;
     var _fx=rowFxParts(r);
@@ -7160,6 +7453,7 @@ function renderDIDRows(){
       +'</tr>';
   }).join('');
   initResizers();
+  decorateMainTableAccessibility();
   var hdr=document.getElementById('chk-all');if(hdr&&window._lastCheckAll!==undefined)hdr.checked=window._lastCheckAll;
 }
 
@@ -9538,6 +9832,7 @@ function applyRolePermissions(role){
   window._canEdit = !isViewer;   // Admin + Semi-Admin can edit/delete
   window._canAdd  = !isViewer;   // Admin + Semi-Admin can add
   updateDoneSubtabs();
+  syncMobileOverflowNav();
 
   // Land on the Dashboard when the app opens. Only the Admin can see that tab, so
   // every other role stays on the All Tasks default already set in the markup.
@@ -12174,6 +12469,8 @@ window.toggleSplitActionMenu=toggleSplitActionMenu;
 window.splitMenuNew=splitMenuNew;
 window.splitMenuTheme=splitMenuTheme;
 window.splitMenuLogout=splitMenuLogout;
+window.mobileNavigate=mobileNavigate;
+window.mobileOpenTaskAlerts=mobileOpenTaskAlerts;
 window.bulkDelete=bulkDelete;
 window.clampDIDTimerHH=clampDIDTimerHH;
 window.clampTimerHH=clampTimerHH;
@@ -12355,7 +12652,8 @@ window.noteInput=noteInput;
 window.copyNotepad=copyNotepad;
 window.renderNotepad=renderNotepad;
 
-// Double-click row to open edit modal
+// Rows open with one click or with Enter/Space. The legacy double-click path is
+// retained as a harmless compatibility fallback for older cached markup.
 var _rowEditorLastKey='';
 var _rowEditorLastAt=0;
 var _rowSwipeSuppressUntil=0;
@@ -12396,19 +12694,13 @@ _mainTable.addEventListener('dblclick',function(e){
   try{id=decodeURIComponent(row.dataset.recordId);}catch(_){id=row.dataset.recordId;}
   rowDblClick(e,id,row.dataset.recordType||'end');
 });
-/* Compatibility fallback: a few browser configurations increment click.detail
-   to 2 but never dispatch dblclick. Wait one task so the native event gets
-   first priority; only synthesize the edit when it never arrives. */
 _mainTable.addEventListener('click',function(e){
   if(Date.now()<_rowSwipeSuppressUntil)return;
-  if(e.detail<2||e.target.closest('button,input,select,a,label'))return;
+  if(e.detail!==1||e.target.closest('button,input,select,a,label'))return;
   var row=e.target.closest('tbody tr[data-record-id]');if(!row)return;
-  var started=Date.now(),recordId=row.dataset.recordId,type=row.dataset.recordType||'end';
-  setTimeout(function(){
-    if(_nativeRowDblClickId===recordId&&_nativeRowDblClickAt>=started)return;
-    var id;try{id=decodeURIComponent(recordId);}catch(_){id=recordId;}
-    openRowEditor(id,type);
-  },0);
+  var recordId=row.dataset.recordId;
+  var id;try{id=decodeURIComponent(recordId);}catch(_){id=recordId;}
+  openRowEditor(id,row.dataset.recordType||'end');
 });
 /* Last-resort double-click recognizer for browsers/PWAs that emit neither a
    dblclick event nor click.detail=2. Two pointer releases on the same row,
@@ -12621,6 +12913,7 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
   },true);
 
   _mainTable.addEventListener('pointerdown',function(e){
+    if(window.matchMedia&&window.matchMedia('(max-width:700px)').matches)return;
     if(e.isPrimary===false||(e.pointerType==='mouse'&&e.button!==0))return;
     if(currentTab==='trash')return;
     if(ownsHorizontalDrag(e.target))return;
@@ -12752,6 +13045,7 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     armedRow = tr; tr.classList.add('lp-arming');
     timer = setTimeout(function(){
       timer = null; disarm();
+      _rowSwipeSuppressUntil=Date.now()+800;
       // clear any single-cell highlight the drag-select handler left on this press
       try{ document.querySelectorAll('.cell-sel').forEach(function(c){c.classList.remove('cell-sel');}); _selCells.clear(); _dragging = false; }catch(_){}
       if(typeof openCommentsModal === 'function') openCommentsModal(id);
