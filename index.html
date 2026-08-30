@@ -1648,6 +1648,76 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
 .topbar .tab-btn{top:0!important;left:0!important;margin-block:0!important;transition:background-color .15s,color .15s,border-color .15s,box-shadow .15s!important;contain:layout style;}
 .topbar .tab-btn::after{display:none!important;content:none!important;}
 
+/* Keep every interactive control physically stationary. Earlier visual layers
+   used small translate/scale effects on hover, focus, and press; because those
+   layers overlap, only some controls were being neutralized below. Preserve
+   color/border feedback, but never move the control under the pointer. */
+.logo-stats-trigger:hover,
+.logo-stats-trigger:active,
+.sheet-color-swatch:hover,
+.toolbar-tools-trigger:hover,
+.toolbar-tools-trigger:active,
+.toolbar-tool:hover,
+.toolbar-tool:focus-visible,
+.btn:hover,
+.btn:active,
+.btn-icon:hover,
+.btn-icon:active,
+.tab-btn:hover,
+.tab-btn:active,
+.search-wrap:hover,
+.search-wrap:focus-within,
+.fc:hover,
+.fc:focus,
+.fsel:hover,
+.fsel:focus,
+.premium-select-trigger:hover,
+.premium-select-trigger:focus-visible,
+.premium-select-trigger:active,
+.premium-select-option:active,
+.premium-date-trigger:hover,
+.premium-date-trigger:focus-visible,
+.premium-date-trigger:active,
+.premium-time-trigger:hover,
+.premium-time-trigger:focus-visible,
+.premium-time-trigger:active,
+.premium-time-adjust:hover,
+.premium-time-adjust:active,
+.premium-calendar-nav:hover,
+.premium-calendar-day:hover,
+.premium-calendar-month:hover,
+.premium-calendar-action:hover,
+.cell-copy-btn:hover,
+.cell-copy-btn:focus,
+.note-tab:hover,
+.note-tab:active,
+.note-tab-add:hover,
+.note-tab-add:active,
+.done-subtab:hover,
+.done-subtab:active,
+.cal-viewsw button:hover,
+.cal-viewsw button:active,
+.comment-actions button:hover,
+.comment-actions button:active,
+.fchip:hover,
+.client-tag:hover,
+.client-tag button.tag-color-dot:hover,
+.split-menu-item:hover,
+.split-menu-item:focus,
+.split-menu-item:active{
+  transform:none!important;
+}
+.btn-primary:hover,.btn-primary:active{box-shadow:none!important;}
+.toolbar-tool:hover .toolbar-tool-arrow,
+.toolbar-tool:focus-visible .toolbar-tool-arrow{transform:rotate(45deg)!important;}
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover{transform:none!important;}
+/* Archive copy buttons are vertically centred with a transform at rest; keep
+   that centring while removing only their hover scale. */
+#archive-modal .copyable-cell .cell-copy-btn:hover,
+#archive-modal .copyable-cell .cell-copy-btn:focus{transform:translateY(-50%)!important;}
+
 @media (hover:hover){
   .table-wrap tbody tr,.admin-table tbody tr,.comment-item,.cal-up-item,.dash-card,.admin-section{transition:transform .18s var(--ease-soft),box-shadow .18s var(--ease-soft),background .18s;}
   .cal-up-item:hover,.dash-card:hover{transform:none;background:color-mix(in srgb,var(--accent) 5%,var(--bg2));box-shadow:none!important;}
