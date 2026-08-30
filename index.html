@@ -1475,10 +1475,7 @@ textarea.fc:focus,.note-area:focus{border:0;background:var(--bg2);box-shadow:var
 }
 .table-scroll{width:100%;max-width:100%;min-width:0;border-radius:15px;max-height:calc(100dvh - 260px);overflow-x:auto;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;touch-action:pan-x pan-y;}
 #main-table-wrap{min-width:0;max-width:100%;}
-#main-table-wrap .table-scroll{padding-bottom:8px;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--accent) 54%,var(--bg4)) var(--bg3);touch-action:pan-x pan-y;}
-#main-table-wrap .table-scroll::-webkit-scrollbar{display:block;width:10px;height:10px;}
-#main-table-wrap .table-scroll::-webkit-scrollbar-track{background:var(--bg3);border-radius:999px;}
-#main-table-wrap .table-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 54%,var(--bg4));border:2px solid var(--bg3);border-radius:999px;}
+#main-table-wrap .table-scroll{padding-bottom:4px;touch-action:pan-x pan-y;}
 body.logo-stats-layout .table-scroll{max-height:calc(100dvh - 214px);}
 table{border-collapse:separate;border-spacing:0;background:transparent;}
 table thead,.admin-table thead,.log-table thead{background:var(--bg3);}
@@ -1637,6 +1634,19 @@ textarea.fc:focus,.note-area:focus{border-color:var(--accent);box-shadow:0 0 0 3
 .mobile-alert-count{min-width:22px;padding:2px 6px;border-radius:999px;background:var(--bg4);color:var(--text2);font:700 10px/1.4 var(--mono);text-align:center;}
 .mobile-cell-value{min-width:0;}
 .mobile-row-toggle-cell{display:none;}
+
+/* Scroll remains available by wheel, trackpad, touch, and keyboard, but the
+   browser chrome is hidden consistently in every app tab and modal. */
+html,body,*{scrollbar-width:none!important;-ms-overflow-style:none!important;scrollbar-gutter:auto!important;}
+html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+
+/* Navigation tabs must not shift position. Hover only changes color/surface;
+   the tooltip fades in without translating either itself or its parent tab. */
+.topbar .tab-btn,.topbar .tab-btn:hover,.topbar .tab-btn:focus-visible,.topbar .tab-btn.active,.topbar .tab-btn.active:hover{
+  transform:none!important;
+}
+.topbar .tab-btn{transition:background-color .15s,color .15s,border-color .15s,box-shadow .15s!important;}
+.topbar .tab-btn::after,.topbar .tab-btn:hover::after{transform:translateX(-50%)!important;transition:opacity .13s!important;}
 
 @media (hover:hover){
   .table-wrap tbody tr,.admin-table tbody tr,.comment-item,.cal-up-item,.dash-card,.admin-section{transition:transform .18s var(--ease-soft),box-shadow .18s var(--ease-soft),background .18s;}
