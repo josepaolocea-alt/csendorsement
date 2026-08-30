@@ -1295,9 +1295,9 @@ td.empty::before,.cal-empty::before{content:"◇";display:block;width:38px;heigh
 }
 
 /* ======================================================================
-   CYN SOFTWORK UI
-   Operational surface system. Tonal separation and crisp borders carry the
-   hierarchy; elevation is reserved for transient menus and dialogs.
+   CYN NEUMORPHIC UI
+   Restored tactile surface system: raised panels and actions, inset fields,
+   and a consistent upper-left light source in both themes.
    ====================================================================== */
 :root{
   --radius-panel:16px;
@@ -1323,12 +1323,12 @@ td.empty::before,.cal-empty::before{content:"◇";display:block;width:38px;heigh
   --primary-action-hover:#27489f;
   --shadow:0 1px 2px rgba(32,40,56,.10);
   --shadow-elevated:0 20px 48px rgba(32,40,56,.22);
-  --neo-raised:0 0 0 1px var(--border);
-  --neo-raised-sm:0 0 0 1px var(--border);
-  --neo-pressed:inset 0 0 0 1px var(--border2);
-  --neo-pressed-deep:inset 0 0 0 1px var(--border2);
-  --surface-highlight:rgba(255,255,255,.68);
-  --surface-shadow:rgba(151,163,183,.6);
+  --neo-raised:10px 10px 24px var(--surface-shadow),-10px -10px 24px var(--surface-highlight);
+  --neo-raised-sm:5px 5px 12px var(--surface-shadow),-5px -5px 12px var(--surface-highlight);
+  --neo-pressed:inset 4px 4px 9px var(--surface-shadow),inset -4px -4px 9px var(--surface-highlight);
+  --neo-pressed-deep:inset 7px 7px 15px var(--surface-shadow),inset -7px -7px 15px var(--surface-highlight);
+  --surface-highlight:rgba(255,255,255,.76);
+  --surface-shadow:rgba(151,163,183,.48);
 }
 [data-theme="dark"]{
   --bg:#171b23;
@@ -1347,11 +1347,11 @@ td.empty::before,.cal-empty::before{content:"◇";display:block;width:38px;heigh
   --primary-action-hover:#3f5aa5;
   --shadow:0 1px 2px rgba(0,0,0,.28);
   --shadow-elevated:0 20px 48px rgba(0,0,0,.48);
-  --neo-raised:0 0 0 1px var(--border);
-  --neo-raised-sm:0 0 0 1px var(--border);
-  --neo-pressed:inset 0 0 0 1px var(--border2);
-  --neo-pressed-deep:inset 0 0 0 1px var(--border2);
-  --surface-highlight:rgba(54,62,77,.58);
+  --neo-raised:10px 10px 24px var(--surface-shadow),-10px -10px 24px var(--surface-highlight);
+  --neo-raised-sm:5px 5px 12px var(--surface-shadow),-5px -5px 12px var(--surface-highlight);
+  --neo-pressed:inset 4px 4px 9px var(--surface-shadow),inset -4px -4px 9px var(--surface-highlight);
+  --neo-pressed-deep:inset 7px 7px 15px var(--surface-shadow),inset -7px -7px 15px var(--surface-highlight);
+  --surface-highlight:rgba(54,62,77,.34);
   --surface-shadow:rgba(7,9,13,.62);
 }
 
@@ -1602,31 +1602,8 @@ table tbody tr:hover>td:first-child{box-shadow:none;}
 .password-toggle:focus-visible,.login-link-button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 38%,transparent);outline-offset:2px;}
 .login-link-button{min-height:44px;padding:8px 12px;border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:650;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
 
-/* Clear hierarchy: persistent surfaces are flat; only transient UI floats. */
-.topbar,.toolbar,.table-wrap,.admin-section,.cal-wrap,.note-wrap,.dash-card,.stat-chip,.done-subtabs,.cal-viewsw,.note-tabs{
-  border:1px solid var(--border);box-shadow:none;
-}
-.btn,.btn-icon,.tab-btn,.toolbar-tools-trigger,.split-menu-item,.premium-calendar-action,.premium-calendar-nav{
-  border:1px solid var(--border);box-shadow:none;
-}
-.btn-secondary:hover,.btn-icon:hover,.toolbar-tools-trigger:hover,.split-menu-item:hover,.split-menu-item:focus,
-.tab-btn:hover,.done-subtab:hover,.cal-viewsw button:hover,.note-tab-pill:hover{
-  border-color:var(--border2);background:var(--bg3);box-shadow:none;transform:none;
-}
-.tab-btn.active,.tab-btn.active:hover,.done-subtab.active,.cal-viewsw button.active,.note-tab-pill.active{
-  border-color:color-mix(in srgb,var(--accent) 52%,var(--border));background:color-mix(in srgb,var(--accent) 12%,var(--bg2));box-shadow:none;
-}
-.search-wrap,.fc,.fsel,.premium-select-trigger,.premium-date-trigger,.premium-time-trigger,.premium-number,.premium-calendar-time-input,
-textarea.fc,.note-area{border:1px solid var(--border);box-shadow:none;}
-.search-wrap:focus-within,.fc:focus,.premium-select.is-open .premium-select-trigger,.premium-date.is-open .premium-date-trigger,
-textarea.fc:focus,.note-area:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);}
-.table-wrap tbody tr{box-shadow:none;}
-.table-wrap tbody tr:hover{background:color-mix(in srgb,var(--accent) 6%,transparent);box-shadow:none;transform:none;}
-.modal,.entry-modal,.toolbar-tools-menu,.split-actions-menu,.logo-stats-menu,.premium-select-menu,.premium-calendar,.premium-time-menu,.toast,.instant-table-tooltip{
-  border:1px solid var(--border);box-shadow:var(--shadow-elevated);
-}
-.modal-cls{border:1px solid var(--border);box-shadow:none;}
-.comments-section,.settings-sec,.comment-bubble,.archive-comment,.attach-zone{border:1px solid var(--border);box-shadow:none;}
+/* The later flat audit override was removed here. The component rules above
+   are the source of truth for raised, inset, and elevated surfaces. */
 .split-menu-mobile-nav{display:none;}
 .split-menu-section-label{display:block;padding:8px 10px 5px;color:var(--text3);font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;}
 .mobile-nav-item{width:100%;justify-content:space-between;text-align:left;}
@@ -1707,7 +1684,6 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
 .split-menu-item:active{
   transform:none!important;
 }
-.btn-primary:hover,.btn-primary:active{box-shadow:none!important;}
 .toolbar-tool:hover .toolbar-tool-arrow,
 .toolbar-tool:focus-visible .toolbar-tool-arrow{transform:rotate(45deg)!important;}
 input[type="date"]::-webkit-calendar-picker-indicator:hover,
@@ -1720,8 +1696,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover{transform:
 
 @media (hover:hover){
   .table-wrap tbody tr,.admin-table tbody tr,.comment-item,.cal-up-item,.dash-card,.admin-section{transition:transform .18s var(--ease-soft),box-shadow .18s var(--ease-soft),background .18s;}
-  .cal-up-item:hover,.dash-card:hover{transform:none;background:color-mix(in srgb,var(--accent) 5%,var(--bg2));box-shadow:none!important;}
-  .comment-item:hover .comment-bubble{border-color:var(--border2);box-shadow:none;}
+  .cal-up-item:hover,.dash-card:hover{transform:none;background:var(--bg2);}
+  .comment-item:hover .comment-bubble{border-color:color-mix(in srgb,var(--accent) 24%,var(--border));}
 }
 
 @media (max-width:920px){
