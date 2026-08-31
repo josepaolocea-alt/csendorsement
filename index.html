@@ -1219,10 +1219,13 @@ table tbody tr:hover>td:first-child{box-shadow:inset 3px 0 0 color-mix(in srgb,v
 .comment-new{padding:14px;border:1px solid var(--border);border-radius:12px;background:color-mix(in srgb,var(--bg3) 64%,transparent);}
 .comment-actions button:hover{transform:translateY(-1px);}
 
-/* Chips */
-.stat-chip,.fchip,.client-tag,.role-badge,.log-action,.reminder-state{border-radius:999px;box-shadow:var(--premium-inset),0 2px 8px rgba(0,0,0,.06);}
-.fchip{background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 9%,var(--bg3)),var(--bg3));border-color:color-mix(in srgb,var(--accent) 24%,var(--border2));}
-.fchip:hover,.client-tag:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--border2));transform:translateY(-1px);}
+/* Chips — depth is reserved for things you click: buttons, panels, and the stat cards and
+   client tags that pick up the soft-raised surface further down. Small label pills stay flat
+   like the table badges, so a row reads as data instead of a stack of controls. The old
+   drop shadow and the diagonal gradient here predate that surface and fought with it. */
+.stat-chip,.fchip,.client-tag,.role-badge,.log-action,.reminder-state{border-radius:999px;}
+.fchip{background:color-mix(in srgb,var(--accent) 9%,var(--bg3));border-color:color-mix(in srgb,var(--accent) 24%,var(--border2));}
+.fchip:hover,.client-tag:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--border2));}
 
 /* Upload controls */
 label.btn:has(input[type="file"]){border-style:dashed;border-color:color-mix(in srgb,var(--accent) 36%,var(--border2));
@@ -2847,7 +2850,7 @@ try{
         <div class="comment-new">
           <label>Add Comment *</label>
           <div class="attach-zone" id="endorse-attach-zone" ondragover="onDragOver(event,'endorse-attach-zone')" ondragleave="onDragLeave('endorse-attach-zone')" ondrop="onDrop(event,'endorse-attach-zone','endorse-attach-pending')">
-            <textarea class="fc" id="f-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:auto" oninput="autoResize(this)" onpaste="onPasteAttach(event,'endorse-attach-pending')"></textarea>
+            <textarea class="fc" id="f-comment-text" data-dialog-focus placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:auto" oninput="autoResize(this)" onpaste="onPasteAttach(event,'endorse-attach-pending')"></textarea>
             <div class="attach-previews" id="endorse-attach-pending"></div>
             <div class="attach-input-row">
               <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'endorse-attach-pending')"></label>
@@ -2970,7 +2973,7 @@ try{
         <div class="comment-new">
           <label>Add Comment</label>
           <div class="attach-zone" id="rr-attach-zone" ondragover="onDragOver(event,'rr-attach-zone')" ondragleave="onDragLeave('rr-attach-zone')" ondrop="onDrop(event,'rr-attach-zone','rr-attach-pending')">
-            <textarea class="fc" id="rr-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:auto" oninput="autoResize(this)" onpaste="onPasteAttach(event,'rr-attach-pending')"></textarea>
+            <textarea class="fc" id="rr-comment-text" data-dialog-focus placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:auto" oninput="autoResize(this)" onpaste="onPasteAttach(event,'rr-attach-pending')"></textarea>
             <div class="attach-previews" id="rr-attach-pending"></div>
             <div class="attach-input-row">
               <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'rr-attach-pending')"></label>
@@ -3078,7 +3081,7 @@ try{
         <div class="comment-new">
           <label>Add Comment *</label>
           <div class="attach-zone" id="did-attach-zone" ondragover="onDragOver(event,'did-attach-zone')" ondragleave="onDragLeave('did-attach-zone')" ondrop="onDrop(event,'did-attach-zone','did-attach-pending')">
-            <textarea class="fc" id="d-comment-text" placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:auto" oninput="autoResize(this)" onpaste="onPasteAttach(event,'did-attach-pending')"></textarea>
+            <textarea class="fc" id="d-comment-text" data-dialog-focus placeholder="Write a comment, or paste a screenshot to turn it into text..." style="min-height:55px;overflow:auto" oninput="autoResize(this)" onpaste="onPasteAttach(event,'did-attach-pending')"></textarea>
             <div class="attach-previews" id="did-attach-pending"></div>
             <div class="attach-input-row">
               <label class="btn btn-secondary btn-sm" style="cursor:pointer">📎 Attach File<input type="file" multiple accept="*/*" style="display:none" onchange="onFileInput(event,'did-attach-pending')"></label>
@@ -4368,6 +4371,16 @@ function initDialogAccessibility(){
         setTimeout(function(){
           if(overlay.classList.contains('hidden'))return;
           var items=dialogFocusable(overlay);
+          // A dialog can name its own landing spot with data-dialog-focus. The three entry
+          // popups use it to open on the comment box instead of Concern / Subject / Description.
+          var marked=items.find(function(el){return el.hasAttribute('data-dialog-focus');});
+          if(marked){
+            try{marked.focus({preventScroll:true});}catch(_){marked.focus();}
+            // Desktop keeps comments in their own visible column, so this is a no-op there;
+            // on the stacked narrow layout it pulls the box up just enough to be seen.
+            try{marked.scrollIntoView({block:'nearest'});}catch(_){}
+            return;
+          }
           var preferred=items.find(function(el){return el.matches('[autofocus],input:not([type="hidden"]),textarea,select');})||items[0];
           if(preferred)preferred.focus();
         },0);
