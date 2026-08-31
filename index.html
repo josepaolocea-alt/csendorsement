@@ -6721,24 +6721,8 @@ window.togglePin=togglePin;
 function rowCommentClass(r){
   return getUnreadCount(r)>0?' has-new-comment':'';
 }
-// Concern / Description / Subject tooltips show the newest conversation update.
-// Records without comments keep their original field value as the tooltip.
-function primaryCellTooltip(r,fallback){
-  var comments=r&&Array.isArray(r.comments)?r.comments:[];
-  if(!comments.length)return String(fallback||'');
-  var latest=comments[0];
-  comments.forEach(function(comment){
-    if((comment&&comment.ts||0)>=(latest&&latest.ts||0))latest=comment;
-  });
-  var text=String(latest&&latest.text||'').trim();
-  if(!text)text=latest&&Array.isArray(latest.attachments)&&latest.attachments.length?'(attachment only)':'(no text)';
-  var commentDate='';
-  if(latest&&latest.ts){
-    var date=new Date(Number(latest.ts));
-    if(!isNaN(date.getTime()))commentDate=date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  }
-  return 'Last comment by '+getUserDisplay(latest&&latest.user)+(commentDate?' on '+commentDate:'')+'\n'+text;
-}
+// Concern / Description / Subject tooltips show that cell's own full text,
+// so a long concern/description can be read in full on hover.
 function rowDataId(id){
   return encodeURIComponent(String(id));
 }
@@ -7322,7 +7306,7 @@ function renderRows(){
         +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
         +'<td style="font-weight:600" colspan="2" title="'+(r.client||'')+'">'+(r.client||'')+' <span style="font-size:10px;color:var(--accent);font-weight:400">[DID]</span></td>'
-        +'<td class="copyable-cell" title="'+escAttr(currentTab==='all'?primaryCellTooltip(r,r.desc):(r.desc||''))+'" style="max-width:260px;color:var(--text2)">'+slaTextBadge(r)+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
+        +'<td class="copyable-cell" title="'+escAttr(r.desc||'')+'" style="max-width:260px;color:var(--text2)">'+slaTextBadge(r)+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
         +'<td></td>'
         +'<td>'+didStBadge(r.status)+advisedAgingBadge(r)+slaBadge(r)+'</td>'
         +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
@@ -7337,7 +7321,7 @@ function renderRows(){
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:180px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
       +'<td>'+svcBadge(r.service)+'</td>'
-      +'<td class="copyable-cell" title="'+escAttr(currentTab==='all'?primaryCellTooltip(r,r.concern):(r.concern||''))+'" style="max-width:260px;color:var(--text2)">'+slaTextBadge(r)+(r.concern||'')+copyCellButton(r.id,'concern')+'</td>'
+      +'<td class="copyable-cell" title="'+escAttr(r.concern||'')+'" style="max-width:260px;color:var(--text2)">'+slaTextBadge(r)+(r.concern||'')+copyCellButton(r.id,'concern')+'</td>'
       +'<td>'+pltBadge(r.platform)+'</td>'
       +'<td>'+stBadge(r.status)+advisedAgingBadge(r)+slaBadge(r)+'</td>'
       +(currentTab==='done'
@@ -7542,7 +7526,7 @@ function renderDIDRows(){
       +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(filteredData.indexOf(r)+1)+'</td>'
       +'<td><input type="checkbox" style="accent-color:var(--accent)" '+(r._sel?'checked':'')+' onchange="toggleRow('+r.id+',this)"></td>'
       +'<td style="font-weight:600;max-width:160px" title="'+(r.client||'')+'">'+(r.client||'')+'</td>'
-      +'<td class="copyable-cell" title="'+escAttr(primaryCellTooltip(r,r.desc))+'" style="max-width:320px;color:var(--text2)">'+slaTextBadge(r)+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
+      +'<td class="copyable-cell" title="'+escAttr(r.desc||'')+'" style="max-width:320px;color:var(--text2)">'+slaTextBadge(r)+(r.desc||'')+copyCellButton(r.id,'desc')+'</td>'
       +'<td>'+didStBadge(r.status)+advisedAgingBadge(r)+slaBadge(r)+'</td>'
       +'<td>'+rrBadge(r.am||'','rrby')+'</td>'
       +'<td style="color:var(--text2)">'+fmtDate(r.startDate)+'</td>'
