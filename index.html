@@ -2493,6 +2493,15 @@ try{
       </div>
       <p style="font-size:11px;color:var(--text3);margin-top:2px">Sets the Dashboard's <strong>User Engagement</strong> table back to zero — every person's Created / Updated / Comments / Deleted / Exports / Logins counts and their Last Active time, plus the 14-day activity chart and the New Entries / Comments / Active Users cards. Counting starts fresh from the moment you clear, and the old numbers will <strong>not</strong> rebuild themselves afterwards. Your records, comments, clients and Activity Logs are <strong>not</strong> touched — only the engagement statistics. Admin only, cannot be undone.</p>
       <p style="font-size:11px;color:var(--text3);margin-top:6px" id="engagement-reset-note"></p>
+      <div style="height:1px;background:var(--border);margin:12px 0"></div>
+      <div class="auto-row" style="margin:0">
+        <span class="auto-label">Auto-clear every month:</span>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+          <input type="checkbox" id="engagement-auto-toggle" onchange="toggleEngagementAutoClear(this)" style="accent-color:var(--accent)"> Enable
+        </label>
+        <span class="auto-label" style="color:var(--text3)">Clears the engagement data by itself on the 1st of every month, 12:00 AM Philippine time</span>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:6px" id="engagement-auto-note"></p>
     </div>
 
     <!-- USER MANAGEMENT -->
@@ -5863,6 +5872,7 @@ setInterval(function(){
     maybeAlertReminder(r);
   });
   try{checkTaskAlertCenter();}catch(e){}
+  try{checkMonthlyEngagementClear();}catch(e){}
   try{checkCalendarEvents();}catch(e){}
   try{updateCalBadge();}catch(e){}
   var rrRoActive=SETTINGS.rrRoAlertEnabled!==false&&isRRRoAlertWindowActive();
@@ -11197,6 +11207,19 @@ async function ensureAnalyticsReady(){
 // the next Dashboard visit run backfillAnalytics() and rebuild the very numbers
 // that were just cleared out of the logs and records.
 var _analyticsClearInfo=null;
+var _autoClearRunning=false;
+var _lastAutoClearCheck=0;
+
+// The monthly schedule is anchored to Manila time, not the device clock, so the
+// reset lands on the PH 1st for everyone. autoClearedMonth is the PH month that
+// has already been handled — that stamp is what stops a repeat.
+function phMonthKey(ms){var p=_phParts(ms);return p.y+'-'+_pad2(p.mo+1);}
+function phNextMonthLabel(ms){
+  var p=_phParts(ms),y=p.y,mo=p.mo+1;
+  if(mo>11){mo=0;y++;}
+  return PH_MONTHS[mo]+' 1, '+y;
+}
+
 function renderEngagementResetNote(){
   var el=document.getElementById('engagement-reset-note');
   if(!el)return;
@@ -11205,6 +11228,50 @@ function renderEngagementResetNote(){
   var when=new Date(info.clearedAt).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   el.textContent='Last cleared: '+when+(info.clearedBy?' by '+info.clearedBy:'');
 }
+function renderEngagementAutoUI(){
+  var box=document.getElementById('engagement-auto-toggle');
+  var note=document.getElementById('engagement-auto-note');
+  var info=_analyticsClearInfo||{};
+  if(box)box.checked=!!info.autoClearMonthly;
+  if(!note)return;
+  if(info.autoClearMonthly){
+    note.textContent='On — next automatic clear: '+phNextMonthLabel(Date.now())+', 12:00 AM Philippine time.'
+      +(info.autoClearedMonth?' Counting for '+info.autoClearedMonth+' so far.':'');
+  }else{
+    note.textContent='Off — engagement data keeps building up until you clear it yourself.';
+  }
+}
+
+// Shared by the button and the monthly schedule. Meta is written with merge so the
+// auto-clear toggle survives, and status stays 'complete' so the next Dashboard
+// visit does not rebuild the numbers that were just cleared.
+async function performEngagementClear(opts){
+  opts=opts||{};
+  var snap=await getDocs(collection(db,ANALYTICS_DAILY_COLL));
+  var refs=[];snap.forEach(function(d){refs.push(d.ref);});
+  if(refs.length)await analyticsCommitDeletes(refs);
+  await setDoc(doc(db,ANALYTICS_SUMMARY_DOC),analyticsEmptyDoc());
+  var prev=_analyticsClearInfo||{};
+  var info={
+    status:'complete',version:1,
+    clearedAt:Date.now(),
+    clearedBy:opts.auto?'Automatic monthly clear':(_currentUser?_currentUser.email:''),
+    autoClearMonthly:!!prev.autoClearMonthly,
+    autoClearedMonth:phMonthKey(Date.now())
+  };
+  await setDoc(doc(db,ANALYTICS_META_DOC),info,{merge:true});
+  _analyticsClearInfo=Object.assign({},prev,info);
+  _dashAnalyticsDays=[];
+  _dashAnalyticsSummary=analyticsEmptyDoc();
+  _analyticsReady=true;
+  renderEngagementResetNote();
+  renderEngagementAutoUI();
+  if(_dashLoaded)renderDashboard();
+  writeLog('analytics_reset','User Engagement',opts.auto
+    ?'Automatic monthly clear — engagement counters reset for '+info.autoClearedMonth
+    :'Cleared all Dashboard engagement counters');
+}
+
 function resetUserEngagement(){
   if(_currentUserRole!=='Admin'){toast('Only Admin can clear engagement data','error');return;}
   appConfirm('Clear ALL User Engagement data on the Dashboard?\n\nEveryone\'s Created / Updated / Comments / Deleted / Exports / Logins counts, their Last Active time and the 14-day activity chart go back to zero, and the app starts counting again from now.\n\nYour records, comments and Activity Logs are NOT touched. This cannot be undone.','Clear Engagement Data').then(async function(ok){
@@ -11212,19 +11279,7 @@ function resetUserEngagement(){
     var btn=document.getElementById('reset-engagement-btn');
     if(btn){btn.disabled=true;btn.textContent='Clearing…';}
     try{
-      var snap=await getDocs(collection(db,ANALYTICS_DAILY_COLL));
-      var refs=[];snap.forEach(function(d){refs.push(d.ref);});
-      if(refs.length)await analyticsCommitDeletes(refs);
-      await setDoc(doc(db,ANALYTICS_SUMMARY_DOC),analyticsEmptyDoc());
-      var info={status:'complete',version:1,clearedAt:Date.now(),clearedBy:_currentUser?_currentUser.email:''};
-      await setDoc(doc(db,ANALYTICS_META_DOC),info,{merge:true});
-      _analyticsClearInfo=info;
-      _dashAnalyticsDays=[];
-      _dashAnalyticsSummary=analyticsEmptyDoc();
-      _analyticsReady=true;
-      renderEngagementResetNote();
-      if(_dashLoaded)renderDashboard();
-      writeLog('analytics_reset','User Engagement','Cleared all Dashboard engagement counters');
+      await performEngagementClear({auto:false});
       toast('User Engagement data cleared','info');
     }catch(e){
       console.error('Engagement reset failed:',e);
@@ -11233,6 +11288,63 @@ function resetUserEngagement(){
       if(btn){btn.disabled=false;btn.textContent='Clear Engagement Data';}
     }
   });
+}
+
+function toggleEngagementAutoClear(el){
+  var on=!!(el&&el.checked);
+  if(_currentUserRole!=='Admin'){
+    if(el)el.checked=!on;
+    toast('Only Admin can change this','error');
+    return;
+  }
+  // Turning it ON stamps the month in progress as already handled, so enabling it
+  // mid-month does not wipe the running month on the spot — it waits for the 1st.
+  var patch={autoClearMonthly:on};
+  if(on)patch.autoClearedMonth=phMonthKey(Date.now());
+  setDoc(doc(db,ANALYTICS_META_DOC),patch,{merge:true}).then(function(){
+    _analyticsClearInfo=Object.assign({},_analyticsClearInfo||{},patch);
+    renderEngagementAutoUI();
+    toast(on?'Monthly auto-clear is ON — next run '+phNextMonthLabel(Date.now())+', 12:00 AM PH time':'Monthly auto-clear is OFF','info');
+  }).catch(function(e){
+    console.error('Auto-clear toggle failed:',e);
+    if(el)el.checked=!on;
+    toast('Could not save the setting: '+(e.message||e),'error');
+  });
+}
+
+// Fires when the PH month has rolled over since the last clear — on app start and
+// once a minute while the app is open, so a session left running overnight still
+// resets at 12:00 AM PH on the 1st. Returns true if it cleared.
+async function maybeAutoClearEngagement(){
+  if(_currentUserRole!=='Admin'||_autoClearRunning)return false;
+  var info=_analyticsClearInfo;
+  if(!info||!info.autoClearMonthly)return false;
+  var monthKey=phMonthKey(Date.now());
+  if(info.autoClearedMonth===monthKey)return false;
+  _autoClearRunning=true;
+  try{
+    // Re-read first: another signed-in device may already have cleared this month.
+    var fresh=await getDoc(doc(db,ANALYTICS_META_DOC));
+    var data=fresh.exists()?fresh.data():null;
+    if(data)_analyticsClearInfo=data;
+    if(!data||!data.autoClearMonthly||data.autoClearedMonth===monthKey){
+      renderEngagementAutoUI();
+      return false;
+    }
+    await performEngagementClear({auto:true});
+    toast('New month started — User Engagement data was cleared automatically','info');
+    return true;
+  }catch(e){
+    console.error('Monthly engagement auto-clear failed:',e);
+    return false;
+  }finally{_autoClearRunning=false;}
+}
+function checkMonthlyEngagementClear(){
+  if(_currentUserRole!=='Admin')return;
+  var now=Date.now();
+  if(now-_lastAutoClearCheck<60000)return;   // local month-key compare, once a minute
+  _lastAutoClearCheck=now;
+  maybeAutoClearEngagement();
 }
 
 function writeLog(action, record, details, extra){
@@ -11950,6 +12062,7 @@ async function loadDashboard(force){
     _dashTrash=[];if(base[1])base[1].forEach(function(d){_dashTrash.push(d.data());});
     _analyticsClearInfo=(base[2]&&base[2].exists())?base[2].data():null;
     renderEngagementResetNote();
+    renderEngagementAutoUI();
     var analyticsComplete=!!(base[2]&&base[2].exists()&&base[2].data().status==='complete');
     if(!analyticsComplete&&_currentUserRole==='Admin'){
       try{
@@ -11962,7 +12075,10 @@ async function loadDashboard(force){
     }
     _analyticsReady=analyticsComplete;
     if(_analyticsReady){
-      await loadAnalyticsSummaries();
+      // A month rolled over while nobody was signed in — clear before loading, so
+      // the old figures never flash up on screen.
+      var autoCleared=await maybeAutoClearEngagement();
+      if(!autoCleared) await loadAnalyticsSummaries();
     }else if(!_logsLoaded||force){
       var logSnap=await getDocs(query(collection(db,'logs'),orderBy('ts','desc'),limit(LOG_READ_LIMIT)));
       cacheLogsSnapshot(logSnap);
@@ -12605,6 +12721,7 @@ window.doLogin=doLogin;
 window.doLogout=doLogout;
 window.clearAllLogs=clearAllLogs;
 window.resetUserEngagement=resetUserEngagement;
+window.toggleEngagementAutoClear=toggleEngagementAutoClear;
 window.exportLogs=exportLogs;
 window.renderLogs=renderLogs;
 window.loadLogs=loadLogs;
