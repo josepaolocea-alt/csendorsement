@@ -1417,12 +1417,22 @@ button,input,select,textarea{font-family:var(--sf);}
   border:0;background:var(--bg2);color:var(--accent);box-shadow:7px 7px 15px var(--surface-shadow),-7px -7px 15px var(--surface-highlight);transform:translateY(-2px);
 }
 .btn-primary{
-  border:1px solid color-mix(in srgb,var(--primary-action) 82%,#000);background:var(--primary-action);color:#fff;
-  box-shadow:0 1px 2px color-mix(in srgb,var(--primary-action) 40%,transparent);
+  border:0;background:var(--primary-action);color:#fff;
+  box-shadow:5px 5px 12px color-mix(in srgb,var(--primary-action) 30%,transparent),
+             5px 5px 12px var(--surface-shadow),
+             -5px -5px 12px var(--surface-highlight),
+             inset 1px 1px 0 rgba(255,255,255,.22);
 }
-.btn-primary:hover{border-color:color-mix(in srgb,var(--primary-action-hover) 82%,#000);background:var(--primary-action-hover);box-shadow:0 2px 5px color-mix(in srgb,var(--primary-action) 34%,transparent);transform:translateY(-1px);}
+.btn-primary:hover{
+  border:0;background:var(--primary-action-hover);
+  box-shadow:7px 7px 15px color-mix(in srgb,var(--primary-action) 32%,transparent),
+             7px 7px 15px var(--surface-shadow),
+             -7px -7px 15px var(--surface-highlight),
+             inset 1px 1px 0 rgba(255,255,255,.24);
+  transform:translateY(-2px);
+}
 .btn:active,.btn-icon:active,.toolbar-tools-trigger:active,.split-menu-item:active{transform:translateY(1px) scale(.985);box-shadow:var(--neo-pressed);}
-.btn-primary:active{box-shadow:inset 4px 4px 9px color-mix(in srgb,var(--accent2) 74%,#172449),inset -3px -3px 8px color-mix(in srgb,#fff 24%,var(--accent));}
+.btn-primary:active{box-shadow:inset 4px 4px 9px rgba(12,20,44,.45),inset -4px -4px 9px rgba(255,255,255,.16);}
 .btn:focus-visible,.btn-icon:focus-visible,.tab-btn:focus-visible,.fsel:focus-visible,.fc:focus-visible,.search-wrap:focus-within,.premium-select-trigger:focus-visible,.premium-date-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 38%,transparent);outline-offset:3px;}
 
 .toolbar{
