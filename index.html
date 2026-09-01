@@ -2515,10 +2515,12 @@ try{
       <div class="admin-toolbar">
         <span class="admin-ctitle">Dashboard Engagement Data</span>
         <button class="btn btn-secondary btn-sm" id="rebuild-engagement-btn" onclick="rebuildUserEngagement()">Rebuild from Activity Logs</button>
+        <button class="btn btn-secondary btn-sm" id="clear-prev-engagement-btn" onclick="clearPreviousMonthsEngagement()">Clear Previous Months</button>
         <button class="btn btn-sm" id="reset-engagement-btn" onclick="resetUserEngagement()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">Clear Engagement Data</button>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-top:2px">Sets the Dashboard's <strong>User Engagement</strong> table back to zero — every person's Created / Updated / Comments / Deleted / Exports / Logins counts and their Last Active time, plus the 14-day activity chart and the New Entries / Comments / Active Users cards. Counting starts fresh from the moment you clear, and the old numbers will <strong>not</strong> rebuild themselves afterwards. Your records, comments, clients and Activity Logs are <strong>not</strong> touched — only the engagement statistics. Admin only, cannot be undone.</p>
-      <p style="font-size:11px;color:var(--text3);margin-top:6px"><strong>Rebuild from Activity Logs</strong> recalculates everybody's numbers from the Activity Logs plus the Created by / comments stored on every record, so activity that was wiped by a clear comes back. Use it if the table looks empty for people who clearly have been working. Nothing is deleted.</p>
+      <p style="font-size:11px;color:var(--text3);margin-top:6px"><strong>Rebuild from Activity Logs</strong> recalculates everybody's numbers from the Activity Logs plus the Created by / comments stored on every record, so activity that was wiped by a clear comes back. Use it if the table looks empty for people who clearly have been working. It restores <strong>all</strong> the history it can find, so months you had already cleared will come back too — follow it with <strong>Clear Previous Months</strong> if you only want the month in progress.</p>
+      <p style="font-size:11px;color:var(--text3);margin-top:6px"><strong>Clear Previous Months</strong> deletes everything from before the current Philippine month and keeps what the team has done this month — the same thing the monthly auto-clear does. Records, comments and Activity Logs are not touched.</p>
       <p style="font-size:11px;color:var(--text3);margin-top:6px" id="engagement-reset-note"></p>
       <div style="height:1px;background:var(--border);margin:12px 0"></div>
       <div class="auto-row" style="margin:0">
@@ -11329,10 +11331,12 @@ async function performEngagementClear(opts){
   renderEngagementResetNote();
   renderEngagementAutoUI();
   if(_dashLoaded)renderDashboard();
+  var keptNote=kept.length?' (kept '+kept.length+' day'+(kept.length!==1?'s':'')+' already logged this month)':'';
   writeLog('analytics_reset','User Engagement',opts.auto
-    ?'Automatic monthly clear — engagement counters reset for '+info.autoClearedMonth
-      +(kept.length?' (kept '+kept.length+' day'+(kept.length!==1?'s':'')+' already logged this month)':'')
-    :'Cleared all Dashboard engagement counters');
+    ?'Automatic monthly clear — engagement counters reset for '+info.autoClearedMonth+keptNote
+    :(keepMonth
+      ?'Cleared engagement counters from before '+keepMonth+keptNote
+      :'Cleared all Dashboard engagement counters'));
 }
 
 function resetUserEngagement(){
@@ -11376,6 +11380,28 @@ function rebuildUserEngagement(){
       toast('Could not rebuild engagement data: '+(e.message||e),'error');
     }finally{
       if(btn){btn.disabled=false;btn.textContent='Rebuild from Activity Logs';}
+    }
+  });
+}
+
+// Manual version of the monthly schedule: drops every month before the current PH
+// one and leaves the month in progress alone. Pairs with the rebuild above, which
+// deliberately brings back ALL history and so undoes past monthly clears.
+function clearPreviousMonthsEngagement(){
+  if(_currentUserRole!=='Admin'){toast('Only Admin can clear engagement data','error');return;}
+  var p=_phParts(Date.now()),monthName=PH_MONTHS[p.mo]+' '+p.y;
+  appConfirm('Clear the engagement data from BEFORE '+monthName+'?\n\nEveryone\'s counts from earlier months are deleted. What the team has already done in '+monthName+' is kept, and counting continues from there.\n\nYour records, comments and Activity Logs are NOT touched.','Clear Previous Months').then(async function(ok){
+    if(!ok)return;
+    var btn=document.getElementById('clear-prev-engagement-btn');
+    if(btn){btn.disabled=true;btn.textContent='Clearing…';}
+    try{
+      await performEngagementClear({auto:false,keepCurrentMonth:true});
+      toast('Engagement data before '+monthName+' cleared','info');
+    }catch(e){
+      console.error('Previous-month clear failed:',e);
+      toast('Could not clear engagement data: '+(e.message||e),'error');
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent='Clear Previous Months';}
     }
   });
 }
@@ -12826,6 +12852,7 @@ window.doLogout=doLogout;
 window.clearAllLogs=clearAllLogs;
 window.resetUserEngagement=resetUserEngagement;
 window.rebuildUserEngagement=rebuildUserEngagement;
+window.clearPreviousMonthsEngagement=clearPreviousMonthsEngagement;
 window.toggleEngagementAutoClear=toggleEngagementAutoClear;
 window.exportLogs=exportLogs;
 window.renderLogs=renderLogs;
