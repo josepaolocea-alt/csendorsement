@@ -7811,7 +7811,7 @@ function addDIDComment(){
       recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
       markRead(r.id);
-      var _dct=document.getElementById('d-comment-text');_dct.value='';_dct.style.height='';
+      resetCommentBox('d-comment-text');
       renderDIDModalComments(r.comments);
       renderDIDRows();
       toast('Comment added','success');
@@ -7819,7 +7819,7 @@ function addDIDComment(){
   }else{
     // Buffer comment — don't save record yet, wait for Save button
     _pendingDIDComments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
-    var _dct=document.getElementById('d-comment-text');_dct.value='';_dct.style.height='';
+    resetCommentBox('d-comment-text');
     renderDIDModalComments(_pendingDIDComments);
     toast('Comment queued — will save with entry','info');
   }
@@ -9111,6 +9111,18 @@ function autoResizeId(id){
   if(el) autoResize(el);
 }
 
+// Clear a comment box AND put it back to its original size. autoResize writes an
+// inline height as you type, and dragging the resize grip writes one too — wiping
+// the inline height hands the box back to its CSS default instead of leaving it
+// stretched to the size of the comment that was just posted.
+function resetCommentBox(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.value='';
+  el.style.height='';
+  el.scrollTop=0;
+}
+
 function clearSearch(){
   var inp=document.getElementById('search-input');
   if(inp){inp.value='';inp.focus();}
@@ -9508,14 +9520,14 @@ function addRRComment(){
       recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
       markRead(r.id);
-      document.getElementById('rr-comment-text').value='';
+      resetCommentBox('rr-comment-text');
       renderRRModalComments(r.comments);
       renderRRRows();
       toast('Comment added','success');
     }
   }else{
     _pendingRRComments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
-    document.getElementById('rr-comment-text').value='';
+    resetCommentBox('rr-comment-text');
     renderRRModalComments(_pendingRRComments);
     toast('Comment queued — will save with entry','info');
   }
@@ -9587,7 +9599,7 @@ function addComment(){
       recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
       markRead(r.id);
-      document.getElementById('f-comment-text').value='';
+      resetCommentBox('f-comment-text');
       renderModalComments(r.comments);
       renderRows();
       toast('Comment added','success');
@@ -9595,7 +9607,7 @@ function addComment(){
   }else{
     // Buffer comment — don't save record yet, wait for Save button
     _pendingComments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
-    document.getElementById('f-comment-text').value='';
+    resetCommentBox('f-comment-text');
     renderModalComments(_pendingComments);
     toast('Comment queued — will save with entry','info');
   }
@@ -9685,7 +9697,7 @@ function openCommentsModal(id){
   _commentModalId=id;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   configureCommentsModalEntry(r);
-  document.getElementById('cm-comment-text').value='';
+  resetCommentBox('cm-comment-text');
   _pendingAttachments['cm-attach-pending']=[];
   renderPendingPreviews('cm-attach-pending');
   renderCmModalComments(r.comments||[]);
@@ -9722,7 +9734,7 @@ function addCommentFromModal(){
   recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
   saveOne(r);
   markRead(r.id);
-  document.getElementById('cm-comment-text').value='';
+  resetCommentBox('cm-comment-text');
   renderCmModalComments(r.comments);
   scrollCmListTop();
   if(currentTab==='did') renderDIDRows(); else if(isRRTableView()) renderRRRows(); else if(currentTab==='trash') renderTrashRows(); else renderRows();
