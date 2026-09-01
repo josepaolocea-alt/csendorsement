@@ -2390,6 +2390,7 @@ try{
           <option value="month">This Month</option>
           <option value="all">All Time</option>
         </select>
+        <span id="dash-updated" style="font-size:11px;color:var(--text3)"></span>
         <button class="btn btn-secondary btn-sm" onclick="loadDashboard(true)">↻ Refresh</button>
       </div>
     </div>
@@ -4582,9 +4583,11 @@ function _doSwitchTab(tab,el){
     loadAdminData();
     return;
   }
-  // Reuse the dashboard snapshot within this app session. The visible Refresh
-  // button still calls loadDashboard(true) when a fresh Firestore read is wanted.
-  if(isDash){loadDashboard(false);return;}
+  // Reuse the dashboard snapshot to keep Firebase reads down, but not forever: a
+  // teammate's entries only reach this device on a fresh read, so a tab left open
+  // all day used to show nothing but the Admin's own actions. Re-reads once the
+  // snapshot is older than DASH_STALE_MS; flicking between tabs still reuses it.
+  if(isDash){loadDashboard(_dashLoaded&&(Date.now()-_dashLoadedAt)>DASH_STALE_MS);return;}
   if(isCal){renderCalendar();return;}
   if(isNote){renderNotepad();return;}
   DATA.forEach(function(r){r._sel=false;});
@@ -12122,8 +12125,20 @@ function generateAISummary(){
 
 // ─── DASHBOARD ───────────────────────────────────────────────
 var _dashLoaded=false;
+var _dashLoadedAt=0; // when the snapshot below was last read from Firestore
+var DASH_STALE_MS=10*60*1000;
 var _dashUsers=[];   // users collection snapshot
 var _dashTrash=[];   // trash records (so deleted entries still count toward engagement)
+
+// Everything on the Dashboard is a point-in-time read, and only THIS device's own
+// actions are mirrored into it live — so say out loud how old the numbers are.
+function renderDashUpdatedLabel(){
+  var el=document.getElementById('dash-updated');
+  if(!el)return;
+  el.textContent=_dashLoadedAt
+    ?'Updated '+new Date(_dashLoadedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+    :'';
+}
 
 async function loadAnalyticsSummaries(){
   var results=await Promise.all([
@@ -12171,6 +12186,8 @@ async function loadDashboard(force){
       cacheLogsSnapshot(logSnap);
     }
     _dashLoaded=true;
+    _dashLoadedAt=Date.now();
+    renderDashUpdatedLabel();
     renderDashboard();
   }catch(e){
     if(tbody) tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:#f87171;padding:20px">Error loading dashboard: '+escHtml(e.message)+'</td></tr>';
