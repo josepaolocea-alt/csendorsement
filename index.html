@@ -510,7 +510,13 @@ tr.has-new-comment>td:last-child::after{content:"";position:absolute;top:0;right
 .timer-center-item-age{font-size:10.5px;color:#f87171;margin-top:5px;font-weight:600;}
 .timer-center-item.is-snoozed .timer-center-item-age{color:var(--accent);}
 .timer-center-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
-@media (max-width:600px){.timer-center-item{grid-template-columns:1fr}.timer-center-actions{justify-content:flex-start}.timer-center-box .modal-ftr{justify-content:flex-start}.timer-center-box .modal-ftr .btn:last-child{margin-left:auto}}
+.timer-center-comment{grid-column:1/-1;margin-top:2px;padding:9px 11px;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:9px;background:var(--bg2);}
+.timer-center-comment-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:10.5px;color:var(--text3);margin-bottom:5px;}
+.timer-center-comment-who{font-weight:700;color:var(--text2);}
+.timer-center-comment-count{margin-left:auto;opacity:.8;}
+.timer-center-comment-text{font-size:12px;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere;max-height:170px;overflow:auto;}
+.timer-center-comment-empty{font-size:11.5px;color:var(--text3);font-style:italic;}
+@media (max-width:600px){.timer-center-item{grid-template-columns:1fr}.timer-center-actions{justify-content:flex-start}.timer-center-comment-count{margin-left:0}.timer-center-box .modal-ftr{justify-content:flex-start}.timer-center-box .modal-ftr .btn:last-child{margin-left:auto}}
 .modal-hdr{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1;}
 .modal-hdr h3{font-size:15px;font-weight:600;}
 .modal-cls{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:2px 7px;border-radius:6px;font-family:var(--sf);}
@@ -5620,6 +5626,7 @@ function resetTaskAlertCenterSession(){
   _taskAlertBatchTimer=null;
   _taskAlertBatchKeys={};
   _taskAlertQueue=[];
+  _taskAlertCommentOpen={};
   _returnToTaskAlertCenterAfterEntry=false;
   _taskAlertLastReminderAt=Date.now();
   updateTaskAlertBadge();
@@ -5650,6 +5657,39 @@ function taskAlertAgeText(item){
   if(mins<60)return isReminder?mins+'m since reminder':mins+'m overdue';
   var hrs=Math.floor(mins/60),rest=mins%60;
   return hrs+'h'+(rest?' '+rest+'m':'')+(isReminder?' since reminder':' overdue');
+}
+// Which alert rows currently have their "Last comment" panel expanded (by alert key).
+// Kept outside the queue so it never gets persisted to localStorage.
+var _taskAlertCommentOpen={};
+function taskAlertLastComment(item){
+  var r=DATA.find(function(rec){return String(rec.id)===String(item.id);});
+  if(!r)return {missing:true};
+  var cms=Array.isArray(r.comments)?r.comments:[];
+  if(!cms.length)return {none:true};
+  return {comment:cms[cms.length-1],total:cms.length};
+}
+function taskAlertCommentHTML(item){
+  var info=taskAlertLastComment(item);
+  if(info.missing)return '<div class="timer-center-comment"><div class="timer-center-comment-empty">This entry is no longer available.</div></div>';
+  if(info.none)return '<div class="timer-center-comment"><div class="timer-center-comment-empty">No comments on this entry yet.</div></div>';
+  var c=info.comment;
+  var when=commentTimeValue(c.ts);
+  var att=(c.attachments||[]).length;
+  var text=String(c.text||'').trim();
+  return '<div class="timer-center-comment">'
+    +'<div class="timer-center-comment-meta">'
+    +'<span class="timer-center-comment-who">'+escHtml(getUserDisplay(c.user)||c.user||'Unknown')+'</span>'
+    +'<span>'+escHtml(when?fmtCommentTime(when):'Unknown date')+'</span>'
+    +'<span class="timer-center-comment-count">Latest of '+info.total+' comment'+(info.total!==1?'s':'')+'</span>'
+    +'</div>'
+    +'<div class="timer-center-comment-text">'+escHtml(text||'(attachment only)')+(att?'\n📎 '+att+' attachment'+(att!==1?'s':''):'')+'</div>'
+    +'</div>';
+}
+function toggleTaskAlertComment(encodedKey){
+  var key=decodeURIComponent(encodedKey);
+  if(_taskAlertCommentOpen[key])delete _taskAlertCommentOpen[key];
+  else _taskAlertCommentOpen[key]=true;
+  renderTaskAlertCenter();
 }
 function updateTaskAlertBadge(){
   var btn=document.getElementById('timer-center-btn');
@@ -5684,6 +5724,7 @@ function renderTaskAlertCenter(){
   });
   list.innerHTML=items.map(function(item){
     var snoozed=item.snoozedUntil&&item.snoozedUntil>Date.now();
+    var commentOpen=!!_taskAlertCommentOpen[item.key];
     var arg=taskAlertKeyArg(item.key);
     return '<div class="timer-center-item'+(snoozed?' is-snoozed':'')+'">'
       +'<div><div class="timer-center-item-name">'+escHtml(item.name||'Task entry')+'</div>'
@@ -5691,9 +5732,12 @@ function renderTaskAlertCenter(){
       +'<div class="timer-center-item-age">'+escHtml(taskAlertAgeText(item))+'</div></div>'
       +'<div class="timer-center-actions">'
       +'<button class="btn btn-secondary btn-sm" onclick="openTaskAlertEntry(\''+arg+'\')">Open</button>'
+      +'<button class="btn btn-secondary btn-sm" onclick="toggleTaskAlertComment(\''+arg+'\')">'+(commentOpen?'💬 Hide comment':'💬 Last comment')+'</button>'
       +'<button class="btn btn-secondary btn-sm" onclick="snoozeTaskAlert(\''+arg+'\',10)">'+(snoozed?'Snooze +10m':'Snooze 10m')+'</button>'
       +'<button class="btn btn-primary btn-sm" onclick="handleTaskAlert(\''+arg+'\')">Handled</button>'
-      +'</div></div>';
+      +'</div>'
+      +(commentOpen?taskAlertCommentHTML(item):'')
+      +'</div>';
   }).join('');
 }
 function openTaskAlertCenter(){
@@ -5715,6 +5759,7 @@ function copyAllTaskAlerts(){
 function handleTaskAlert(encodedKey){
   var key=decodeURIComponent(encodedKey);
   _taskAlertQueue=_taskAlertQueue.filter(function(item){return item.key!==key;});
+  delete _taskAlertCommentOpen[key];
   persistTaskAlertQueue();renderTaskAlertCenter();
   if(!_taskAlertQueue.length)closeTaskAlertCenter();
 }
@@ -5722,7 +5767,7 @@ function handleAllTaskAlerts(){
   if(!_taskAlertQueue.length)return;
   appConfirm('Mark all '+_taskAlertQueue.length+' task alerts as handled?','Mark all handled').then(function(ok){
     if(!ok)return;
-    _taskAlertQueue=[];persistTaskAlertQueue();renderTaskAlertCenter();closeTaskAlertCenter();
+    _taskAlertQueue=[];_taskAlertCommentOpen={};persistTaskAlertQueue();renderTaskAlertCenter();closeTaskAlertCenter();
   });
 }
 function snoozeTaskAlert(encodedKey,mins){
@@ -5971,6 +6016,7 @@ window.handleAllTaskAlerts=handleAllTaskAlerts;
 window.snoozeTaskAlert=snoozeTaskAlert;
 window.snoozeAllTaskAlerts=snoozeAllTaskAlerts;
 window.openTaskAlertEntry=openTaskAlertEntry;
+window.toggleTaskAlertComment=toggleTaskAlertComment;
 
 // ─── CALENDAR (personal events + alarms) ─────────────────────
 // Events live in Firestore 'calendar_events' and sync to every device the
