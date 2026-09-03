@@ -5679,7 +5679,7 @@ function taskAlertCommentHTML(item){
   return '<div class="timer-center-comment">'
     +'<div class="timer-center-comment-meta">'
     +'<span class="timer-center-comment-who">'+escHtml(getUserDisplay(c.user)||c.user||'Unknown')+'</span>'
-    +'<span>'+escHtml(when?fmtCommentTime(when):'Unknown date')+'</span>'
+    +'<span>'+escHtml(when?fmtCommentTime(when)+' ('+agoLabel(when)+')':'Unknown date')+'</span>'
     +'<span class="timer-center-comment-count">Latest of '+info.total+' comment'+(info.total!==1?'s':'')+'</span>'
     +'</div>'
     +'<div class="timer-center-comment-text">'+escHtml(text||'(attachment only)')+(att?'\n📎 '+att+' attachment'+(att!==1?'s':''):'')+'</div>'
@@ -8822,7 +8822,7 @@ function archiveDetailsHTML(r){
   if(!comments.length)html+='<div class="archive-detail-value">No comments</div>';
   comments.forEach(function(c){
     var attachmentCount=(c.attachments||[]).length;
-    html+='<div class="archive-comment"><div class="archive-comment-meta">'+escHtml(getUserDisplay(c.user)||c.user||'Unknown')+' · '+escHtml(fmtCommentTime(c.ts))+(attachmentCount?' · '+attachmentCount+' attachment'+(attachmentCount!==1?'s':''):'')+'</div><div class="archive-comment-text">'+escHtml(c.text||'(attachment only)')+'</div></div>';
+    html+='<div class="archive-comment"><div class="archive-comment-meta">'+escHtml(getUserDisplay(c.user)||c.user||'Unknown')+' · '+escHtml(fmtCommentTime(c.ts)+' ('+agoLabel(c.ts)+')')+(attachmentCount?' · '+attachmentCount+' attachment'+(attachmentCount!==1?'s':''):'')+'</div><div class="archive-comment-text">'+escHtml(c.text||'(attachment only)')+'</div></div>';
   });
   html+='</div></div>';
   return html;
@@ -9313,6 +9313,17 @@ function fmtCommentTime(ts){
   var d=new Date(ts);
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 }
+// "How long ago" label used next to every comment date (e.g. "just now", "3h ago", "2d ago")
+function agoLabel(ts){
+  var t=commentTimeValue(ts);
+  if(!t)return '';
+  var s=Math.floor((Date.now()-t)/1000);
+  if(s<0)s=0;
+  if(s<45)return 'just now';
+  var m=Math.floor(s/60);if(m<60)return m+'m ago';
+  var h=Math.floor(m/60);if(h<24)return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
 // Short "chat style" relative time for comment bubbles (full date kept in the title tooltip)
 function relTime(ts){
   var s=Math.floor((Date.now()-ts)/1000);
@@ -9321,7 +9332,8 @@ function relTime(ts){
   var m=Math.floor(s/60);if(m<60)return m+'m ago';
   var h=Math.floor(m/60);if(h<24)return h+'h ago';
   var dd=Math.floor(h/24);if(dd<7)return dd+'d ago';
-  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  // Past a week we show the date, but keep the day count so "how old is this?" stays obvious
+  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' ('+dd+'d ago)';
 }
 // Stable per-person avatar colour + initials for comment threads
 function avatarColor(key){
