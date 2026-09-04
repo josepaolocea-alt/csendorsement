@@ -2098,7 +2098,7 @@ try{
       <div class="sheet-color-picker" id="advised-aging-color-picker"></div>
     </div>
     <div class="auto-row">
-      <span class="auto-label">RR/RO missing RO by:</span>
+      <span class="auto-label" title="Alerts Pending RR/RO entries whose RO by is still blank or set to &quot;Not Yet&quot; after the time below">RR/RO missing RO by (blank or Not Yet):</span>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="rr-ro-alert-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
       </label>
@@ -2115,7 +2115,7 @@ try{
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="rr-ro-alert-color-picker"></div>
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Also pop a desktop notification on this computer for Pending RR / RO entries that still have no RO by after the set time">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Also pop a desktop notification on this computer for Pending RR / RO entries whose RO by is still blank or Not Yet after the set time">
         <input type="checkbox" id="rr-ro-alert-notify" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> 🔔 Notify PC
       </label>
     </div>
@@ -4738,9 +4738,15 @@ function isRRRoAlertWindowActive(){
   var mins=now.getHours()*60+now.getMinutes();
   return mins>=parseTimeMinutes(SETTINGS.rrRoAlertTime,'18:00');
 }
+// "RO by" counts as still-missing when it is blank OR explicitly set to "Not Yet"
+// (the entry form requires a pick, so "Not Yet" is how an unassigned RO is recorded).
+function isRoByUnassigned(v){
+  var s=String(v||'').trim().toLowerCase().replace(/[\s_-]+/g,' ');
+  return !s||s==='not yet';
+}
 function isRRRoMissingDue(r){
   if(!SETTINGS.rrRoAlertEnabled||!r||r._type!=='rr'||r.rrCompleted||r.rrDisregard)return false;
-  if(String(r.roBy||'').trim())return false;
+  if(!isRoByUnassigned(r.roBy))return false;
   return isRRRoAlertWindowActive();
 }
 function rrRoAlertRowClass(r){
@@ -4752,7 +4758,7 @@ function rrRoAlertRowStyle(r){
 }
 function rrRoAlertBadge(r){
   if(!isRRRoMissingDue(r))return '';
-  return '<span class="rr-ro-alert-badge" title="No RO by after '+(SETTINGS.rrRoAlertTime||'18:00')+'">No RO</span>';
+  return '<span class="rr-ro-alert-badge" title="RO by is still blank / Not Yet after '+(SETTINGS.rrRoAlertTime||'18:00')+'">No RO</span>';
 }
 // ── "Days since Done" aging for still-pending RR/RO ─────────────
 // Anchor = the moment Status was set to Done (rrStatusDoneAt, captured in saveRR).
@@ -5921,7 +5927,7 @@ function checkRRRoMissingNotifs(){
   pruneRRRoNotifKeys(dayStr);
   var dueAll=[],dueNew=[];
   DATA.forEach(function(r){
-    if(!isRRRoMissingDue(r))return;           // Pending RR/RO, not done/disregarded, no RO by, past set time
+    if(!isRRRoMissingDue(r))return;           // Pending RR/RO, not done/disregarded, RO by blank or "Not Yet", past set time
     dueAll.push(r);
     var key='cyn_rronotify_'+currentAlertUserKey()+'_'+r.id+'_'+dayStr;
     var seen=_sessionAlerted[key];
@@ -5936,8 +5942,8 @@ function checkRRRoMissingNotifs(){
   var t=SETTINGS.rrRoAlertTime||'18:00';
   var names=dueAll.map(function(r){return r.rrSubject||'(no subject)';});
   var body=dueAll.length===1
-    ? names[0]+' still has no RO by after '+t+'.'
-    : dueAll.length+' Pending RR/RO entries still have no RO by after '+t+':\n• '+names.slice(0,6).join('\n• ')+(names.length>6?'\n…and '+(names.length-6)+' more':'');
+    ? names[0]+' still has no RO by (blank or Not Yet) after '+t+'.'
+    : dueAll.length+' Pending RR/RO entries still have no RO by (blank or Not Yet) after '+t+':\n• '+names.slice(0,6).join('\n• ')+(names.length>6?'\n…and '+(names.length-6)+' more':'');
   toast('🔔 '+dueAll.length+' Pending RR/RO '+(dueAll.length===1?'entry has':'entries have')+' no RO by after '+t,'error');
   sendBrowserNotif('🔔 Pending RR/RO: missing RO by',body,'rroalert_'+dayStr,true);
 }
@@ -10155,7 +10161,7 @@ var DROPDOWN_OPTS = {
   status_ip:  {label:'Status — In Progress', defaults:['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client']},
   status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Lack of Update from our Team','Continue to Other Ticket','Close due to lack of update from Vendor/Developer']},
   rr_by:      {label:'RR by',                defaults:["Ma'am Kath","Sir Jason","Ma'am Shayne","Jem Santos","Robert Pinote","Raffy Ching","Mark Deviente","Vi Quibingco","Paul Fabella","Jessa Lubiano"]},
-  ro_by:      {label:'RO by',                defaults:['Sir Rod','L2 Aries','L2 Efren','L2 Franz']}
+  ro_by:      {label:'RO by',                defaults:['Not Yet','Sir Rod','L2 Aries','L2 Efren','L2 Franz']}
 };
 var _dropdownData = {}; // loaded from Firestore
 var _dropdownColors = {}; // per-option custom badge colors, loaded from Firestore: {key:{optionValue:'#hex'}}
