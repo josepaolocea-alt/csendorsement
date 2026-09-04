@@ -6846,6 +6846,8 @@ function rrBadge(val,type){
   if(type==='roby'){
     var roHex=dropdownColor('ro_by',val);
     if(roHex) return '<span class="badge" style="'+customBadgeStyle(roHex)+'">'+escHtml(val)+'</span>';
+    // "Not Yet" means no RO assigned yet — red it, not the green assigned-RO badge
+    if(isRoByUnassigned(val)) return '<span class="badge rr-notyet">'+escHtml(val)+'</span>';
     return '<span class="badge rr-ro">'+val+'</span>';
   }
   if(val==='Critical') return '<span class="badge rr-notyet">⚡ Critical</span>';
