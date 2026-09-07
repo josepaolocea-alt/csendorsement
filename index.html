@@ -4940,6 +4940,16 @@ function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.default
 var AUTO_THIRTY_SECS=1800;
 var AUTO_THIRTY_LONG_SECS=7200;
 var AUTO_THIRTY_SHORT_CYCLES=4;
+/* Which statuses run the 30m x 4 -> 2h repeat sequence.
+   Every "Pending at ..." status qualifies, Vendor and Developer included. They
+   used to be excluded (via isPendingOnOurSideStatus, which is now left alone for
+   the "Pending (ours)" filter), and the side effect was that those rows just
+   repeated 30 minutes forever instead of easing off to a 2-hour ping.
+   "Advised Client" and the done statuses never reach here - they stop the timer
+   outright in recordStatusStopsTimer. */
+function isAutoThirtyStatus(status){
+  return String(status||'').trim().toLowerCase().indexOf('pending at ')===0;
+}
 function ordinaryAutoThirtyEligible(r){
   if(!r||r._type==='did'||r._type==='rr')return false;
   return ruleTimerSecs(r.client,r.service)===0;
@@ -4964,10 +4974,10 @@ function setAutoThirtyModeForDuration(r,secs){
   return enabled;
 }
 function autoThirtySequenceApplies(r){
-  return !!(r&&r.autoRestartTimer&&isPendingOnOurSideStatus(r.status)&&autoThirtyModeActive(r));
+  return !!(r&&r.autoRestartTimer&&isAutoThirtyStatus(r.status)&&autoThirtyModeActive(r));
 }
 function resetAutoThirtyCycle(r){
-  if(!r||!isPendingOnOurSideStatus(r.status)||!autoThirtyModeActive(r))return false;
+  if(!r||!isAutoThirtyStatus(r.status)||!autoThirtyModeActive(r))return false;
   r.timerOverride=AUTO_THIRTY_SECS;
   r.autoThirtyMode=true;
   r.autoThirtyCycleCount=0;
@@ -8204,8 +8214,8 @@ function saveRecord(){
           rec.timerOverride=null;
           setAutoThirtyModeForDuration(rec,0);
           timerUpdate={timerStart:null,timerAlerted:false,autoRestartedAt:null};
-        }else if(statusChanged&&isPendingOnOurSideStatus(newStatus)&&prevThirtyMode&&canUseAutoThirtyRule(rec)){
-          // A fresh on-our-side status starts the 30m x 4 sequence again.
+        }else if(statusChanged&&isAutoThirtyStatus(newStatus)&&prevThirtyMode&&canUseAutoThirtyRule(rec)){
+          // A fresh pending status starts the 30m x 4 sequence again.
           rec.timerOverride=AUTO_THIRTY_SECS;
           rec.autoThirtyMode=true;
           rec.autoThirtyCycleCount=0;
@@ -8893,7 +8903,7 @@ function buildRestoredArchiveRecord(source,newStatus){
   }else{
     restored.status=newStatus;
     restored.advisedClientAt=newStatus==='Advised Client'?Date.now():null;
-    if(restoreThirtyMode&&isPendingOnOurSideStatus(newStatus)){
+    if(restoreThirtyMode&&isAutoThirtyStatus(newStatus)){
       restored.timerOverride=AUTO_THIRTY_SECS;
       restored.timerStart=Date.now();
       restored.autoRestartTimer=restored.autoThirtyResume!==false;
@@ -9687,7 +9697,7 @@ function updateCommentsModalStatus(newStatus){
       r.autoRestartedAt=null;
       r.autoRestartTimer=false;
       if(hadThirtyMode){r.autoThirtyMode=true;r.autoThirtyCycleCount=0;r.autoThirtyResume=wasAutoRestart;}
-    }else if(hadThirtyMode&&isPendingOnOurSideStatus(newStatus)){
+    }else if(hadThirtyMode&&isAutoThirtyStatus(newStatus)){
       r.timerOverride=AUTO_THIRTY_SECS;
       r.timerStart=Date.now();
       r.timerAlerted=false;
@@ -9701,7 +9711,7 @@ function updateCommentsModalStatus(newStatus){
       r.timerAlerted=false;
       r.autoRestartedAt=null;
     }
-    if(hadThirtyMode&&!isPendingOnOurSideStatus(newStatus)){r.autoThirtyMode=true;r.autoThirtyCycleCount=0;}
+    if(hadThirtyMode&&!isAutoThirtyStatus(newStatus)){r.autoThirtyMode=true;r.autoThirtyCycleCount=0;}
   }
 
   r.updatedBy=_currentUser?_currentUser.email:'';
