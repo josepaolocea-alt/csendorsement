@@ -9406,7 +9406,11 @@ function markRead(recordId){
   var record=typeof findDataRecord==='function'?findDataRecord(recordId):null;
   var comments=record&&Array.isArray(record.comments)?record.comments:[];
   var latest=comments.length?comments[comments.length-1]:null;
-  var mark={v:2,at:Date.now(),count:comments.length,last:commentReadSignature(latest)};
+  // lastTs = the time on the newest comment that was read. Kept alongside the signature
+  // so that, if that comment is later deleted or edited, "newer than what I read" can
+  // still be answered by comparing comment times to each other instead of to this PC's
+  // clock (the two PCs are rarely in perfect sync).
+  var mark={v:2,at:Date.now(),count:comments.length,last:commentReadSignature(latest),lastTs:commentTimeValue(latest&&latest.ts)};
   rt[String(recordId)]=mark;
   _saveLocalReadMarks();
   _queueReadMarkSync(String(recordId),mark);   // → same account, every other browser
@@ -9424,9 +9428,25 @@ function getUnreadCount(r){
         if(commentReadSignature(r.comments[i])===marker.last){markerIndex=i;break;}
       }
     }
-    if(markerIndex>=0)candidates=r.comments.slice(markerIndex+1);
-    else if(Number.isFinite(Number(marker.count)))candidates=r.comments.slice(Math.max(0,Number(marker.count)));
-    else candidates=r.comments.filter(function(cm){return commentTimeValue(cm.ts)>Number(marker.at||0);});
+    if(markerIndex>=0){
+      candidates=r.comments.slice(markerIndex+1);   // exact: everything past the comment that was read last
+    }else{
+      /* The comment that was read last is no longer in the list (it was deleted, or its
+         text was edited), so its POSITION can't be trusted any more. Fall back to both
+         weaker signals and flag whatever either one catches: anything past the number of
+         comments that were read, PLUS anything posted after the moment they were read.
+         Counting alone used to lose a genuinely new comment whenever an older one had
+         been deleted in between — the list shrank back to the read count, so "everything
+         past the count" came out empty and the row showed no new-comment stripe. */
+      var readAt=Number(marker.at)||0;                 // when this account read the record
+      var readTs=Number(marker.lastTs)||0;             // time on the newest comment it read
+      var fromIndex=Number.isFinite(Number(marker.count))?Math.max(0,Number(marker.count)):r.comments.length;
+      candidates=r.comments.filter(function(cm,idx){
+        if(idx>=fromIndex)return true;
+        var when=commentTimeValue(cm.ts);
+        return (readTs&&when>readTs)||(readAt&&when>readAt);
+      });
+    }
   }else{
     var lastRead=Number(marker)||0;
     candidates=r.comments.filter(function(cm){return commentTimeValue(cm.ts)>lastRead;});
@@ -9435,6 +9455,38 @@ function getUnreadCount(r){
     return normalizeEmail(cm.user)!==myEmail;
   }).length;
 }
+/* Console helper for "there IS a new comment but the row shows no blue stripe".
+   Press F12 → Console and run:  commentDebug()   — or commentDebug('CS TEST') to look
+   at one client only. For every record that holds comments it prints how many comments
+   it has, how many this account still counts as unread, whether the row on screen is
+   actually wearing the stripe, and when this account last marked it read. */
+function commentDebug(filterText){
+  var q=String(filterText||'').toLowerCase();
+  var rows=DATA.filter(function(r){
+    if(!r.comments||!r.comments.length)return false;
+    if(!q)return true;
+    return [r.client,r.concern,r.desc,r.rrSubject].join(' ').toLowerCase().indexOf(q)>-1;
+  }).map(function(r){
+    var el=document.getElementById('row-'+r.id);
+    var mark=getReadTimes()[String(r.id)];
+    var last=r.comments[r.comments.length-1]||{};
+    return {
+      id:r.id,
+      name:r.client||r.rrSubject||r.desc||'',
+      comments:r.comments.length,
+      lastCommentBy:last.user||'',
+      lastCommentAt:commentTimeValue(last.ts)?new Date(commentTimeValue(last.ts)).toLocaleString():'',
+      unreadForMe:getUnreadCount(r),
+      stripeOnRow:el?el.classList.contains('has-new-comment'):'(row not rendered)',
+      markedReadAt:mark?new Date(_readMarkStamp(mark)).toLocaleString():'never',
+      markedReadCount:(mark&&typeof mark==='object'&&mark.count!==undefined)?mark.count:'—'
+    };
+  });
+  console.log('Signed in as:',(_currentUser&&_currentUser.email)||'(nobody)');
+  if(console.table)console.table(rows);else console.log(rows);
+  return rows.length+' record(s) with comments';
+}
+window.commentDebug=commentDebug;
 
 function fmtCommentTime(ts){
   var d=new Date(ts);
