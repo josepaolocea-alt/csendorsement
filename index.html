@@ -357,10 +357,17 @@ tr.fx-shimmer>td{background:var(--fx-soft,rgba(244,63,94,.08))!important;}
 .timer-cell{display:flex;align-items:center;gap:5px;min-width:max-content;}
 tr.pinned-row>td{background:rgba(251,191,36,.07);}
 tr.pinned-row>td:first-child{box-shadow:inset 3px 0 0 #fbbf24;}
-/* Comments live inside the entry popup. A slim accent at the far right marks
-   only rows with new comments from another user and clears after they are read. */
+/* Comments live inside the entry popup. A slim accent marks only rows carrying a new
+   comment from another user, and clears once they are read. It is drawn at BOTH ends of
+   the row: the All Tasks table is 1441px wide, so the moment the window is even slightly
+   narrower than that the right-hand stripe sits past the edge of the scrolling area and
+   can only be seen by dragging the table sideways. The left-hand marker is the one that
+   is always in view at the normal scroll position. */
 tr.has-new-comment>td:last-child{position:relative;}
 tr.has-new-comment>td:last-child::after{content:"";position:absolute;top:0;right:0;bottom:0;width:4px;background:var(--accent);}
+tr.has-new-comment>td:first-child{box-shadow:inset 4px 0 0 var(--accent);}
+/* Pinned AND unread: keep the amber pin marker, and sit the blue one just inside it. */
+tr.pinned-row.has-new-comment>td:first-child{box-shadow:inset 3px 0 0 #fbbf24,inset 7px 0 0 var(--accent);}
 .tbadge{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg4);color:var(--text2);min-width:70px;text-align:center;white-space:nowrap;}
 .tbadge .timer-phase{display:none;font-weight:700;}
 .tbadge.has-phase:hover .timer-value{display:none;}
