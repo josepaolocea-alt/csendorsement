@@ -7376,7 +7376,7 @@ function openEditRR(id){
   _pendingAttachments['rr-attach-pending']=[];
   renderPendingPreviews('rr-attach-pending');
   renderRRModalComments(r.comments||[]);
-  markRead(id);renderRRRows();
+  markRead(id,'opened the RR entry');renderRRRows();
   setModalMeta('rr-modal',r);
   openEntryOverlay('rr-modal');
 }
@@ -7819,7 +7819,7 @@ function openEditDID(id){
   renderPendingPreviews('did-attach-pending');
   renderDIDModalComments(r.comments||[]);
   setModalMeta('did-modal',r);
-  markRead(id);renderDIDRows();
+  markRead(id,'opened the DID entry');renderDIDRows();
   openEntryOverlay('did-modal');
 }
 
@@ -7937,7 +7937,7 @@ function addDIDComment(){
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
       recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
-      markRead(r.id);
+      markRead(r.id,'posted your own comment');
       resetCommentBox('d-comment-text');
       renderDIDModalComments(r.comments);
       renderDIDRows();
@@ -8252,7 +8252,7 @@ function openEdit(id){
   renderPendingPreviews('endorse-attach-pending');
   renderModalComments(r.comments||[]);
   setModalMeta('modal',r);
-  markRead(r.id);renderRows();
+  markRead(r.id,'opened the entry');renderRows();
   openEntryOverlay('record-modal');
 }
 function closeModal(){if(_skipModalClose)return;clearEntryRequired('record-modal');closeEntryOverlay('record-modal');editingId=null;_endorsementTimerDirty=false;_pendingComments=[];}
@@ -9401,7 +9401,12 @@ function commentReadSignature(cm){
   for(var i=0;i<source.length;i++){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619);}
   return commentTimeValue(cm.ts)+'|'+normalizeEmail(cm.user)+'|'+(hash>>>0).toString(36);
 }
-function markRead(recordId){
+/* `by` names the action that cleared the stripe — five different things mark a record
+   read (opening the entry, opening the Comments box, holding the row down, swiping the
+   row right, posting your own comment) and when a stripe disappears unexpectedly the
+   first question is always WHICH of them did it. It is stored with the marker and shown
+   by commentDebug(). */
+function markRead(recordId,by){
   var rt=getReadTimes();
   var record=typeof findDataRecord==='function'?findDataRecord(recordId):null;
   var comments=record&&Array.isArray(record.comments)?record.comments:[];
@@ -9410,7 +9415,7 @@ function markRead(recordId){
   // so that, if that comment is later deleted or edited, "newer than what I read" can
   // still be answered by comparing comment times to each other instead of to this PC's
   // clock (the two PCs are rarely in perfect sync).
-  var mark={v:2,at:Date.now(),count:comments.length,last:commentReadSignature(latest),lastTs:commentTimeValue(latest&&latest.ts)};
+  var mark={v:2,at:Date.now(),count:comments.length,last:commentReadSignature(latest),lastTs:commentTimeValue(latest&&latest.ts),by:String(by||'unknown')};
   rt[String(recordId)]=mark;
   _saveLocalReadMarks();
   _queueReadMarkSync(String(recordId),mark);   // → same account, every other browser
@@ -9479,7 +9484,8 @@ function commentDebug(filterText){
       unreadForMe:getUnreadCount(r),
       stripeOnRow:el?el.classList.contains('has-new-comment'):'(row not rendered)',
       markedReadAt:mark?new Date(_readMarkStamp(mark)).toLocaleString():'never',
-      markedReadCount:(mark&&typeof mark==='object'&&mark.count!==undefined)?mark.count:'—'
+      markedReadCount:(mark&&typeof mark==='object'&&mark.count!==undefined)?mark.count:'—',
+      markedReadBecauseYou:(mark&&typeof mark==='object'&&mark.by)?mark.by:'— (marked before this was tracked)'
     };
   });
   console.log('Signed in as:',(_currentUser&&_currentUser.email)||'(nobody)');
@@ -9710,7 +9716,7 @@ function addRRComment(){
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
       recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
-      markRead(r.id);
+      markRead(r.id,'posted your own comment');
       resetCommentBox('rr-comment-text');
       renderRRModalComments(r.comments);
       renderRRRows();
@@ -9789,7 +9795,7 @@ function addComment(){
       r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
       recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
       saveOne(r);
-      markRead(r.id);
+      markRead(r.id,'posted your own comment');
       resetCommentBox('f-comment-text');
       renderModalComments(r.comments);
       renderRows();
@@ -9884,7 +9890,9 @@ function updateCommentsModalStatus(newStatus){
   toast('Status updated to '+newStatus,'success');
 }
 
-function openCommentsModal(id){
+// `via` only labels what cleared the unread stripe (see markRead) — the 💬 button leaves
+// it empty, the press-and-hold gesture says so.
+function openCommentsModal(id,via){
   _commentModalId=id;
   var r=DATA.find(function(d){return d.id===id;});if(!r)return;
   configureCommentsModalEntry(r);
@@ -9892,7 +9900,7 @@ function openCommentsModal(id){
   _pendingAttachments['cm-attach-pending']=[];
   renderPendingPreviews('cm-attach-pending');
   renderCmModalComments(r.comments||[]);
-  markRead(id);
+  markRead(id,via||'opened the Comments box');
   // Clear the badge on the specific row immediately (works for all roles)
   var rowBtn=document.querySelector('#row-'+id+' button[onclick*="openCommentsModal"]');
   if(rowBtn){
@@ -9924,7 +9932,7 @@ function addCommentFromModal(){
   r.comments.push({ts:Date.now(),text:text,attachments:attachments,user:(_currentUser?_currentUser.email:'Unknown')});
   recordAnalyticsEvent('comment',r.comments[r.comments.length-1].user,r.comments[r.comments.length-1].ts);
   saveOne(r);
-  markRead(r.id);
+  markRead(r.id,'posted your own comment');
   resetCommentBox('cm-comment-text');
   renderCmModalComments(r.comments);
   scrollCmListTop();
@@ -13495,7 +13503,7 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
     _rowSwipeSuppressUntil=Date.now()+800;
     openRow=null;
     if(record&&hasUnread(record)){
-      markRead(record.id);
+      markRead(record.id,'swiped the row right');
       /* Clear the unread stripe on every rendered copy of this record, not just the
          element the finger happened to be holding — that one may already have been
          replaced by a re-render, which used to leave the marker sitting there and
@@ -13690,7 +13698,7 @@ _mainTable.addEventListener(window.PointerEvent?'pointerup':'mouseup',function(e
       _rowSwipeSuppressUntil=Date.now()+800;
       // clear any single-cell highlight the drag-select handler left on this press
       try{ document.querySelectorAll('.cell-sel').forEach(function(c){c.classList.remove('cell-sel');}); _selCells.clear(); _dragging = false; }catch(_){}
-      if(typeof openCommentsModal === 'function') openCommentsModal(id);
+      if(typeof openCommentsModal === 'function') openCommentsModal(id,'held the row down (long-press)');
     }, HOLD_MS);
   });
 
