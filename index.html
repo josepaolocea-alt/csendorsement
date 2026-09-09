@@ -2389,7 +2389,7 @@ try{
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
       <span class="admin-ctitle" style="font-size:13px">Dashboard</span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-        <select class="fsel" id="dash-period" onchange="renderDashboard()">
+        <select class="fsel" id="dash-period" onchange="dashPeriodChanged()">
           <option value="today">Today</option>
           <option value="7">Last 7 Days</option>
           <option value="30" selected>Last 30 Days</option>
@@ -4594,8 +4594,9 @@ function _doSwitchTab(tab,el){
   // Reuse the dashboard snapshot to keep Firebase reads down, but not forever: a
   // teammate's entries only reach this device on a fresh read, so a tab left open
   // all day used to show nothing but the Admin's own actions. Re-reads once the
-  // snapshot is older than DASH_STALE_MS; flicking between tabs still reuses it.
-  if(isDash){loadDashboard(_dashLoaded&&(Date.now()-_dashLoadedAt)>DASH_STALE_MS);return;}
+  // snapshot is older than DASH_STALE_MS (or the day has rolled over, which would
+  // make "Today" read 0); flicking between tabs still reuses it.
+  if(isDash){loadDashboard(_dashLoaded&&dashSnapshotStale());return;}
   if(isCal){renderCalendar();return;}
   if(isNote){renderNotepad();return;}
   DATA.forEach(function(r){r._sel=false;});
@@ -5285,6 +5286,10 @@ document.addEventListener('visibilitychange',function(){
   if(_audioCtx&&_audioCtx.state==='suspended')_audioCtx.resume().catch(function(){});
   try{checkTimerExpiries();}catch(e){}
   try{checkRRRoMissingNotifs();}catch(e){}
+  // Parked on the Dashboard while the browser tab sat in the background (often
+  // overnight): its figures are a point-in-time read, so re-read on the way back
+  // instead of leaving "New Entries — Today" showing yesterday's zeros.
+  try{if(currentTab==='dashboard'&&_dashLoaded&&dashSnapshotStale())loadDashboard(true);}catch(e){}
 });
 
 function testAlert(){playAlert(SETTINGS.alarmTone||'beep');toast('Timer alarm sound test!','info');}
@@ -5975,6 +5980,9 @@ setInterval(function(){
     maybeAlertReminder(r);
   });
   try{checkTaskAlertCenter();}catch(e){}
+  // Keeps the "Updated …" stamp honest on a Dashboard nobody has touched — it turns
+  // amber (and gains the date) the moment the snapshot stops being current.
+  try{if(currentTab==='dashboard')renderDashUpdatedLabel();}catch(e){}
   try{checkMonthlyEngagementClear();}catch(e){}
   try{checkCalendarEvents();}catch(e){}
   try{updateCalBadge();}catch(e){}
@@ -12246,12 +12254,29 @@ var _dashTrash=[];   // trash records (so deleted entries still count toward eng
 
 // Everything on the Dashboard is a point-in-time read, and only THIS device's own
 // actions are mirrored into it live — so say out loud how old the numbers are.
+// The snapshot is stale once it is older than DASH_STALE_MS, and ALWAYS once the
+// day has rolled over — "Today" cannot be answered from figures read yesterday.
+function dashSnapshotStale(){
+  if(!_dashLoadedAt) return true;
+  var midnight=new Date();midnight.setHours(0,0,0,0);
+  return (Date.now()-_dashLoadedAt)>DASH_STALE_MS||_dashLoadedAt<midnight.getTime();
+}
+
 function renderDashUpdatedLabel(){
   var el=document.getElementById('dash-updated');
   if(!el)return;
-  el.textContent=_dashLoadedAt
-    ?'Updated '+new Date(_dashLoadedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
-    :'';
+  if(!_dashLoadedAt){el.textContent='';el.style.color='';el.title='';return;}
+  var d=new Date(_dashLoadedAt),now=new Date();
+  var sameDay=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+  var time=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  var dateStr=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  // A tab left open overnight used to keep showing a bare "Updated 10:24 AM" while
+  // the figures were a day old, so "Today" read 0. Spell out the date, and go amber,
+  // as soon as the snapshot stops being current.
+  el.textContent='Updated '+(sameDay?time:dateStr+', '+time);
+  var stale=(Date.now()-_dashLoadedAt)>DASH_STALE_MS||!sameDay;
+  el.style.color=stale?'#f59e0b':'';
+  el.title=stale?'These figures were read '+(sameDay?'at '+time:'on '+dateStr+' at '+time)+'. Click ↻ Refresh for the latest.':'';
 }
 
 async function loadAnalyticsSummaries(){
@@ -12318,6 +12343,15 @@ function dashPeriodStart(){
   now.setHours(0,0,0,0);
   now.setDate(now.getDate()-Math.max(0,(parseInt(v,10)||1)-1));
   return now.getTime();
+}
+
+// Picking a period only re-slices the snapshot already in memory, so switching to
+// "Today" on a tab that had been sitting open showed zeros while the table beside it
+// (which IS live) already had today's entries. Re-read first when the snapshot is
+// stale, then render.
+function dashPeriodChanged(){
+  if(_dashLoaded&&dashSnapshotStale()){loadDashboard(true);return;}
+  renderDashboard();
 }
 
 function dashRelTime(ts){
@@ -12878,6 +12912,7 @@ function applyRemoteNote(data){
 // ─── EXPOSE ALL FUNCTIONS TO GLOBAL SCOPE (required for type=module) ───
 window.loadDashboard=loadDashboard;
 window.renderDashboard=renderDashboard;
+window.dashPeriodChanged=dashPeriodChanged;
 window.addClientName=addClientName;
 window.filterClientGrid=filterClientGrid;
 window.clearClientSearch=clearClientSearch;
