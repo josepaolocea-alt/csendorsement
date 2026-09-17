@@ -12583,13 +12583,38 @@ function dashPeriodStart(){
   return now.getTime();
 }
 
-// Picking a period only re-slices the snapshot already in memory, so switching to
-// "Today" on a tab that had been sitting open showed zeros while the table beside it
-// (which IS live) already had today's entries. Re-read first when the snapshot is
-// stale, then render.
-function dashPeriodChanged(){
-  if(_dashLoaded&&dashSnapshotStale()){loadDashboard(true);return;}
-  renderDashboard();
+// Picking a period is a question ("what happened today?"), so it must be answered
+// with today's figures — not by re-slicing whatever this tab downloaded earlier.
+// The counters behind cards 6-8 live in Firestore, so changing the period always
+// goes back for them. Only the counters are re-read: the users list and the trash
+// don't change with the period, so this costs a fraction of a full Refresh.
+var _dashPeriodBusy=false;
+function setDashUpdating(on){
+  var el=document.getElementById('dash-updated');
+  if(!el)return;
+  if(!on){renderDashUpdatedLabel();return;}
+  el.textContent='Updating…';el.style.color='';el.title='';
+}
+async function dashPeriodChanged(){
+  if(!_dashLoaded){renderDashboard();return;}
+  // Snapshot past its shelf life (or read yesterday): everything goes, not just the counters.
+  if(dashSnapshotStale()){loadDashboard(true);return;}
+  // Without the counters the Dashboard is running off the Activity Logs it already
+  // holds; re-reading those is thousands of documents, so leave that to ↻ Refresh.
+  if(!_analyticsReady||_dashPeriodBusy){renderDashboard();return;}
+  _dashPeriodBusy=true;
+  setDashUpdating(true);
+  try{
+    await loadAnalyticsSummaries();
+    _dashLoadedAt=Date.now();
+  }catch(e){
+    console.error('Period re-read failed:',e);
+    toast('Could not refresh the figures — showing the last ones read','error');
+  }finally{
+    _dashPeriodBusy=false;
+    setDashUpdating(false);
+    renderDashboard();
+  }
 }
 
 function dashRelTime(ts){
@@ -12650,6 +12675,57 @@ function dashAnalyticsForPeriod(startTs){
   });
   return out;
 }
+
+// Console helper (run dashDebug() with the Dashboard open) for "Today shows 0 but
+// there ARE entries". The cards 6-8 read a counter document, not the task list, so
+// this prints the counter this tab is holding, the counter the SERVER holds right
+// now, and what today's Activity Logs say — which tells a stale tab apart from
+// counters that were never written or were cleared.
+async function dashDebug(){
+  var day=analyticsDayParts(Date.now());
+  var sel=document.getElementById('dash-period');
+  var out={
+    now:new Date().toLocaleString(),
+    period:sel?sel.value:'(dashboard not open)',
+    todayKey:day.key,
+    analyticsReady:_analyticsReady,
+    snapshotReadAt:_dashLoadedAt?new Date(_dashLoadedAt).toLocaleString():'never',
+    snapshotStale:dashSnapshotStale()
+  };
+  function totalsOf(d){
+    d=d||{};var t=d.totals||{};
+    return {created:analyticsNum(t.created),comments:analyticsNum(t.comments),activity:analyticsNum(t.activity),
+      people:Object.keys(d.users||{}).length,dayStart:analyticsNum(d.dayStart)?new Date(d.dayStart).toLocaleString():'MISSING — this doc is skipped by every period except All Time'};
+  }
+  var mem=_dashAnalyticsDays.find(function(d){return d.date===day.key;});
+  out.inThisTab=mem?totalsOf(mem):'no counter for today in this tab (its snapshot predates today, or the doc was skipped)';
+  try{
+    var snap=await getDoc(doc(db,ANALYTICS_DAILY_COLL,day.key));
+    out.onServerNow=snap.exists()?totalsOf(snap.data()):'no analytics_daily/'+day.key+' document exists — nothing has been counted today';
+  }catch(e){out.onServerNow='read failed: '+(e.code||e.message)+' (check the analytics_daily rule is deployed)';}
+  try{
+    var lsnap=await getDocs(query(collection(db,'logs'),where('ts','>=',day.start)));
+    var created=0,comments=0,people={};
+    lsnap.forEach(function(d){
+      var l=d.data();
+      if(l.action==='created')created++;
+      if(l.action==='comment')comments++;
+      if(l.action!=='login')people[normalizeEmail(l.user)]=1;
+    });
+    out.logsSayToday={created:created,peopleActive:Object.keys(people).length};
+  }catch(e){out.logsSayToday='read failed: '+(e.code||e.message);}
+  out.verdict=(typeof out.onServerNow==='string')
+    ? 'The counter for today is missing on the server — activity is not being counted (see onServerNow).'
+    : (out.onServerNow.created||out.onServerNow.comments||out.onServerNow.activity)
+      ? (out.snapshotStale||typeof out.inThisTab==='string'||out.inThisTab.created!==out.onServerNow.created
+        ? 'The server HAS today\'s counts — this tab is showing an older read. Click ↻ Refresh.'
+        : 'This tab matches the server. The cards should not be zero — send this whole output.')
+      : 'The server counter for today is empty. Entries exist but were not counted: either the counters were cleared today, or the devices that made those entries are running an older cached copy of the app.';
+  console.log('%c── Dashboard "Today" check ──','font-weight:bold;color:#7c9cff');
+  console.log(out);
+  return out;
+}
+window.dashDebug=dashDebug;
 
 // The Admin is counted on the Dashboard exactly like everyone else — every card,
 // the chart and the engagement table all include them. The ONE exception is the
