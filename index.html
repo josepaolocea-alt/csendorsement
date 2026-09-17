@@ -3543,6 +3543,10 @@ var _donePage=0, _donePageSize=10;
 var _rrPage=0, _rrPageSize=50;
 var _doneRRPage=0, _doneRRPageSize=10;
 var _undoState=null, _undoTimeout=null;
+// Records whose "move to Trash" write is still in flight, keyed by id -> {rec,p}.
+// The Trash tab renders these optimistically, so a just-deleted entry shows up
+// without waiting for the round trip (or for a page refresh).
+var _trashPending={};
 var _pendingRRComments=[];
 
 // ─── REQUIRED ENTRY FIELDS ──────────────────────────────────
@@ -3852,8 +3856,17 @@ async function saveOne(r){
   }
 }
 
+// Resolves once an in-flight "move to Trash" for this id has landed. A Restore
+// or Delete Forever tapped seconds after the delete must queue behind it, or it
+// races the write that is still creating (and un-creating) those docs.
+function whenTrashWritten(id){
+  var pend=_trashPending[String(id)];
+  return pend&&pend.p?pend.p.catch(function(){}):Promise.resolve();
+}
+
 async function deleteTrashOne(id){
   try{
+    await whenTrashWritten(id);
     await deleteDoc(doc(db, TRASH_COLL, String(id)));
   }catch(e){
     console.error('Trash delete error',e);
@@ -7160,6 +7173,7 @@ var TRASH_THEAD='<tr>'
 
 // Fetch trashed records from the separate trash collection (only when Trash tab opens)
 async function loadTrash(){
+  flushPendingDelete(); // opening Trash ends the undo window: commit the move now
   setMainTableLayout('trash');
   var tbody=document.getElementById('main-tbody');
   document.getElementById('main-thead').innerHTML=TRASH_THEAD;
@@ -7170,6 +7184,12 @@ async function loadTrash(){
     var snap=await getDocs(collection(db,TRASH_COLL));
     TRASH_DATA=[];
     snap.forEach(function(d){var x=d.data();x._sel=false;TRASH_DATA.push(x);});
+    // A move still in flight isn't in that snapshot yet — keep showing it, or
+    // the entry would blink out of the list a moment after it appeared.
+    Object.keys(_trashPending).forEach(function(k){
+      if(TRASH_DATA.some(function(d){return String(d.id)===k;}))return;
+      var x=Object.assign({},_trashPending[k].rec);x._sel=false;TRASH_DATA.push(x);
+    });
     purgeOldTrash(); // auto-remove entries older than 30 days
     if(currentTab==='trash'){applyTrashFilters();updateBulkBar();}
   }catch(e){
@@ -7231,7 +7251,8 @@ function restoreRec(id){
   var r=TRASH_DATA.find(function(d){return d.id===id;});
   if(!r)return;
   var rec=Object.assign({},r);delete rec.deletedAt;delete rec._sel;
-  setDoc(doc(db,COLL,String(id)),rec)
+  whenTrashWritten(id)
+    .then(function(){return setDoc(doc(db,COLL,String(id)),rec);})
     .then(function(){return deleteDoc(doc(db,TRASH_COLL,String(id)));})
     .catch(function(e){console.error('Restore error',e);toast('Restore failed','error');});
   try{writeLog('updated',r.client||r.rrSubject||r.desc||'record','Restored from Trash');}catch(e){}
@@ -7260,7 +7281,8 @@ function restoreSelected(){
   if(!sel.length){toast('No trashed entries selected','info');return;}
   sel.forEach(function(r){
     var rec=Object.assign({},r);delete rec.deletedAt;delete rec._sel;
-    setDoc(doc(db,COLL,String(r.id)),rec)
+    whenTrashWritten(r.id)
+      .then(function(){return setDoc(doc(db,COLL,String(r.id)),rec);})
       .then(function(){return deleteDoc(doc(db,TRASH_COLL,String(r.id)));})
       .catch(function(e){console.error('Restore error',e);});
   });
@@ -8128,13 +8150,38 @@ function commitPendingDelete(){
     rec.deletedAt=Date.now();
     rec.timerStart=null;
     delete rec._sel;
+    var key=String(r.id);
+    // Put it in the Trash list right away — the write below only confirms it.
+    // Without this the entry is invisible until the next Trash read finishes.
+    if(!TRASH_DATA.some(function(d){return String(d.id)===key;})){
+      var row=Object.assign({},rec);row._sel=false;TRASH_DATA.push(row);
+    }
     // Write to the trash collection first, then remove from the live collection
-    setDoc(doc(db,TRASH_COLL,String(r.id)),rec)
-      .then(function(){return deleteDoc(doc(db,COLL,String(r.id)));})
-      .catch(function(e){console.error('Trash move error',e);toast('Failed to move a record to Trash','error');});
+    var p=setDoc(doc(db,TRASH_COLL,key),rec)
+      .then(function(){return deleteDoc(doc(db,COLL,key));})
+      .then(function(){delete _trashPending[key];})
+      .catch(function(e){
+        console.error('Trash move error',e);
+        toast('Failed to move a record to Trash','error');
+        delete _trashPending[key];
+        TRASH_DATA=TRASH_DATA.filter(function(d){return String(d.id)!==key;});
+        if(currentTab==='trash'){applyTrashFilters();updateBulkBar();}
+      });
+    _trashPending[key]={rec:rec,p:p};
     try{writeLog('deleted',r.client||r.rrSubject||r.desc||'record','Moved to Trash');}catch(e){}
   });
   _undoState=null;
+  if(currentTab==='trash'){applyTrashFilters();updateBulkBar();}
+}
+
+// The 5-second undo window keeps a deleted record out of Firestore until it
+// expires. Anything that needs Trash to be truthful (opening the tab) commits
+// the move now instead of waiting the rest of that window out.
+function flushPendingDelete(){
+  if(!_undoState) return;
+  clearTimeout(_undoTimeout);
+  var t=document.getElementById('undo-toast');if(t)dismissToast(t);
+  commitPendingDelete();
 }
 
 function undoDelete(){
