@@ -9786,6 +9786,29 @@ function addRRComment(){
 
 function onSvcChange(){
   applyPaymentTimerRule();
+  applyPaymentStatusRule();
+}
+
+// Payment concerns are worked by Accounting, so picking that service parks the
+// entry there instead of leaving it on whichever desk was selected. Only a
+// blank or another "Pending at ..." status is switched — a finished status
+// (Done, Resolved, Advised Client ...) is left alone, and the status stays
+// editable afterwards, so this is a head start, not a lock.
+var PAYMENT_STATUS='Pending at Accounting';
+function applyPaymentStatusRule(){
+  var svcEl=document.getElementById('f-svc-f');
+  var stEl=document.getElementById('f-st-f');
+  if(!svcEl||!stEl)return;
+  if(String(svcEl.value||'').trim().toLowerCase()!=='payment')return;
+  var cur=stEl.value||'';
+  if(cur===PAYMENT_STATUS)return;
+  if(cur&&cur.indexOf('Pending at ')!==0)return;
+  // Admins can rename the status list from Settings — don't invent an option.
+  if(!Array.prototype.some.call(stEl.options,function(o){return o.value===PAYMENT_STATUS;}))return;
+  stEl.value=PAYMENT_STATUS;
+  clearRequiredField(stEl);
+  onEndorsementStatusChange(); // keep the repeat-timer toggle in step
+  toast('Payment service — status set to '+PAYMENT_STATUS,'info');
 }
 
 // Settings > Payment / Client timer:
