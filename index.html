@@ -1516,6 +1516,10 @@ body.density-compact table th,body.density-compact .admin-table th,body.density-
 table tbody tr:nth-child(even)>td,.admin-table tr:nth-child(even)>td,.log-table tr:nth-child(even)>td{background:color-mix(in srgb,var(--bg3) 56%,transparent);}
 table tbody tr:hover>td,.admin-table tr:hover>td,.log-table tr:hover>td{background:var(--bg3);}
 table tbody tr:hover>td:first-child{box-shadow:none;}
+/* ...but the unread-comment marker is data, not decoration: hovering a row must never
+   hide it. Re-assert the stripe (and the pinned+unread pair) above the hover reset. */
+table tbody tr.has-new-comment:hover>td:first-child{box-shadow:inset 4px 0 0 var(--accent);}
+table tbody tr.pinned-row.has-new-comment:hover>td:first-child{box-shadow:inset 3px 0 0 #fbbf24,inset 7px 0 0 var(--accent);}
 .col-rz{width:8px;background:transparent;}
 
 .admin-section,.cal-wrap,.note-wrap,.timer-center-box{
@@ -2484,9 +2488,9 @@ try{
       <span class="admin-ctitle" style="font-size:13px">Dashboard</span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <select class="fsel" id="dash-period" onchange="dashPeriodChanged()">
-          <option value="today">Today</option>
+          <option value="today" selected>Today</option>
           <option value="7">Last 7 Days</option>
-          <option value="30" selected>Last 30 Days</option>
+          <option value="30">Last 30 Days</option>
           <option value="month">This Month</option>
           <option value="all">All Time</option>
         </select>
@@ -12573,7 +12577,7 @@ async function loadDashboard(force){
 
 function dashPeriodStart(){
   var sel=document.getElementById('dash-period');
-  var v=sel?sel.value:'30';
+  var v=sel?sel.value:'today';   // matches the <option selected> default in the picker
   var now=new Date();
   if(v==='all') return 0;
   if(v==='today') return new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
