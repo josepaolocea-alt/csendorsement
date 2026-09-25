@@ -1489,7 +1489,19 @@ textarea.fc,.note-area{border:0;border-radius:var(--radius-control);background:v
 textarea.fc:focus,.note-area:focus{border:0;background:var(--bg2);box-shadow:var(--neo-pressed-deep),0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);}
 .premium-select-menu,.premium-calendar,.premium-time-menu{border:0;border-radius:18px;background:var(--bg2);box-shadow:var(--shadow-elevated);backdrop-filter:none;-webkit-backdrop-filter:none;}
 .premium-select-option{margin:4px 3px;border-radius:11px;}
-.premium-select-option:hover,.premium-select-option.is-active{background:var(--bg2);box-shadow:var(--neo-pressed);}
+/* Hovered / keyboard-focused option gets a real accent tint so the row under the
+   pointer reads as highlighted, not just gently recessed. */
+.premium-select-option:not(:disabled):hover,
+.premium-select-option:not(:disabled):focus,
+.premium-select-option:not(:disabled):focus-visible,
+.premium-select-option.is-active{
+  background:color-mix(in srgb,var(--accent) 17%,var(--bg2));
+  color:var(--text);
+  box-shadow:inset 3px 0 0 var(--accent),var(--neo-pressed);
+  outline:none;
+}
+.premium-select-option:not(:disabled):hover.is-selected,
+.premium-select-option:not(:disabled):focus.is-selected{background:color-mix(in srgb,var(--accent) 26%,var(--bg2));}
 .premium-calendar-day,.premium-calendar-month{border:0;}
 .premium-calendar-day:hover,.premium-calendar-month:hover{border:0;background:var(--bg2);box-shadow:var(--neo-pressed);}
 .premium-calendar-footer,.premium-calendar-time{border:0;}
