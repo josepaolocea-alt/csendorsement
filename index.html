@@ -626,7 +626,8 @@ body.entry-style-split .topbar,body.entry-style-split .main{transition:width .25
   body.entry-style-split .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
 }
 /* Entry exit animations. The overlay remains mounted until the modal animation
-   finishes, so Escape, X, Cancel, Save, and backdrop clicks all close smoothly. */
+   finishes, so Escape, X, Cancel and Save all close smoothly. (A backdrop click is
+   deliberately NOT a way out of an entry popup — see initEntryOverlays.) */
 .entry-ov.is-closing{animation:entryOverlayOut .22s ease forwards;pointer-events:none;}
 .entry-ov.is-closing .entry-modal{animation:entryModalOut .18s cubic-bezier(.4,0,1,1) forwards;}
 body.entry-style-panel .entry-ov.is-closing .entry-modal{animation:entryDrawerOut .24s cubic-bezier(.55,.05,.9,.45) forwards;}
@@ -1593,6 +1594,11 @@ table tbody tr.pinned-row.has-new-comment:hover>td:first-child{box-shadow:inset 
   border:0;border-radius:var(--radius-panel);background:var(--bg2);box-shadow:var(--shadow-elevated);overflow:hidden;
 }
 .modal-hdr,.modal-ftr{border:0;padding:18px 22px;background:transparent;}
+/* .timer-center-box inherits the raised-panel padding it shares with .admin-section, so its
+   header sits INSIDE the panel's rounded corners rather than being clipped by them. Every other
+   modal header is transparent, but this one carries its own red tint — so with no radius of its
+   own it rendered as a sharp-cornered bar floating in a rounded panel. Round it to match. */
+.timer-center-box>.modal-hdr{border-radius:12px;}
 .modal-body{padding:20px 22px 24px;}
 .modal-cls{border:0;border-radius:10px;background:var(--bg2);box-shadow:var(--neo-raised-sm);}
 .modal-cls:hover{background:var(--bg2);color:#d94d5d;box-shadow:var(--neo-pressed);}
@@ -4413,23 +4419,19 @@ function closeEntryOverlay(id){
   if(modal)modal.addEventListener('animationend',onAnimationEnd);
   timer=setTimeout(finish,360);
 }
-function initEntryBackdropClose(){
-  [
-    {id:'record-modal',close:closeModal},
-    {id:'rr-modal',close:closeRRModal},
-    {id:'did-modal',close:closeDIDModal}
-  ].forEach(function(item){
-    var overlay=document.getElementById(item.id);
-    if(!overlay||overlay._backdropCloseBound)return;
-    overlay._backdropCloseBound=true;
-    overlay.addEventListener('click',function(e){
-      if(e.target===overlay)item.close();
-    });
+// The three entry popups deliberately do NOT close on a backdrop click. A stray click beside
+// a half-typed entry used to discard the whole form, so closing is now an explicit act: the ✕,
+// Cancel, or Esc. This only watches each overlay so the split-view layout stays in sync.
+function initEntryOverlays(){
+  ['record-modal','rr-modal','did-modal'].forEach(function(id){
+    var overlay=document.getElementById(id);
+    if(!overlay||overlay._entryOverlayBound)return;
+    overlay._entryOverlayBound=true;
     new MutationObserver(syncEntrySplitOpen).observe(overlay,{attributes:true,attributeFilter:['class']});
   });
   syncEntrySplitOpen();
 }
-initEntryBackdropClose();
+initEntryOverlays();
 
 // ─── COLLAPSIBLE SETTINGS SECTIONS ───────────────────────────
 // Make each Settings section header toggle its content (default expanded; state per-section in localStorage).
