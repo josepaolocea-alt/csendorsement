@@ -516,6 +516,15 @@ tr.pinned-row.has-new-comment>td:first-child{box-shadow:inset 3px 0 0 #fbbf24,in
 .timer-center-item-detail{font-size:11.5px;color:var(--text3);margin-top:3px;overflow-wrap:anywhere;}
 .timer-center-item-age{font-size:10.5px;color:#f87171;margin-top:5px;font-weight:600;}
 .timer-center-item.is-snoozed .timer-center-item-age{color:var(--accent);}
+/* Colour-coded Task Alert rows (.is-fx): an SLA escalation is tinted with its own level colour,
+   a DID Order/Cancel or Pending RR/RO alert with its tab colour — always the same --fx-* vars
+   used elsewhere, plus a thick left bar and a labelled chip. An All Tasks timer/reminder alert
+   stays deliberately plain, so a coloured row always means "not the ordinary case". */
+.timer-center-item.is-fx{border-color:var(--fx-border,rgba(250,204,21,.32));border-left:4px solid var(--fx-color,#facc15);background-color:var(--bg3);background-image:linear-gradient(0deg,var(--fx-badge,rgba(250,204,21,.16)),var(--fx-badge,rgba(250,204,21,.16)));}
+.timer-center-item.is-fx .timer-center-item-age{color:var(--fx-color,#facc15);}
+.timer-center-item.is-fx.is-snoozed .timer-center-item-age{color:var(--accent);}
+.alert-chip{display:inline-flex;align-items:center;margin-right:6px;padding:1px 6px;border-radius:6px;background:var(--fx-badge,rgba(250,204,21,.16));color:var(--fx-color,#facc15);border:1px solid var(--fx-border,rgba(250,204,21,.32));font-size:10px;font-weight:800;letter-spacing:.3px;vertical-align:middle;white-space:nowrap;}
+[data-theme="light"] .timer-center-item.is-fx .timer-center-item-age,[data-theme="light"] .alert-chip{color:color-mix(in srgb,var(--fx-color,#facc15) 55%,#000);}
 .timer-center-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
 .timer-center-comment{grid-column:1/-1;margin-top:2px;padding:9px 11px;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:9px;background:var(--bg2);}
 .timer-center-comment-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:10.5px;color:var(--text3);margin-bottom:5px;}
@@ -2289,6 +2298,12 @@ try{
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="sla-am-color-picker"></div>
+    </div>
+    <div class="auto-row">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Add the entry to the ⏰ Task Alerts tray — and pop a desktop notification on this computer — the moment it crosses an enabled L2 / CTO / AM threshold">
+        <input type="checkbox" id="sla-notify" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> 🔔 Notify me when an entry reaches L2 / CTO / AM
+      </label>
+      <span class="auto-label" style="color:var(--text3)">appears in Task Alerts in that level's own colour (not timer red); each level announces once per entry, and the alert clears itself once the entry is completed or advised</span>
     </div>
     </div>
     <div class="settings-sec">
@@ -4064,6 +4079,8 @@ function saveSettings(){
   SETTINGS.slaCtoEnabled=slaCtoEn?slaCtoEn.checked:false;
   SETTINGS.slaAmEnabled=slaAmEn?slaAmEn.checked:false;
   SETTINGS.slaEnabled=SETTINGS.slaL2Enabled||SETTINGS.slaCtoEnabled||SETTINGS.slaAmEnabled;
+  var slaNotify=document.getElementById('sla-notify');
+  SETTINGS.slaNotify=slaNotify?slaNotify.checked:true;
   SETTINGS.slaL2Hours=slaHoursValue('sla-l2-hours',3);
   SETTINGS.slaCtoHours=slaHoursValue('sla-cto-hours',6);
   SETTINGS.slaAmHours=slaHoursValue('sla-am-hours',8);
@@ -4936,17 +4953,26 @@ function entryAgeHours(r){
 function slaAnyEnabled(){
   return SETTINGS.slaL2Enabled===true||SETTINGS.slaCtoEnabled===true||SETTINGS.slaAmEnabled===true;
 }
+// One source of truth for the three escalation levels (enabled or not), so the row effects,
+// the Concern badge and the Task Alerts tray all read the same hours, labels and colors.
+function slaTiers(){
+  return [
+    {enabled:SETTINGS.slaL2Enabled===true,key:'l2',label:'L2',hours:parseFloat(SETTINGS.slaL2Hours)||3,effect:SETTINGS.slaL2Effect,color:SETTINGS.slaL2Color,fallback:FX_COLOR_DEFAULTS.slaL2Color},
+    {enabled:SETTINGS.slaCtoEnabled===true,key:'cto',label:'CTO',hours:parseFloat(SETTINGS.slaCtoHours)||6,effect:SETTINGS.slaCtoEffect,color:SETTINGS.slaCtoColor,fallback:FX_COLOR_DEFAULTS.slaCtoColor},
+    {enabled:SETTINGS.slaAmEnabled===true,key:'am',label:'AM',hours:parseFloat(SETTINGS.slaAmHours)||8,effect:SETTINGS.slaAmEffect,color:SETTINGS.slaAmColor,fallback:FX_COLOR_DEFAULTS.slaAmColor}
+  ];
+}
+function slaTierByKey(key){
+  var found=slaTiers().filter(function(t){return t.key===key;});
+  return found.length?found[0]:null;
+}
 function slaTier(r){
   // SLA escalation applies to All Tasks entries only — not DID Order/Cancel, not Pending RR/RO
   if(!slaAnyEnabled()||!r||r._type==='rr'||r._type==='did')return null;
   if(isRecordCompleted(r)||r.status==='Advised Client')return null;
   var h=entryAgeHours(r);
   if(h===null)return null;
-  var tiers=[
-    {enabled:SETTINGS.slaL2Enabled===true,key:'l2',label:'L2',hours:parseFloat(SETTINGS.slaL2Hours)||3,effect:SETTINGS.slaL2Effect,color:SETTINGS.slaL2Color,fallback:FX_COLOR_DEFAULTS.slaL2Color},
-    {enabled:SETTINGS.slaCtoEnabled===true,key:'cto',label:'CTO',hours:parseFloat(SETTINGS.slaCtoHours)||6,effect:SETTINGS.slaCtoEffect,color:SETTINGS.slaCtoColor,fallback:FX_COLOR_DEFAULTS.slaCtoColor},
-    {enabled:SETTINGS.slaAmEnabled===true,key:'am',label:'AM',hours:parseFloat(SETTINGS.slaAmHours)||8,effect:SETTINGS.slaAmEffect,color:SETTINGS.slaAmColor,fallback:FX_COLOR_DEFAULTS.slaAmColor}
-  ].filter(function(t){return t.enabled;});
+  var tiers=slaTiers().filter(function(t){return t.enabled;});
   tiers.sort(function(a,b){return b.hours-a.hours;});
   for(var i=0;i<tiers.length;i++){
     if(h>=tiers[i].hours)return tiers[i];
@@ -5411,6 +5437,7 @@ document.addEventListener('visibilitychange',function(){
   if(_audioCtx&&_audioCtx.state==='suspended')_audioCtx.resume().catch(function(){});
   try{checkTimerExpiries();}catch(e){}
   try{checkRRRoMissingNotifs();}catch(e){}
+  try{checkSlaEscalations();}catch(e){}
   // Parked on the Dashboard while the browser tab sat in the background (often
   // overnight): its figures are a point-in-time read, so re-read on the way back
   // instead of leaving "New Entries — Today" showing yesterday's zeros.
@@ -5793,10 +5820,55 @@ function persistTaskAlertQueue(){
 }
 function taskAlertByKey(key){return _taskAlertQueue.find(function(item){return item.key===key;});}
 function taskAlertKeyArg(key){return encodeURIComponent(String(key)).replace(/'/g,'%27');}
+// ─── TASK ALERT COLOUR CODING BY SOURCE TAB ──────────────────
+// The tray mixes all three tabs, and an expired DID timer used to look exactly like an
+// expired All Tasks one. DID Order/Cancel and Pending RR/RO now each get their own colour
+// and a labelled chip; Pending RR/RO reuses the sky blue its "missing RO by" effect already
+// defaults to. All Tasks stays plain red — it is the ordinary case and the bulk of the tray.
+var TASK_ALERT_TYPE_STYLES={
+  did:{label:'DID',icon:'🛒',color:'#a78bfa',title:'DID Order / Cancel'},
+  rr:{label:'RR/RO',icon:'🕘',color:'#38bdf8',title:'Pending RR / RO'}
+};
+function taskAlertTypeStyle(item){
+  return (item&&TASK_ALERT_TYPE_STYLES[item.type])||null;
+}
+// Text equivalent of the colour, for the places that cannot carry one: the desktop
+// notification, the toast and the "Copy all" clipboard text.
+function taskAlertSourceTag(item){
+  var ts=taskAlertTypeStyle(item);
+  return ts?'['+ts.label+'] ':'';
+}
+// SLA alert rows read off the live record, not firedAt: an escalation is a standing
+// condition ("open 4h, past the 3h L2 SLA"), not a one-off moment like a timer expiring.
+function slaAlertLabel(item){
+  var tier=slaTierByKey(item.level);
+  return (tier&&tier.label)||item.levelLabel||'SLA';
+}
+function slaAlertHours(item){
+  var tier=slaTierByKey(item.level);
+  return tier?tier.hours:(Number(item.hours)||0);
+}
+function slaAlertTierStyle(item){
+  var tier=slaTierByKey(item.level);
+  return effectColorVars(tier?tier.color:item.color,tier?tier.fallback:FX_COLOR_DEFAULTS.slaL2Color);
+}
+function slaAlertAgeText(item){
+  var r=DATA.find(function(rec){return String(rec.id)===String(item.id);});
+  var h=r?entryAgeHours(r):null;
+  var open='';
+  if(h!==null){
+    if(h>=48)open='Open '+Math.floor(h/24)+'d';
+    else if(h>=1)open='Open '+Math.floor(h)+'h'+(Math.floor((h%1)*60)?' '+Math.floor((h%1)*60)+'m':'');
+    else open='Open '+Math.floor(h*60)+'m';
+  }
+  var hrs=slaAlertHours(item);
+  return (open?open+' — ':'')+'past the '+hrs+'h SLA — escalate to '+slaAlertLabel(item);
+}
 function taskAlertAgeText(item){
   if(item.snoozedUntil&&item.snoozedUntil>Date.now()){
     return 'Snoozed until '+new Date(item.snoozedUntil).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
   }
+  if(item.kind==='sla')return slaAlertAgeText(item);
   var mins=Math.max(0,Math.floor((Date.now()-(Number(item.firedAt)||Date.now()))/60000));
   var isReminder=item.kind==='reminder';
   if(mins<1)return isReminder?'Reminder reached just now':'Just expired';
@@ -5859,7 +5931,8 @@ function renderTaskAlertCenter(){
   var snoozeAll=document.getElementById('task-alert-snooze-all');
   var handleAll=document.getElementById('task-alert-handle-all');
   if(title)title.textContent=total?'('+total+')':'';
-  if(summary)summary.textContent=total?(active+' need attention'+(total-active?' · '+(total-active)+' snoozed':'')):'No task alerts need attention';
+  var slaTotal=_taskAlertQueue.filter(function(item){return item.kind==='sla';}).length;
+  if(summary)summary.textContent=total?(active+' need attention'+(slaTotal?' · '+slaTotal+' SLA escalation'+(slaTotal===1?'':'s'):'')+(total-active?' · '+(total-active)+' snoozed':'')):'No task alerts need attention';
   if(copyAll)copyAll.disabled=!total;
   if(snoozeAll)snoozeAll.disabled=!active;
   if(handleAll)handleAll.disabled=!total;
@@ -5872,8 +5945,18 @@ function renderTaskAlertCenter(){
     var snoozed=item.snoozedUntil&&item.snoozedUntil>Date.now();
     var commentOpen=!!_taskAlertCommentOpen[item.key];
     var arg=taskAlertKeyArg(item.key);
-    return '<div class="timer-center-item'+(snoozed?' is-snoozed':'')+'">'
-      +'<div><div class="timer-center-item-name">'+escHtml(item.name||'Task entry')+'</div>'
+    // An SLA escalation is always an All Tasks entry, so the two colourings never collide —
+    // but if that ever changes, the more specific escalation colour wins.
+    var isSla=item.kind==='sla';
+    var ts=isSla?null:taskAlertTypeStyle(item);
+    var fxVars=isSla?slaAlertTierStyle(item):(ts?effectColorVars(ts.color,ts.color):'');
+    var chip=isSla
+      ?'<span class="alert-chip">🚨 '+escHtml(slaAlertLabel(item))+'</span>'
+      :(ts?'<span class="alert-chip" title="'+escHtml(ts.title)+'">'+ts.icon+' '+escHtml(ts.label)+'</span>':'');
+    return '<div class="timer-center-item'+(snoozed?' is-snoozed':'')+(fxVars?' is-fx':'')+'"'
+      +(fxVars?' style="'+fxVars+'"':'')+'>'
+      +'<div><div class="timer-center-item-name">'+chip
+      +escHtml(item.name||'Task entry')+'</div>'
       +(item.detail&&item.detail!==item.name?'<div class="timer-center-item-detail">'+escHtml(item.detail)+'</div>':'')
       +'<div class="timer-center-item-age">'+escHtml(taskAlertAgeText(item))+'</div></div>'
       +'<div class="timer-center-actions">'
@@ -5895,7 +5978,7 @@ function copyAllTaskAlerts(){
   if(!_taskAlertQueue.length){toast('No task alerts to copy','info');return;}
   var items=_taskAlertQueue.slice().sort(function(a,b){return (Number(a.firedAt)||0)-(Number(b.firedAt)||0);});
   var text='Task Alerts ('+items.length+')\n\n'+items.map(function(item,index){
-    var lines=[(index+1)+'. '+(item.name||'Task entry')];
+    var lines=[(index+1)+'. '+(item.kind==='sla'?'[Escalate to '+slaAlertLabel(item)+'] ':taskAlertSourceTag(item))+(item.name||'Task entry')];
     if(item.detail&&item.detail!==item.name)lines.push(item.detail);
     lines.push(taskAlertAgeText(item));
     return lines.join('\n');
@@ -5957,14 +6040,24 @@ function flushTaskAlertBatch(){
   var items=keys.map(taskAlertByKey).filter(function(item){return item&&(!item.snoozedUntil||item.snoozedUntil<=Date.now());});
   if(!items.length)return;
   var reminderCount=items.filter(function(item){return item.kind==='reminder';}).length;
-  var timerCount=items.length-reminderCount;
-  try{playAlert(timerCount?(SETTINGS.alarmTone||'beep'):(SETTINGS.reminderTone||'bell'));}catch(e){}
+  var slaCount=items.filter(function(item){return item.kind==='sla';}).length;
+  var timerCount=items.length-reminderCount-slaCount;
+  // An SLA breach is as urgent as an expired timer, so it uses the alarm tone, not the reminder chime
+  try{playAlert((timerCount||slaCount)?(SETTINGS.alarmTone||'beep'):(SETTINGS.reminderTone||'bell'));}catch(e){}
   var count=items.length;
+  var allSla=slaCount===count;
   var body=count===1
-    ?items[0].name+(items[0].kind==='reminder'?' — reminder time reached.':' — timer has expired.')
-    :count+' task alerts need review:\n• '+items.slice(0,5).map(function(item){return item.name;}).join('\n• ')+(count>5?'\n…and '+(count-5)+' more':'');
-  toast('⏰ '+count+' task '+(count===1?'alert needs':'alerts need')+' review','error');
-  sendBrowserNotif('⏰ '+count+' Task '+(count===1?'Alert':'Alerts'),body,'task_alert_batch_'+currentAlertUserKey(),true);
+    ?taskAlertBodyLine(items[0])
+    :count+(allSla?' entries need escalation:':' task alerts need review:')+'\n• '+items.slice(0,5).map(function(item){
+        return item.kind==='sla'?item.name+' → '+slaAlertLabel(item):taskAlertSourceTag(item)+item.name;
+      }).join('\n• ')+(count>5?'\n…and '+(count-5)+' more':'');
+  if(allSla){
+    toast('🚨 '+count+' SLA '+(count===1?'escalation needs':'escalations need')+' attention','error');
+    sendBrowserNotif('🚨 '+count+' SLA Escalation'+(count===1?'':'s'),body,'task_alert_batch_'+currentAlertUserKey(),true);
+  }else{
+    toast('⏰ '+count+' task '+(count===1?'alert needs':'alerts need')+' review','error');
+    sendBrowserNotif('⏰ '+count+' Task '+(count===1?'Alert':'Alerts'),body,'task_alert_batch_'+currentAlertUserKey(),true);
+  }
   _taskAlertLastReminderAt=Date.now();
   renderTaskAlertCenter();
   document.getElementById('task-alert-center-modal').classList.remove('hidden');
@@ -5979,6 +6072,59 @@ function enqueueTimerAlert(r,basis){
     persistTaskAlertQueue();
   }
   scheduleTaskAlertBatch(key);
+}
+function taskAlertBodyLine(item){
+  if(item.kind==='sla'){
+    var hrs=slaAlertHours(item);
+    return item.name+' — needs escalation to '+slaAlertLabel(item)+(hrs?' (open past '+hrs+'h)':'')+'.';
+  }
+  return taskAlertSourceTag(item)+item.name+(item.kind==='reminder'?' — reminder time reached.':' — timer has expired.');
+}
+// ─── SLA ESCALATION ALERTS ───────────────────────────────────
+// Whenever an open All Tasks entry crosses an enabled L2 / CTO / AM threshold it joins the
+// Task Alerts tray (in that level's own colour) and pops a desktop notification. Dedup is per
+// device per entry per level via localStorage, so each level announces exactly once — and a
+// row that has climbed to the next level replaces its own earlier, lower alert.
+function enqueueSlaAlert(r,tier){
+  var type=r._type||'endorsement';
+  var key='sla_'+type+'_'+String(r.id)+'_'+tier.key;
+  if(!taskAlertByKey(key)){
+    _taskAlertQueue.push({key:key,id:r.id,type:type,kind:'sla',level:tier.key,levelLabel:tier.label,
+      hours:tier.hours,color:tier.color,name:timerAlertName(r),detail:timerAlertDetail(r),
+      firedAt:Date.now(),snoozedUntil:0});
+    persistTaskAlertQueue();
+  }
+  scheduleTaskAlertBatch(key);
+}
+// Drop queued SLA alerts that no longer describe reality: the whole feature was switched
+// off, or the entry was completed, moved to Advised Client, deleted, had its level switched
+// off in Settings, or climbed to a higher level (whose own alert takes over). Timer alerts
+// are left alone — those record a past event rather than a standing condition.
+function pruneSlaAlerts(){
+  if(!_fbReady||!Array.isArray(DATA))return;
+  if(!_taskAlertQueue.some(function(item){return item.kind==='sla';}))return;
+  var off=SETTINGS.slaNotify===false||!slaAnyEnabled();
+  var before=_taskAlertQueue.length;
+  _taskAlertQueue=_taskAlertQueue.filter(function(item){
+    if(item.kind!=='sla')return true;
+    if(off)return false;
+    var r=DATA.find(function(rec){return String(rec.id)===String(item.id);});
+    if(!r)return false;
+    var t=slaTier(r);
+    return !!t&&t.key===item.level;
+  });
+  if(_taskAlertQueue.length!==before){persistTaskAlertQueue();renderTaskAlertCenter();}
+}
+function checkSlaEscalations(){
+  if(!_fbReady||!Array.isArray(DATA))return;
+  pruneSlaAlerts();
+  if(SETTINGS.slaNotify===false||!slaAnyEnabled())return;
+  DATA.forEach(function(r){
+    var t=slaTier(r);
+    if(!t||hasLocalAlerted('sla',r,t.key))return;
+    markLocalAlerted('sla',r,t.key);
+    enqueueSlaAlert(r,t);
+  });
 }
 function enqueueReminderAlert(r,basis){
   var type=r._type||'endorsement';
@@ -6117,6 +6263,7 @@ setInterval(function(){
     if(isRRTableView())renderRRRows();
   }
   try{checkRRRoMissingNotifs();}catch(e){}
+  try{checkSlaEscalations();}catch(e){}
   // Re-render when any record crosses an SLA escalation threshold
   if(slaAnyEnabled()){
     var slaSig=DATA.map(function(r){var t=slaTier(r);return t?r.id+':'+t.key:'';}).filter(Boolean).join(',');
@@ -10126,6 +10273,7 @@ document.getElementById('sla-cto-hours').value=SETTINGS.slaCtoHours||6;
 document.getElementById('sla-cto-effect').value=SETTINGS.slaCtoEffect||'pulse';
 document.getElementById('sla-am-hours').value=SETTINGS.slaAmHours||8;
 document.getElementById('sla-am-effect').value=SETTINGS.slaAmEffect||'blink';
+document.getElementById('sla-notify').checked=SETTINGS.slaNotify!==false;
 SETTINGS.advisedAgingColor=normalizeColorHex(SETTINGS.advisedAgingColor,'#fb7185');
 SETTINGS.rrRoAlertColor=normalizeColorHex(SETTINGS.rrRoAlertColor,'#38bdf8');
 SETTINGS.slaL2Color=normalizeColorHex(SETTINGS.slaL2Color,'#facc15');
@@ -10192,6 +10340,9 @@ async function startFirestore(){
     // laptop behind a Google Meet still sound the alarm the instant a timer expires
     // (or the instant another device's auto-restart syncs the expiry over).
     if(_fbReady)checkTimerExpiries();
+    // A status change (e.g. → Advised Client) or a new entry can create or retire an
+    // escalation, so re-evaluate the SLA tray the moment fresh data lands.
+    if(_fbReady){try{checkSlaEscalations();}catch(e){}}
     if(currentTab==='dashboard'&&_dashLoaded){try{renderDashboard();}catch(e){}}
   }, function(err){
     hideLoader();
