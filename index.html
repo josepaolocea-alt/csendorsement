@@ -541,12 +541,12 @@ tr.pinned-row.has-new-comment>td:first-child{box-shadow:inset 3px 0 0 #fbbf24,in
 .modal-ftr{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--bg2);}
 .entry-modal{max-width:min(1120px,96vw);height:min(90vh,820px);overflow:hidden;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr);grid-template-rows:auto minmax(0,1fr) auto;}
 .entry-modal .modal-hdr{grid-column:1/-1;position:relative;top:auto;}
-.entry-details{grid-column:1;grid-row:2;overflow:auto;}
+.entry-details{grid-column:1;grid-row:2;overflow:auto;overscroll-behavior:contain;}
 .entry-comments{grid-column:2;grid-row:2;overflow:hidden;padding:0;border-left:1px solid var(--border);background:var(--bg2);}
 .entry-modal .modal-ftr{grid-column:1/-1;position:relative;bottom:auto;z-index:2;}
 .entry-comments .comments-section{height:100%;margin:0;padding:0;border-top:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;}
 .entry-comments .comments-section h4{margin:0;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg2);}
-.entry-comments .comment-list{min-height:0;overflow:auto;margin:0;padding:14px 16px;}
+.entry-comments .comment-list{min-height:0;overflow:auto;overscroll-behavior:contain;margin:0;padding:14px 16px;}
 .entry-comments .comment-new{margin:0;padding:14px 16px;background:var(--bg2);border-top:1px solid var(--border);}
 .entry-comments .attach-zone{padding:10px;}
 .entry-comments textarea.fc{min-height:64px!important;max-height:150px;}
@@ -637,6 +637,18 @@ body.entry-style-panel .entry-ov.is-closing .entry-modal{animation:entryDrawerOu
 @keyframes entryModalOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(7px) scale(.975)}}
 @keyframes entryDrawerOut{from{transform:translateX(0)}to{transform:translateX(100%)}}
 @keyframes entrySplitOut{from{opacity:1;transform:translateX(0)}to{opacity:.7;transform:translateX(42px)}}
+/* ── Freeze the page behind an open entry popup ───────────────────────────────
+   Without this the wheel (or a finger) over the backdrop — or over the form once
+   it has hit its last field — leaked through and scrolled the task table behind,
+   so closing the popup left the list somewhere else. body's overflow propagates
+   to the viewport while html stays overflow:visible, so this one rule stops the
+   page without the position:fixed jump-to-top trick. Toggled by syncEntrySplitOpen().
+   Split view is the deliberate exception: its backdrop is pointer-transparent on
+   purpose, so the left workspace must keep scrolling beside the editor. */
+body.entry-scroll-lock{overflow:hidden;overscroll-behavior:none;}
+/* Long Concern/Description/Comment boxes scroll on their own — keep that scroll
+   inside the box instead of handing it off once the caret reaches the end. */
+.entry-ov textarea,.entry-ov .entry-details,.entry-ov [data-scroll-contain]{overscroll-behavior:contain;}
 .timer-auto-toggle{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;width:max-content;max-width:100%;}
 .timer-auto-toggle:hover{background:var(--bg4);color:var(--text);}
 .timer-auto-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
@@ -4396,7 +4408,13 @@ function syncEntrySplitOpen(){
   var open=Array.prototype.some.call(document.querySelectorAll('.entry-ov'),function(overlay){
     return !overlay.classList.contains('hidden');
   });
-  document.body.classList.toggle('entry-split-open',document.body.classList.contains('entry-style-split')&&open);
+  var split=document.body.classList.contains('entry-style-split');
+  document.body.classList.toggle('entry-split-open',split&&open);
+  // Lock the page behind the popup (see body.entry-scroll-lock). Desktop Split View is
+  // the one layout that must stay scrollable, since its backdrop lets clicks through to
+  // the task list on purpose; below 1100px Split falls back to a side panel, which locks.
+  var splitDesktop=split&&window.matchMedia('(min-width:1100px)').matches;
+  document.body.classList.toggle('entry-scroll-lock',open&&!splitDesktop);
   if(!open)closeSplitActionMenu();
 }
 var _returnToTaskAlertCenterAfterEntry=false;
@@ -4446,6 +4464,9 @@ function initEntryOverlays(){
   syncEntrySplitOpen();
 }
 initEntryOverlays();
+// Split View only skips the scroll lock above 1100px, so re-check when the window
+// crosses that line with a popup already open.
+window.addEventListener('resize',syncEntrySplitOpen);
 
 // ─── COLLAPSIBLE SETTINGS SECTIONS ───────────────────────────
 // Make each Settings section header toggle its content (default expanded; state per-section in localStorage).
