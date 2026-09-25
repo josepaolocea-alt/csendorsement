@@ -102,12 +102,6 @@ pre,code,kbd,samp{font-family:var(--mono);}
 /* Each client type rule is its own small card, so a rule reads as one unit */
 .ctyp-card{border:1px solid var(--border);border-radius:9px;background:var(--bg2);padding:9px 11px;margin-top:8px;}
 .ctyp-card .auto-row+.auto-row{margin-top:8px;}
-/* Settings > Client Types: one chip per type, with its client count */
-.ctype-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text);background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 8px;}
-.ctype-chip-default{color:var(--text2);}
-.ctype-chip .ctype-chip-n{font-size:10px;font-weight:500;color:var(--text3);}
-.ctype-chip button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 1px;}
-.ctype-chip button:hover{color:#f87171;}
 .sheet-color-picker{display:grid;grid-template-columns:repeat(10,18px);gap:4px;align-items:center;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);}
 .sheet-color-swatch{width:18px;height:18px;border-radius:3px;border:1px solid rgba(255,255,255,.18);cursor:pointer;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);position:relative;}
 .sheet-color-swatch:hover{transform:translateY(-1px);border-color:var(--text2);}
@@ -2146,16 +2140,7 @@ try{
     <div id="client-type-rules"></div>
     <div class="auto-row">
       <button type="button" class="btn btn-secondary btn-sm" onclick="addClientTypeRule()">+ Add client type rule</button>
-      <span class="auto-label" style="color:var(--text3)">set a client's type in Admin → Client / Vendor List → <strong>Link</strong>; clients with no type count as <strong>Normal</strong>. The alarm sounds take effect right away; the timer fills in when an entry is created or edited.</span>
-    </div>
-    </div>
-    <div class="settings-sec">
-    <div class="settings-sec-title">👑 Client Types</div>
-    <div class="auto-row" id="client-type-list"></div>
-    <div class="auto-row">
-      <input class="fc" id="new-client-type" placeholder="New type, e.g. SVIP" style="width:190px" onkeydown="if(event.key==='Enter'){event.preventDefault();addClientType();}">
-      <button type="button" class="btn btn-secondary btn-sm" onclick="addClientType()">+ Add type</button>
-      <span class="auto-label" style="color:var(--text3)">types are shared with the whole team — <strong>Normal</strong> is the built-in fallback and can't be removed</span>
+      <span class="auto-label" style="color:var(--text3)">types are added in Admin → <strong>Dropdown Options → Client Type</strong>; set a client's type in Admin → Client / Vendor List → <strong>Link</strong>. Clients with no type count as <strong>Normal</strong>. The alarm sounds take effect right away; the timer fills in when an entry is created or edited.</span>
     </div>
     </div>
     <div class="settings-sec">
@@ -4081,7 +4066,6 @@ function saveSettings(){
   syncLegacyClientTimerKeys();
   var typeRules=readClientTypeRulesFromUI();
   if(typeRules) SETTINGS.clientTypeRules=typeRules;
-  clientTypes(); // normalise the shared type list before it is written out
   var longHrsEl=document.getElementById('auto-thirty-long-hours');
   if(longHrsEl) SETTINGS.autoThirtyLongHours=Math.max(1,Math.min(168,parseInt(longHrsEl.value,10)||AUTO_THIRTY_LONG_HOURS_DEFAULT));
   var autoThirtyRuleEl=document.getElementById('auto-thirty-rule-enabled');
@@ -10081,19 +10065,28 @@ function syncLegacyClientTimerKeys(){
    Every Client / Vendor can carry a type, picked in Admin > Link Client and
    stored on the client document as `clientType`. A client with no type set
    counts as the default type (Normal), so nothing has to be back-filled.
-   The list of types lives in SETTINGS.clientTypes and is team-synced like the
-   rest of Settings; each type can own a timer + its two alarm sounds through
-   SETTINGS.clientTypeRules = [{type,secs,alarmTone,reminderTone},...]. */
+   The list of types is a Dropdown Option group (Admin > Dropdown Options >
+   Client Type), edited like Service or RR by; each type can own a timer + its
+   two alarm sounds through SETTINGS.clientTypeRules, which is team-synced with
+   the rest of Settings = [{type,secs,custom,alarmTone,reminderTone},...]. */
 var DEFAULT_CLIENT_TYPE='Normal';
-var DEFAULT_CLIENT_TYPES=['SVIP','VIP','Normal'];
+// Used until the Dropdown Options list is in memory — the Settings panel is built
+// while this file loads, before DROPDOWN_OPTS / _dropdownData are assigned.
+var CLIENT_TYPE_FALLBACK=['SVIP','VIP','Normal'];
 // Same alarm sounds the two general pickers offer, in one reusable list.
 // Declared here because the Settings panel is rendered while this file loads.
 var ALERT_TONE_GROUPS=[
   {label:'Alerting',items:[['beep','🔔 Classic Beep'],['siren','🚨 Siren'],['pulse','💓 Pulse'],['alarm','⏰ Alarm Clock']]},
   {label:'Gentle (not alarming)',items:[['bell','🔕 Bell'],['ding','✨ Ding Ding'],['chime','🎐 Wind Chime'],['marimba','🎶 Marimba'],['soft','🌙 Soft Ping'],['waterdrop','💧 Water Drop']]}
 ];
+// The list itself is an ordinary Dropdown Option group (Admin → Dropdown Options →
+// Client Type), so it is added, renamed, reordered and coloured like Service or RR by.
+// SETTINGS.clientTypes is only read as a fallback for the types an admin added while
+// this list still lived in Settings, before the dropdown document exists.
 function clientTypes(){
-  var raw=Array.isArray(SETTINGS.clientTypes)?SETTINGS.clientTypes:DEFAULT_CLIENT_TYPES.slice();
+  var raw=(_dropdownData&&_dropdownData['client_type'])
+    ||(Array.isArray(SETTINGS.clientTypes)&&SETTINGS.clientTypes.length?SETTINGS.clientTypes:null)
+    ||(DROPDOWN_OPTS&&DROPDOWN_OPTS.client_type?DROPDOWN_OPTS.client_type.defaults:CLIENT_TYPE_FALLBACK);
   var out=[],seen={};
   raw.forEach(function(t){
     var name=String(t||'').trim();
@@ -10105,7 +10098,6 @@ function clientTypes(){
   });
   // The fallback type always exists — unset clients are reported as this one
   if(!out.some(function(t){return t.toUpperCase()===DEFAULT_CLIENT_TYPE.toUpperCase();}))out.push(DEFAULT_CLIENT_TYPE);
-  SETTINGS.clientTypes=out;
   return out;
 }
 function isDefaultClientType(t){
@@ -10451,7 +10443,6 @@ if(typeof SETTINGS.paymentClientName!=='string')SETTINGS.paymentClientName='SIR 
   else{sel.value='custom';hrs.value=Math.max(1,Math.round(cfg[2]/3600));hrs.style.display='';}
 });
 renderClientTimerRules();
-renderClientTypeList();
 renderClientTypeRules();
 var _longHrsEl=document.getElementById('auto-thirty-long-hours');
 if(_longHrsEl)_longHrsEl.value=autoThirtyLongHours();
@@ -10790,7 +10781,10 @@ var DROPDOWN_OPTS = {
   status_ip:  {label:'Status — In Progress', defaults:['Pending at CS','Pending at NOC','Pending at TSE','Pending at L2','Pending at CTO','Pending at AM','Pending at Product','Pending at Accounting','Pending at Vendor','Pending at Developer','Advised Client']},
   status_done:{label:'Status — Completed',   defaults:['Done','Commercial Concern','Resolved','Posted','Lack of Update from Client','Lack of Update from our Team','Continue to Other Ticket','Close due to lack of update from Vendor/Developer']},
   rr_by:      {label:'RR by',                defaults:["Ma'am Kath","Sir Jason","Ma'am Shayne","Jem Santos","Robert Pinote","Raffy Ching","Mark Deviente","Vi Quibingco","Paul Fabella","Jessa Lubiano"]},
-  ro_by:      {label:'RO by',                defaults:['Not Yet','Sir Rod','L2 Aries','L2 Efren','L2 Franz']}
+  ro_by:      {label:'RO by',                defaults:['Not Yet','Sir Rod','L2 Aries','L2 Efren','L2 Franz']},
+  // Client types feed the Link Client modal and the per-type timer / alarm rules
+  // in Settings. "Normal" is the fallback for every client with no type set.
+  client_type:{label:'Client Type',          defaults:['SVIP','VIP','Normal']}
 };
 var _dropdownData = {}; // loaded from Firestore
 var _dropdownColors = {}; // per-option custom badge colors, loaded from Firestore: {key:{optionValue:'#hex'}}
@@ -10807,6 +10801,12 @@ function customBadgeStyle(hex){
   return 'background:'+rgba(hex,.15)+';color:'+hex+';';
 }
 
+// What a missing dropdown document starts with. Client Type carries over any types
+// an admin added while that list still lived in Settings, so nothing is lost.
+function seedDropdownItems(key){
+  if(key==='client_type')return clientTypes();
+  return DROPDOWN_OPTS[key].defaults.slice();
+}
 function loadDropdownOptions(){
   if(_dropdownUnsub)return;
   _dropdownUnsub=onSnapshot(collection(db,'dropdown_options'), function(snap){
@@ -10834,8 +10834,8 @@ function loadDropdownOptions(){
     if(!hasData){
       // First time — seed defaults to Firestore
       var batch=Object.keys(DROPDOWN_OPTS).map(function(key){
-        _dropdownData[key]=DROPDOWN_OPTS[key].defaults.slice();
-        var payload={items:DROPDOWN_OPTS[key].defaults,colors:{}};
+        _dropdownData[key]=seedDropdownItems(key);
+        var payload={items:_dropdownData[key],colors:{}};
         if(key==='service')payload.vipPaymentRemoved=true;
         return setDoc(doc(db,'dropdown_options',key),payload);
       });
@@ -10846,7 +10846,7 @@ function loadDropdownOptions(){
       // intentionally deleted by an admin and must stay deleted after refresh.
       Object.keys(DROPDOWN_OPTS).forEach(function(key){
         if(seen[key])return;
-        var items=DROPDOWN_OPTS[key].defaults.slice();
+        var items=seedDropdownItems(key);
         _dropdownData[key]=items;
         _dropdownColors[key]={};
         var payload={items:items,colors:{}};
@@ -10946,6 +10946,8 @@ function applyDropdownsToForms(){
   RR_BM=_dropdownData['rr_by']||DROPDOWN_OPTS.rr_by.defaults;
   RR_AM=[];RR_PROD=[];
   RR_RO=_dropdownData['ro_by']||DROPDOWN_OPTS.ro_by.defaults;
+  // Client types come from the same panel — keep the Settings rule cards in step
+  try{renderClientTypeRules();}catch(e){}
   configureTaskFilterToolbar(currentTab);
 }
 
@@ -11117,7 +11119,9 @@ function renameDropdownOption(btn){
   if(title)title.textContent='Edit '+label+' Option';
   if(lbl)lbl.textContent=label;
   if(inp)inp.value=oldVal;
-  if(note)note.textContent='Existing records using "'+oldVal+'" will also be updated.';
+  if(note)note.textContent=key==='client_type'
+    ?'Clients set to "'+oldVal+'" — and its timer / alarm rule — will also be updated.'
+    :'Existing records using "'+oldVal+'" will also be updated.';
   document.getElementById('edit-dropdown-modal').classList.remove('hidden');
   setTimeout(function(){if(inp){inp.focus();inp.select();}},20);
 }
@@ -11161,12 +11165,17 @@ function saveDropdownEdit(){
       });
       if(touched)changed.push(r);
     });
-    return Promise.all(changed.map(saveOne)).then(function(){
+    // A client type lives on client documents, not on records
+    var typeWork=key==='client_type'?renameClientTypeEverywhere(oldVal,next):Promise.resolve(0);
+    return Promise.all([typeWork].concat(changed.map(saveOne))).then(function(res){
+      var clientsTouched=key==='client_type'?(res[0]||0):0;
       applyDropdownsToForms();
-      if(currentTab==='admin')renderDropdownOptionsPanel();
+      if(currentTab==='admin'){renderDropdownOptionsPanel();renderClientGrid();}
       applyFilters();
       closeDropdownEditModal();
-      toast('Updated '+oldVal+' to '+next+(changed.length?' in '+changed.length+' record'+(changed.length!==1?'s':''):'') ,'success');
+      toast('Updated '+oldVal+' to '+next
+        +(changed.length?' in '+changed.length+' record'+(changed.length!==1?'s':''):'')
+        +(clientsTouched?' in '+clientsTouched+' client'+(clientsTouched!==1?'s':''):''),'success');
       try{writeLog('updated','Dropdown option','Renamed '+label+': '+oldVal+' to '+next);}catch(e){}
     });
   }).catch(function(e){toast('Error: '+e.message,'error');}).finally(function(){
@@ -11177,7 +11186,18 @@ function saveDropdownEdit(){
 function deleteDropdownOption(btn){
   var key=btn.dataset.key;
   var val=btn.dataset.val;
-  appConfirm('Remove "'+val+'" from '+DROPDOWN_OPTS[key].label+'?','Remove').then(function(ok){
+  // Normal is what every client with no type falls back to — it can't be removed
+  if(key==='client_type'&&isDefaultClientType(val)){
+    toast(DEFAULT_CLIENT_TYPE+' is the fallback client type and stays','info');
+    return;
+  }
+  var extra='';
+  if(key==='client_type'){
+    var used=clientCountByType(val);
+    if(used)extra=' '+used+' client'+(used===1?'':'s')+' will go back to '+DEFAULT_CLIENT_TYPE+'.';
+    if(clientTypeRuleFor(val))extra+=' Its timer / alarm rule is removed too.';
+  }
+  appConfirm('Remove "'+val+'" from '+DROPDOWN_OPTS[key].label+'?'+extra,'Remove').then(function(ok){
     if(!ok)return;
     var items=(_dropdownData[key]||[]).filter(function(v){return v!==val;});
     var colors={};
@@ -11187,12 +11207,34 @@ function deleteDropdownOption(btn){
     setDoc(doc(db,'dropdown_options',key),payload,{merge:true}).then(function(){
       _dropdownData[key]=items;
       _dropdownColors[key]=colors;
+      if(key==='client_type')dropClientTypeRule(val);
       applyDropdownsToForms();
       if(currentTab==='admin')renderDropdownOptionsPanel();
       applyFilters();
       toast('Removed: '+val,'info');
     }).catch(function(e){toast('Could not remove '+val+': '+e.message,'error');});
   });
+}
+// A removed type leaves its clients pointing at a name that no longer exists —
+// clientTypeOf() already reads them as Normal, so only the rule needs clearing.
+function dropClientTypeRule(val){
+  var before=clientTypeRules().length;
+  SETTINGS.clientTypeRules=clientTypeRules().filter(function(r){return r.type.toUpperCase()!==String(val).toUpperCase();});
+  if(SETTINGS.clientTypeRules.length!==before){renderClientTypeRules();saveSettings();}
+}
+// Renaming a type has to follow the clients that carry it and its own rule row
+function renameClientTypeEverywhere(oldVal,next){
+  clientTypeRules().forEach(function(r){if(r.type.toUpperCase()===String(oldVal).toUpperCase())r.type=next;});
+  renderClientTypeRules();
+  saveSettings();
+  var touched=Object.keys(CLIENT_LINKS).filter(function(name){
+    var t=CLIENT_LINKS[name]&&CLIENT_LINKS[name].clientType;
+    return t&&String(t).toUpperCase()===String(oldVal).toUpperCase();
+  });
+  return Promise.all(touched.map(function(name){
+    CLIENT_LINKS[name].clientType=next;
+    return setDoc(doc(db,'clients',name.replace(/[^A-Z0-9]/g,'_')),{name:name,clientType:next},{merge:true});
+  })).then(function(){return touched.length;});
 }
 
 // ─── DROPDOWN OPTION BADGE COLORS (Admin → Dropdown Options) ────────────────
@@ -11203,6 +11245,7 @@ function dropdownColorPreviewBadge(key,val){
   if(key==='status_ip'||key==='status_done')return stBadge(val);
   if(key==='rr_by')return rrBadge(val,'rrby');
   if(key==='ro_by')return rrBadge(val,'roby');
+  if(key==='client_type')return clientTypeChipHTML(val);
   return escHtml(val);
 }
 function openDropdownColorModal(btn){
@@ -11411,7 +11454,7 @@ function renderClientGrid(){
     }
     // Only a non-default type is worth a badge — everything else is Normal
     if(link&&link.clientType&&!isDefaultClientType(link.clientType)){
-      badge+='<span class="client-type-info" title="Client type — decides this client’s timer and alarm sounds">'+escHtml(link.clientType)+'</span>';
+      badge+=clientTypeChipHTML(link.clientType);
     }
     return '<div class="client-tag" data-name="'+escAttr(c)+'">'+escHtml(c)+badge
       +'<button class="tag-edit" data-name="'+escAttr(c)+'" onclick="openClientLink(this)" title="Link AM / RR by + Priority to this client">Link</button>'
@@ -11601,53 +11644,17 @@ function toneOptionsHTML(sel,defaultLabel){
         +'</optgroup>';
     }).join('');
 }
+// Violet by default, or the badge colour the admin picked for this type in
+// Admin → Dropdown Options → Client Type
+function clientTypeChipHTML(type){
+  var hex=dropdownColor('client_type',type);
+  return '<span class="client-type-info"'+(hex?' style="'+customBadgeStyle(hex)+'border-color:'+rgba(hex,.35)+'"':'')
+    +' title="Client type — decides this client’s timer and alarm sounds">'+escHtml(type)+'</span>';
+}
 function clientCountByType(type){
   var t=String(type||'').trim().toUpperCase();
   if(!t||!Array.isArray(CLIENTS))return 0;
   return CLIENTS.filter(function(c){return clientTypeOf(c).toUpperCase()===t;}).length;
-}
-// The chips in Settings > Client Types
-function renderClientTypeList(){
-  var wrap=document.getElementById('client-type-list');
-  if(!wrap)return;
-  wrap.innerHTML=clientTypes().map(function(t){
-    var n=clientCountByType(t);
-    return '<span class="ctype-chip'+(isDefaultClientType(t)?' ctype-chip-default':'')+'">'+escHtml(t)
-      +'<span class="ctype-chip-n">'+n+' client'+(n===1?'':'s')+'</span>'
-      +(isDefaultClientType(t)?'':'<button type="button" title="Remove this type" onclick="removeClientType(\''+encodeURIComponent(t)+'\')">×</button>')
-      +'</span>';
-  }).join('');
-}
-function addClientType(){
-  var inp=document.getElementById('new-client-type');
-  if(!inp)return;
-  var name=inp.value.trim();
-  if(!name){toast('Type a client type first','error');return;}
-  if(name.length>24){toast('Keep the type short (24 characters max)','error');return;}
-  var list=clientTypes();
-  if(list.some(function(t){return t.toUpperCase()===name.toUpperCase();})){toast(name+' is already a client type','info');inp.value='';return;}
-  list.push(name);
-  SETTINGS.clientTypes=list;
-  inp.value='';
-  renderClientTypeList();
-  renderClientTypeRules();
-  saveSettings();
-  toast('Client type added: '+name,'success');
-}
-function removeClientType(encoded){
-  var name=decodeURIComponent(encoded);
-  if(isDefaultClientType(name)){toast(DEFAULT_CLIENT_TYPE+' is the fallback type and stays','info');return;}
-  var used=clientCountByType(name);
-  appConfirm('Remove client type "'+name+'"?'+(used?' '+used+' client'+(used===1?'':'s')+' will go back to '+DEFAULT_CLIENT_TYPE+'.':'')+' Any timer rule for it is removed too.','Remove').then(function(ok){
-    if(!ok)return;
-    SETTINGS.clientTypes=clientTypes().filter(function(t){return t.toUpperCase()!==name.toUpperCase();});
-    SETTINGS.clientTypeRules=clientTypeRules().filter(function(r){return r.type.toUpperCase()!==name.toUpperCase();});
-    renderClientTypeList();
-    renderClientTypeRules();
-    saveSettings();
-    applyFilters();
-    toast('Removed client type: '+name,'info');
-  });
 }
 // One row per type rule: type → its own timer + its own two alarm sounds
 var _clientTypeRulesRendered=false;
@@ -14055,8 +14062,6 @@ window.applyPaymentTimerRule=applyPaymentTimerRule;
 window.saveClientTimerRules=saveClientTimerRules;
 window.addClientTimerRule=addClientTimerRule;
 window.removeClientTimerRule=removeClientTimerRule;
-window.addClientType=addClientType;
-window.removeClientType=removeClientType;
 window.saveClientTypeRules=saveClientTypeRules;
 window.addClientTypeRule=addClientTypeRule;
 window.removeClientTypeRule=removeClientTypeRule;
