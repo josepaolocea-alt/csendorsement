@@ -470,7 +470,7 @@ tr.pinned-row.has-new-comment>td:first-child{box-shadow:inset 3px 0 0 #fbbf24,in
 .cal-ym-cell.cal-ym-today{background:var(--accent);color:#fff;font-weight:700;}
 .cal-ym-cell.cal-ym-has:after{content:"";position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);}
 .cal-ym-cell.cal-ym-today.cal-ym-has:after{background:#fff;}
-/* Notepad tab — a private, auto-saving scratchpad (Admin only) */
+/* Notepad tab — a private, auto-saving scratchpad (every role, one per account) */
 .note-wrap{max-width:900px;margin:0 auto;}
 .note-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .note-title{font-size:16px;font-weight:700;letter-spacing:-.2px;}
@@ -1993,7 +1993,7 @@ try{
   <button class="tab-btn" id="tab-btn-done" data-tip="Done / Resolved" aria-label="Done / Resolved" onclick="switchTab('done',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></button>
   <button class="tab-btn nav-tab" id="notes-tab-btn" data-tip="Notes (opens in a new tab)" aria-label="Notes (opens in a new tab)" onclick="openNotesProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11l5-5V5a2 2 0 0 0-2-2Z"/><path d="M15 21v-5a1 1 0 0 1 1-1h5"/></svg><span class="tab-label">Notes</span></button>
   <button class="tab-btn" id="trash-tab-btn" data-tip="Trash" aria-label="Trash" onclick="switchTab('trash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
-  <!-- Admin-only group, in order: Calendar, Notepad, then Admin last. -->
+  <!-- Side group, in order: Calendar (Admin only), Notepad (every role), Admin last. -->
   <div class="divider" id="cal-divider" style="display:none"></div>
   <button class="tab-btn" id="cal-tab-btn" style="display:none" data-tip="Calendar" aria-label="Calendar" onclick="switchTab('calendar',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg></button>
   <button class="tab-btn" id="notepad-tab-btn" style="display:none" data-tip="Notepad" aria-label="Notepad" onclick="switchTab('notepad',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9.5 8h5"/><path d="M9.5 12H16"/><path d="M9.5 16H14"/></svg></button>
@@ -2482,9 +2482,9 @@ try{
     </div>
   </div>
 
-  <!-- NOTEPAD PANEL (Admin only) — a private, free-form scratchpad. The text
+  <!-- NOTEPAD PANEL (every role) — a private, free-form scratchpad. The text
        autosaves to Firestore and syncs to every device the same account signs
-       in on, exactly like the calendar but as one always-there note. -->
+       in on. Each person gets their OWN notepad doc; nobody shares one. -->
   <div id="notepad-panel" style="display:none">
     <div class="note-wrap">
       <div class="note-head">
@@ -10387,10 +10387,11 @@ async function startFirestore(){
   // Live-sync which comments this account has already read (every role). One small
   // doc per user, so a second browser/device never shows old comments as new.
   startReadStateSync();
-  // Live-sync the Admin's private notepad across their devices. Only the Admin
-  // account can read/write this doc (enforced by Firestore rules), so we attach
-  // the listener just for that account to avoid a permission error for others.
-  if(!_noteUnsub && _currentUser && normalizeEmail(_currentUser.email)===PRIMARY_ADMIN_EMAIL){
+  // Live-sync THIS account's private notepad across their devices. Every role has
+  // one now; the doc is named after the signed-in email, and the Firestore rules
+  // let a person read/write only their own (the Admin can also read all of them
+  // for the full backup), so no role hits a permission error here.
+  if(!_noteUnsub && _currentUser){
     _noteUnsub = onSnapshot(doc(db,'notepad',noteDocId()), function(snap){
       if(snap.metadata.hasPendingWrites) return;      // our own save echoing back
       applyRemoteNote(snap.exists()?snap.data():null);
@@ -10413,15 +10414,19 @@ function applyRolePermissions(role){
   var managementDivider = document.getElementById('management-divider');
   if(managementDivider) managementDivider.style.display = isAdmin ? '' : 'none';
 
-  // Calendar tab (and its divider): Admin only
+  // Calendar tab: Admin only. The divider in front of it now also fronts the
+  // Notepad, which EVERY role can see, so the divider itself stays visible for
+  // everyone — otherwise a teammate's Notepad button would butt against Trash.
   var calTabBtn = document.getElementById('cal-tab-btn');
   if(calTabBtn) calTabBtn.style.display = isAdmin ? '' : 'none';
   var calDivider = document.getElementById('cal-divider');
-  if(calDivider) calDivider.style.display = isAdmin ? '' : 'none';
+  if(calDivider) calDivider.style.display = '';
 
-  // Notepad tab: Admin only (shares the calendar divider)
+  // Notepad tab: EVERY role. Each account writes to its OWN doc
+  // (notepad/<own-sanitized-email>) and the Firestore rules let a person touch
+  // only their own, so teammates can never see each other's notes.
   var noteTabBtn = document.getElementById('notepad-tab-btn');
-  if(noteTabBtn) noteTabBtn.style.display = isAdmin ? '' : 'none';
+  if(noteTabBtn) noteTabBtn.style.display = '';
 
   // Notes tab (external project): visible to EVERY role. It sits in the main tab
   // group just before Trash and only opens an outside site, so there is nothing
@@ -13125,13 +13130,14 @@ function renderDashboard(){
     :'<div style="color:var(--text3);font-size:12px">No open client tasks</div>';
 }
 
-// ─── NOTEPAD (Admin only) ────────────────────────────────────
-// A private, free-form scratchpad for the Admin. The text lives in Firestore
-// under 'notepad/<sanitized-email>', tagged with its owner, so it autosaves as
-// you type and syncs to every device the same account signs in on — like the
-// calendar, but a single always-there note instead of dated events. The
-// Firestore rules restrict this collection to the Admin email, so no other role
-// can read or write it even straight from the browser console.
+// ─── NOTEPAD (every role — one private notepad per account) ──
+// A private, free-form scratchpad. The text lives in Firestore under
+// 'notepad/<sanitized-email>', tagged with its owner, so it autosaves as you type
+// and syncs to every device the same account signs in on — like the calendar, but
+// notes instead of dated events. Because the doc is named after the signed-in
+// email, every person automatically gets their own; the Firestore rules allow
+// read/write only on your OWN doc (plus the Admin), so a teammate cannot open
+// your notes even straight from the browser console.
 // The whole notepad lives in ONE Firestore doc as a list of pages:
 //   { notes:[{id,title,text},…], activeId, owner, updatedAt }
 // Keeping every page in a single doc means one listener, one atomic save and —
