@@ -2237,8 +2237,10 @@ try{
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="rr-ro-alert-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
       </label>
-      <span class="auto-label">after</span>
+      <span class="auto-label">show from</span>
       <input class="fc" id="rr-ro-alert-time" type="time" value="18:00" style="width:142px;min-width:142px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
+      <span class="auto-label">until</span>
+      <input class="fc" id="rr-ro-alert-until" type="time" value="23:59" style="width:142px;min-width:142px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
       <select class="fsel" id="rr-ro-alert-effect" onchange="onAgingSettingChange()" style="width:154px;min-width:154px">
         <option value="soft">Soft highlight</option>
         <option value="pulse">Pulse</option>
@@ -2250,9 +2252,15 @@ try{
       </select>
       <span class="auto-label">color</span>
       <div class="sheet-color-picker" id="rr-ro-alert-color-picker"></div>
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Also pop a desktop notification on this computer for Pending RR / RO entries whose RO by is still blank or Not Yet after the set time">
-        <input type="checkbox" id="rr-ro-alert-notify" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> 🔔 Notify PC
+    </div>
+    <div class="auto-row">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Pop a toast and a desktop notification on this computer for Pending RR / RO entries whose RO by is still blank or Not Yet inside the window above">
+        <input type="checkbox" id="rr-ro-alert-notify" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> 🔔 Pop-up alert
       </label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Also list those entries in the ⏰ Task Alerts tray while the window is open; a row leaves the tray as soon as it gets an RO by">
+        <input type="checkbox" id="rr-ro-alert-tray" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> ⏰ Show in Task Alerts
+      </label>
+      <span class="auto-label" style="color:var(--text3)">row colour and both alerts only run inside the window above — each entry announces once a day, and the tray row clears itself once an RO by is set</span>
     </div>
     <div class="auto-row">
       <span class="auto-label">Days since Done (Pending RR/RO):</span>
@@ -2267,69 +2275,15 @@ try{
     <div class="auto-row">
       <span class="auto-label" style="color:var(--text3)">highlights open All Tasks entries that need escalation (does not apply to DID Order / Cancel or Pending RR / RO) — turn each level on or off below</span>
     </div>
+    <!-- One card per escalation level — built by renderSlaLevels() -->
+    <div id="sla-levels"></div>
     <div class="auto-row">
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
-        <input type="checkbox" id="sla-l2-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
-      </label>
-      <span class="auto-label">Escalate to L2 after</span>
-      <input class="fc" id="sla-l2-hours" type="number" min="1" max="168" step="0.5" value="3" style="width:64px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
-      <span class="auto-label">hrs</span>
-      <select class="fsel" id="sla-l2-effect" onchange="onAgingSettingChange()">
-        <option value="soft">Soft highlight</option>
-        <option value="pulse">Pulse</option>
-        <option value="stripe">Stripe</option>
-        <option value="blink">Blink</option>
-        <option value="glow">Glow</option>
-        <option value="shimmer">Shimmer</option>
-        <option value="outline">Outline</option>
-        <option value="text">Text in Concern</option>
-      </select>
-      <span class="auto-label">color</span>
-      <div class="sheet-color-picker" id="sla-l2-color-picker"></div>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="addSlaLevel()">+ Add escalation level</button>
+      <span class="auto-label" style="color:var(--text3)">an entry shows the highest level it has passed, so give each level more hours than the one before it</span>
     </div>
     <div class="auto-row">
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
-        <input type="checkbox" id="sla-cto-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
-      </label>
-      <span class="auto-label">Escalate to CTO after</span>
-      <input class="fc" id="sla-cto-hours" type="number" min="1" max="168" step="0.5" value="6" style="width:64px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
-      <span class="auto-label">hrs</span>
-      <select class="fsel" id="sla-cto-effect" onchange="onAgingSettingChange()">
-        <option value="soft">Soft highlight</option>
-        <option value="pulse">Pulse</option>
-        <option value="stripe">Stripe</option>
-        <option value="blink">Blink</option>
-        <option value="glow">Glow</option>
-        <option value="shimmer">Shimmer</option>
-        <option value="outline">Outline</option>
-        <option value="text">Text in Concern</option>
-      </select>
-      <span class="auto-label">color</span>
-      <div class="sheet-color-picker" id="sla-cto-color-picker"></div>
-    </div>
-    <div class="auto-row">
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
-        <input type="checkbox" id="sla-am-enabled" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> Enable
-      </label>
-      <span class="auto-label">Escalate to AM after</span>
-      <input class="fc" id="sla-am-hours" type="number" min="1" max="168" step="0.5" value="8" style="width:64px" onchange="onAgingSettingChange()" oninput="onAgingSettingChange()">
-      <span class="auto-label">hrs</span>
-      <select class="fsel" id="sla-am-effect" onchange="onAgingSettingChange()">
-        <option value="soft">Soft highlight</option>
-        <option value="pulse">Pulse</option>
-        <option value="stripe">Stripe</option>
-        <option value="blink">Blink</option>
-        <option value="glow">Glow</option>
-        <option value="shimmer">Shimmer</option>
-        <option value="outline">Outline</option>
-        <option value="text">Text in Concern</option>
-      </select>
-      <span class="auto-label">color</span>
-      <div class="sheet-color-picker" id="sla-am-color-picker"></div>
-    </div>
-    <div class="auto-row">
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Add the entry to the ⏰ Task Alerts tray — and pop a desktop notification on this computer — the moment it crosses an enabled L2 / CTO / AM threshold">
-        <input type="checkbox" id="sla-notify" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> 🔔 Notify me when an entry reaches L2 / CTO / AM
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer" title="Add the entry to the ⏰ Task Alerts tray — and pop a desktop notification on this computer — the moment it crosses an enabled escalation level">
+        <input type="checkbox" id="sla-notify" onchange="onAgingSettingChange()" style="accent-color:var(--accent)"> 🔔 Notify me when an entry reaches an escalation level
       </label>
       <span class="auto-label" style="color:var(--text3)">appears in Task Alerts in that level's own colour (not timer red); each level announces once per entry, and the alert clears itself once the entry is completed or advised</span>
     </div>
@@ -3991,9 +3945,7 @@ function renderEffectColorPickers(){
   renderEffectColorPicker('timer-fx-color-picker','timerFxColor',FX_COLOR_DEFAULTS.timerFxColor);
   renderEffectColorPicker('advised-aging-color-picker','advisedAgingColor',FX_COLOR_DEFAULTS.advisedAgingColor);
   renderEffectColorPicker('rr-ro-alert-color-picker','rrRoAlertColor',FX_COLOR_DEFAULTS.rrRoAlertColor);
-  renderEffectColorPicker('sla-l2-color-picker','slaL2Color',FX_COLOR_DEFAULTS.slaL2Color);
-  renderEffectColorPicker('sla-cto-color-picker','slaCtoColor',FX_COLOR_DEFAULTS.slaCtoColor);
-  renderEffectColorPicker('sla-am-color-picker','slaAmColor',FX_COLOR_DEFAULTS.slaAmColor);
+  // SLA level colors live inside SETTINGS.slaLevels — their pickers are drawn per card
 }
 function selectEffectColor(settingKey,color){
   SETTINGS[settingKey]=normalizeColorHex(color,FX_COLOR_DEFAULTS[settingKey]||'#fb7185');
@@ -4040,15 +3992,6 @@ function applyPinStyle(){
   }
   el.textContent=css;
 }
-function slaHoursValue(id,def){
-  var el=document.getElementById(id);
-  var v=el?parseFloat(el.value):NaN;
-  return isNaN(v)||v<=0?def:Math.min(168,v);
-}
-function slaEffectValue(id,def){
-  var el=document.getElementById(id);
-  return el&&el.value?el.value:def;
-}
 
 function saveSettings(){
   var sel=document.getElementById('default-timer').value;
@@ -4089,37 +4032,28 @@ function saveSettings(){
   var agingEffect=document.getElementById('advised-aging-effect');
   var rrRoAlertEnabled=document.getElementById('rr-ro-alert-enabled');
   var rrRoAlertTime=document.getElementById('rr-ro-alert-time');
+  var rrRoAlertUntil=document.getElementById('rr-ro-alert-until');
   var rrRoAlertEffect=document.getElementById('rr-ro-alert-effect');
   var rrRoAlertNotify=document.getElementById('rr-ro-alert-notify');
+  var rrRoAlertTray=document.getElementById('rr-ro-alert-tray');
   SETTINGS.advisedAgingEnabled=agingEnabled?agingEnabled.checked:true;
   SETTINGS.advisedAgingDays=agingDays?Math.max(1,parseInt(agingDays.value,10)||7):7;
   SETTINGS.advisedAgingEffect=agingEffect?agingEffect.value:'soft';
   SETTINGS.advisedAgingColor=normalizeColorHex(SETTINGS.advisedAgingColor,'#fb7185');
   SETTINGS.rrRoAlertEnabled=rrRoAlertEnabled?rrRoAlertEnabled.checked:true;
   SETTINGS.rrRoAlertTime=rrRoAlertTime&&rrRoAlertTime.value?rrRoAlertTime.value:'18:00';
+  SETTINGS.rrRoAlertUntil=rrRoAlertUntil&&rrRoAlertUntil.value?rrRoAlertUntil.value:'23:59';
   SETTINGS.rrRoAlertEffect=rrRoAlertEffect?rrRoAlertEffect.value:'pulse';
   SETTINGS.rrRoAlertNotify=rrRoAlertNotify?rrRoAlertNotify.checked:true;
+  SETTINGS.rrRoAlertTray=rrRoAlertTray?rrRoAlertTray.checked:true;
   SETTINGS.rrRoAlertColor=normalizeColorHex(SETTINGS.rrRoAlertColor,'#38bdf8');
   var rrDoneAgingEnabled=document.getElementById('rr-done-aging-enabled');
   SETTINGS.rrDoneAgingEnabled=rrDoneAgingEnabled?rrDoneAgingEnabled.checked:true;
-  var slaL2En=document.getElementById('sla-l2-enabled');
-  var slaCtoEn=document.getElementById('sla-cto-enabled');
-  var slaAmEn=document.getElementById('sla-am-enabled');
-  SETTINGS.slaL2Enabled=slaL2En?slaL2En.checked:false;
-  SETTINGS.slaCtoEnabled=slaCtoEn?slaCtoEn.checked:false;
-  SETTINGS.slaAmEnabled=slaAmEn?slaAmEn.checked:false;
-  SETTINGS.slaEnabled=SETTINGS.slaL2Enabled||SETTINGS.slaCtoEnabled||SETTINGS.slaAmEnabled;
+  var slaFromUI=readSlaLevelsFromUI();
+  if(slaFromUI) SETTINGS.slaLevels=slaFromUI;
+  syncLegacySlaKeys(); // normalises slaLevels and mirrors the old slaL2*/Cto*/Am* keys
   var slaNotify=document.getElementById('sla-notify');
   SETTINGS.slaNotify=slaNotify?slaNotify.checked:true;
-  SETTINGS.slaL2Hours=slaHoursValue('sla-l2-hours',3);
-  SETTINGS.slaCtoHours=slaHoursValue('sla-cto-hours',6);
-  SETTINGS.slaAmHours=slaHoursValue('sla-am-hours',8);
-  SETTINGS.slaL2Effect=slaEffectValue('sla-l2-effect','soft');
-  SETTINGS.slaCtoEffect=slaEffectValue('sla-cto-effect','pulse');
-  SETTINGS.slaAmEffect=slaEffectValue('sla-am-effect','blink');
-  SETTINGS.slaL2Color=normalizeColorHex(SETTINGS.slaL2Color,'#facc15');
-  SETTINGS.slaCtoColor=normalizeColorHex(SETTINGS.slaCtoColor,'#f97316');
-  SETTINGS.slaAmColor=normalizeColorHex(SETTINGS.slaAmColor,'#f87171');
   localStorage.setItem('end_settings',JSON.stringify(SETTINGS));
   // Persist to Firestore so all users (any role, any device) receive these settings.
   // Only Admins publish — other roles never overwrite the shared doc.
@@ -4921,10 +4855,19 @@ function parseTimeMinutes(value,fallback){
   var mm=Math.min(59,Math.max(0,parseInt(parts[1],10)||0));
   return hh*60+mm;
 }
+// The alert runs between the two times set in Settings. "until" earlier than "from"
+// means the window runs past midnight (e.g. 18:00 → 02:00).
+function rrRoAlertFrom(){return parseTimeMinutes(SETTINGS.rrRoAlertTime,'18:00');}
+function rrRoAlertUntil(){return parseTimeMinutes(SETTINGS.rrRoAlertUntil,'23:59');}
+function rrRoAlertWindowLabel(){
+  return (SETTINGS.rrRoAlertTime||'18:00')+' – '+(SETTINGS.rrRoAlertUntil||'23:59');
+}
 function isRRRoAlertWindowActive(){
   var now=new Date();
   var mins=now.getHours()*60+now.getMinutes();
-  return mins>=parseTimeMinutes(SETTINGS.rrRoAlertTime,'18:00');
+  var from=rrRoAlertFrom(),until=rrRoAlertUntil();
+  if(from===until)return true;               // same time both sides = all day
+  return from<until?(mins>=from&&mins<=until):(mins>=from||mins<=until);
 }
 // "RO by" counts as still-missing when it is blank OR explicitly set to "Not Yet"
 // (the entry form requires a pick, so "Not Yet" is how an unassigned RO is recorded).
@@ -4946,7 +4889,7 @@ function rrRoAlertRowStyle(r){
 }
 function rrRoAlertBadge(r){
   if(!isRRRoMissingDue(r))return '';
-  return '<span class="rr-ro-alert-badge" title="RO by is still blank / Not Yet after '+(SETTINGS.rrRoAlertTime||'18:00')+'">No RO</span>';
+  return '<span class="rr-ro-alert-badge" title="RO by is still blank / Not Yet during '+rrRoAlertWindowLabel()+'">No RO</span>';
 }
 // ── "Days since Done" aging for still-pending RR/RO ─────────────
 // Anchor = the moment Status was set to Done (rrStatusDoneAt, captured in saveRR).
@@ -4995,17 +4938,67 @@ function entryAgeHours(r){
   if(isNaN(start))return null;
   return Math.max(0,(Date.now()-start)/3600000);
 }
-function slaAnyEnabled(){
-  return SETTINGS.slaL2Enabled===true||SETTINGS.slaCtoEnabled===true||SETTINGS.slaAmEnabled===true;
+/* ── SLA ESCALATION LEVELS ───────────────────────────────────────────────────
+   L2 / CTO / AM used to be three fixed levels. They are now rows in
+   SETTINGS.slaLevels = [{key,label,enabled,hours,effect,color}], so a level can
+   be added, renamed or removed when the SLA changes. `key` is what the Task
+   Alerts tray and the per-device "already announced" markers are keyed on, so it
+   is generated once and never rewritten — renaming a level keeps its key.
+   The old slaL2 / slaCto / slaAm keys migrate into the first three rows and are
+   kept mirrored (syncLegacySlaKeys) so a teammate on an older tab still works. */
+var SLA_EFFECTS=FX_EFFECTS.concat(['text']);
+var SLA_FALLBACK_COLORS={l2:'#facc15',cto:'#f97316',am:'#f87171'};
+function slaFallbackColor(key){return SLA_FALLBACK_COLORS[key]||'#f87171';}
+function slaEffectOrDefault(effect,def){return SLA_EFFECTS.indexOf(effect)>=0?effect:def;}
+function slaLevels(){
+  var raw=SETTINGS.slaLevels;
+  if(!Array.isArray(raw)){
+    raw=[
+      {key:'l2', label:'L2', enabled:SETTINGS.slaL2Enabled===true, hours:SETTINGS.slaL2Hours||3,  effect:SETTINGS.slaL2Effect||'soft',  color:SETTINGS.slaL2Color},
+      {key:'cto',label:'CTO',enabled:SETTINGS.slaCtoEnabled===true,hours:SETTINGS.slaCtoHours||6, effect:SETTINGS.slaCtoEffect||'pulse',color:SETTINGS.slaCtoColor},
+      {key:'am', label:'AM', enabled:SETTINGS.slaAmEnabled===true, hours:SETTINGS.slaAmHours||8,  effect:SETTINGS.slaAmEffect||'blink', color:SETTINGS.slaAmColor}
+    ];
+  }
+  var out=[],seen={};
+  raw.forEach(function(l,i){
+    if(!l)return;
+    var key=String(l.key||'').trim()||('lvl'+i);
+    while(seen[key])key=key+'_'+i;          // keys must stay unique — alerts are deduped on them
+    seen[key]=true;
+    var hrs=parseFloat(l.hours);
+    out.push({
+      key:key,
+      label:String(l.label||'').trim(),     // a level with no name yet is simply inactive
+      enabled:l.enabled===true,
+      hours:hrs>0?Math.min(168,hrs):3,
+      effect:slaEffectOrDefault(l.effect,'soft'),
+      color:normalizeColorHex(l.color,slaFallbackColor(key))
+    });
+  });
+  SETTINGS.slaLevels=out;
+  return out;
 }
-// One source of truth for the three escalation levels (enabled or not), so the row effects,
+// Keep the pre-list keys in step with the levels that still carry the old keys
+function syncLegacySlaKeys(){
+  var byKey={};
+  slaLevels().forEach(function(l){byKey[l.key]=l;});
+  [['l2','slaL2'],['cto','slaCto'],['am','slaAm']].forEach(function(pair){
+    var l=byKey[pair[0]],p=pair[1];
+    SETTINGS[p+'Enabled']=!!(l&&l.enabled&&l.label);
+    if(l){SETTINGS[p+'Hours']=l.hours;SETTINGS[p+'Effect']=l.effect;SETTINGS[p+'Color']=l.color;}
+  });
+  SETTINGS.slaEnabled=slaAnyEnabled();
+}
+function slaAnyEnabled(){
+  return slaLevels().some(function(l){return l.enabled&&!!l.label;});
+}
+// One source of truth for the escalation levels (enabled or not), so the row effects,
 // the Concern badge and the Task Alerts tray all read the same hours, labels and colors.
 function slaTiers(){
-  return [
-    {enabled:SETTINGS.slaL2Enabled===true,key:'l2',label:'L2',hours:parseFloat(SETTINGS.slaL2Hours)||3,effect:SETTINGS.slaL2Effect,color:SETTINGS.slaL2Color,fallback:FX_COLOR_DEFAULTS.slaL2Color},
-    {enabled:SETTINGS.slaCtoEnabled===true,key:'cto',label:'CTO',hours:parseFloat(SETTINGS.slaCtoHours)||6,effect:SETTINGS.slaCtoEffect,color:SETTINGS.slaCtoColor,fallback:FX_COLOR_DEFAULTS.slaCtoColor},
-    {enabled:SETTINGS.slaAmEnabled===true,key:'am',label:'AM',hours:parseFloat(SETTINGS.slaAmHours)||8,effect:SETTINGS.slaAmEffect,color:SETTINGS.slaAmColor,fallback:FX_COLOR_DEFAULTS.slaAmColor}
-  ];
+  return slaLevels().map(function(l){
+    return {enabled:l.enabled&&!!l.label,key:l.key,label:l.label,hours:l.hours,
+            effect:l.effect,color:l.color,fallback:slaFallbackColor(l.key)};
+  });
 }
 function slaTierByKey(key){
   var found=slaTiers().filter(function(t){return t.key===key;});
@@ -5933,6 +5926,10 @@ function taskAlertAgeText(item){
   }
   if(item.kind==='sla')return slaAlertAgeText(item);
   var mins=Math.max(0,Math.floor((Date.now()-(Number(item.firedAt)||Date.now()))/60000));
+  if(item.kind==='rrro'){
+    return 'No RO by yet — flagged '+(mins<1?'just now':(mins<60?mins+'m ago':Math.floor(mins/60)+'h'+(mins%60?' '+(mins%60)+'m':'')+' ago'))
+      +' ('+rrRoAlertWindowLabel()+')';
+  }
   var isReminder=item.kind==='reminder';
   if(mins<1)return isReminder?'Reminder reached just now':'Just expired';
   if(mins<60)return isReminder?mins+'m since reminder':mins+'m overdue';
@@ -6102,14 +6099,16 @@ function flushTaskAlertBatch(){
   var keys=Object.keys(_taskAlertBatchKeys);_taskAlertBatchKeys={};
   var items=keys.map(taskAlertByKey).filter(function(item){return item&&(!item.snoozedUntil||item.snoozedUntil<=Date.now());});
   if(!items.length)return;
-  var reminderCount=items.filter(function(item){return item.kind==='reminder';}).length;
+  // A missing RO by is a nudge, not an expiry — it chimes like a reminder
+  var isGentle=function(item){return item.kind==='reminder'||item.kind==='rrro';};
+  var reminderCount=items.filter(isGentle).length;
   var slaCount=items.filter(function(item){return item.kind==='sla';}).length;
   var timerCount=items.length-reminderCount-slaCount;
   // An SLA breach is as urgent as an expired timer, so it uses the alarm tone, not the reminder chime.
   // The sound follows the client TYPE of the entry that leads the batch (Settings > Timers & Alarms),
   // falling back to the general pair when that type has no sound of its own.
   var leadKind=(timerCount||slaCount)?'timer':'reminder';
-  var lead=items.filter(function(item){return leadKind==='timer'?item.kind!=='reminder':item.kind==='reminder';})[0]||items[0];
+  var lead=items.filter(function(item){return leadKind==='timer'?!isGentle(item):isGentle(item);})[0]||items[0];
   var leadRec=lead?DATA.find(function(rec){return String(rec.id)===String(lead.id);}):null;
   try{playAlert(alertToneFor(leadRec,leadKind));}catch(e){}
   var count=items.length;
@@ -6146,6 +6145,7 @@ function taskAlertBodyLine(item){
     var hrs=slaAlertHours(item);
     return item.name+' — needs escalation to '+slaAlertLabel(item)+(hrs?' (open past '+hrs+'h)':'')+'.';
   }
+  if(item.kind==='rrro')return taskAlertSourceTag(item)+item.name+' — still has no RO by (blank or Not Yet).';
   return taskAlertSourceTag(item)+item.name+(item.kind==='reminder'?' — reminder time reached.':' — timer has expired.');
 }
 // ─── SLA ESCALATION ALERTS ───────────────────────────────────
@@ -6274,31 +6274,71 @@ function pruneRRRoNotifKeys(dayStr){
     rm.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
   }catch(e){}
 }
+// Was this entry already announced today, for this purpose ('notify' pop-up or 'tray')?
+function rrRoAlreadyAnnounced(kind,r,dayStr){
+  var key='cyn_rro'+kind+'_'+currentAlertUserKey()+'_'+r.id+'_'+dayStr;
+  var seen=_sessionAlerted[key];
+  if(!seen){try{seen=localStorage.getItem(key)==='1';}catch(e){}}
+  return {key:key,seen:!!seen};
+}
+function markRRRoAnnounced(key){
+  _sessionAlerted[key]=true;
+  try{localStorage.setItem(key,'1');}catch(e){}
+}
+// Tray row for a Pending RR/RO with no RO by. type:'rr' gives it the sky 🕘 RR/RO chip.
+function enqueueRRRoAlert(r,dayStr){
+  var key='rrro_rr_'+String(r.id)+'_'+dayStr;
+  if(taskAlertByKey(key))return;
+  _taskAlertQueue.push({key:key,id:r.id,type:'rr',kind:'rrro',name:timerAlertName(r),
+    detail:timerAlertDetail(r),firedAt:Date.now(),snoozedUntil:0});
+  persistTaskAlertQueue();
+  scheduleTaskAlertBatch(key);
+}
+// Like SLA rows, these describe a standing condition: drop them as soon as the entry
+// gets an RO by, is completed or disregarded, the window closes, or the toggle goes off.
+function pruneRRRoAlerts(){
+  if(!Array.isArray(DATA))return;
+  if(!_taskAlertQueue.some(function(item){return item.kind==='rrro';}))return;
+  var off=SETTINGS.rrRoAlertEnabled===false||SETTINGS.rrRoAlertTray===false;
+  var before=_taskAlertQueue.length;
+  _taskAlertQueue=_taskAlertQueue.filter(function(item){
+    if(item.kind!=='rrro')return true;
+    if(off)return false;
+    var r=DATA.find(function(rec){return String(rec.id)===String(item.id);});
+    return !!r&&isRRRoMissingDue(r);
+  });
+  if(_taskAlertQueue.length!==before){persistTaskAlertQueue();renderTaskAlertCenter();updateTaskAlertBadge();}
+}
 function checkRRRoMissingNotifs(){
-  if(SETTINGS.rrRoAlertEnabled===false||SETTINGS.rrRoAlertNotify===false)return;
+  pruneRRRoAlerts();
+  if(SETTINGS.rrRoAlertEnabled===false)return;
+  var wantPopup=SETTINGS.rrRoAlertNotify!==false;
+  var wantTray=SETTINGS.rrRoAlertTray!==false;
+  if(!wantPopup&&!wantTray)return;
   if(!isRRRoAlertWindowActive()||!Array.isArray(DATA))return;
   var dayStr=rrRoNotifDayStr();
   pruneRRRoNotifKeys(dayStr);
   var dueAll=[],dueNew=[];
   DATA.forEach(function(r){
-    if(!isRRRoMissingDue(r))return;           // Pending RR/RO, not done/disregarded, RO by blank or "Not Yet", past set time
+    if(!isRRRoMissingDue(r))return;           // Pending RR/RO, not done/disregarded, RO by blank or "Not Yet", inside the window
     dueAll.push(r);
-    var key='cyn_rronotify_'+currentAlertUserKey()+'_'+r.id+'_'+dayStr;
-    var seen=_sessionAlerted[key];
-    if(!seen){try{seen=localStorage.getItem(key)==='1';}catch(e){}}
-    if(!seen)dueNew.push({r:r,key:key});
+    if(wantTray){
+      var tray=rrRoAlreadyAnnounced('tray',r,dayStr);
+      if(!tray.seen){markRRRoAnnounced(tray.key);enqueueRRRoAlert(r,dayStr);}
+    }
+    if(wantPopup){
+      var pop=rrRoAlreadyAnnounced('notify',r,dayStr);
+      if(!pop.seen)dueNew.push({r:r,key:pop.key});
+    }
   });
-  if(!dueNew.length)return;                    // nothing new to announce this evening
-  dueNew.forEach(function(o){
-    _sessionAlerted[o.key]=true;
-    try{localStorage.setItem(o.key,'1');}catch(e){}
-  });
-  var t=SETTINGS.rrRoAlertTime||'18:00';
+  if(!wantPopup||!dueNew.length)return;        // nothing new to announce this evening
+  dueNew.forEach(function(o){markRRRoAnnounced(o.key);});
+  var t=rrRoAlertWindowLabel();
   var names=dueAll.map(function(r){return r.rrSubject||'(no subject)';});
   var body=dueAll.length===1
-    ? names[0]+' still has no RO by (blank or Not Yet) after '+t+'.'
-    : dueAll.length+' Pending RR/RO entries still have no RO by (blank or Not Yet) after '+t+':\n• '+names.slice(0,6).join('\n• ')+(names.length>6?'\n…and '+(names.length-6)+' more':'');
-  toast('🔔 '+dueAll.length+' Pending RR/RO '+(dueAll.length===1?'entry has':'entries have')+' no RO by after '+t,'error');
+    ? names[0]+' still has no RO by (blank or Not Yet) — '+t+'.'
+    : dueAll.length+' Pending RR/RO entries still have no RO by (blank or Not Yet) — '+t+':\n• '+names.slice(0,6).join('\n• ')+(names.length>6?'\n…and '+(names.length-6)+' more':'');
+  toast('🔔 '+dueAll.length+' Pending RR/RO '+(dueAll.length===1?'entry has':'entries have')+' no RO by','error');
   sendBrowserNotif('🔔 Pending RR/RO: missing RO by',body,'rroalert_'+dayStr,true);
 }
 
@@ -10459,28 +10499,19 @@ document.getElementById('advised-aging-days').value=SETTINGS.advisedAgingDays||7
 document.getElementById('advised-aging-effect').value=SETTINGS.advisedAgingEffect||'soft';
 document.getElementById('rr-ro-alert-enabled').checked=SETTINGS.rrRoAlertEnabled!==false;
 document.getElementById('rr-ro-alert-time').value=SETTINGS.rrRoAlertTime||'18:00';
+document.getElementById('rr-ro-alert-until').value=SETTINGS.rrRoAlertUntil||'23:59';
 document.getElementById('rr-ro-alert-effect').value=SETTINGS.rrRoAlertEffect||'pulse';
 document.getElementById('rr-ro-alert-notify').checked=SETTINGS.rrRoAlertNotify!==false;
+document.getElementById('rr-ro-alert-tray').checked=SETTINGS.rrRoAlertTray!==false;
 document.getElementById('rr-done-aging-enabled').checked=SETTINGS.rrDoneAgingEnabled!==false;
-// Migrate the old single SLA on/off switch to per-level switches
+// Migrate the old single SLA on/off switch to per-level switches, then into the level list
 if(SETTINGS.slaL2Enabled===undefined)SETTINGS.slaL2Enabled=SETTINGS.slaEnabled===true;
 if(SETTINGS.slaCtoEnabled===undefined)SETTINGS.slaCtoEnabled=SETTINGS.slaEnabled===true;
 if(SETTINGS.slaAmEnabled===undefined)SETTINGS.slaAmEnabled=SETTINGS.slaEnabled===true;
-document.getElementById('sla-l2-enabled').checked=SETTINGS.slaL2Enabled===true;
-document.getElementById('sla-cto-enabled').checked=SETTINGS.slaCtoEnabled===true;
-document.getElementById('sla-am-enabled').checked=SETTINGS.slaAmEnabled===true;
-document.getElementById('sla-l2-hours').value=SETTINGS.slaL2Hours||3;
-document.getElementById('sla-l2-effect').value=SETTINGS.slaL2Effect||'soft';
-document.getElementById('sla-cto-hours').value=SETTINGS.slaCtoHours||6;
-document.getElementById('sla-cto-effect').value=SETTINGS.slaCtoEffect||'pulse';
-document.getElementById('sla-am-hours').value=SETTINGS.slaAmHours||8;
-document.getElementById('sla-am-effect').value=SETTINGS.slaAmEffect||'blink';
+renderSlaLevels();
 document.getElementById('sla-notify').checked=SETTINGS.slaNotify!==false;
 SETTINGS.advisedAgingColor=normalizeColorHex(SETTINGS.advisedAgingColor,'#fb7185');
 SETTINGS.rrRoAlertColor=normalizeColorHex(SETTINGS.rrRoAlertColor,'#38bdf8');
-SETTINGS.slaL2Color=normalizeColorHex(SETTINGS.slaL2Color,'#facc15');
-SETTINGS.slaCtoColor=normalizeColorHex(SETTINGS.slaCtoColor,'#f97316');
-SETTINGS.slaAmColor=normalizeColorHex(SETTINGS.slaAmColor,'#f87171');
 document.getElementById('pin-fx-effect').value=fxEffectOrDefault(SETTINGS.pinEffect,'soft');
 SETTINGS.pinColor=normalizeColorHex(SETTINGS.pinColor,'#fbbf24');
 renderEffectColorPickers();
@@ -11755,6 +11786,113 @@ function removeClientTypeRule(i){
   saveSettings();
   applyFilters();
   toast(gone?('Removed the '+gone+' rule'):'Rule removed','info');
+}
+// ── Settings > SLA Escalation levels (add / rename / remove) ──
+var _slaLevelsRendered=false;
+function renderSlaLevels(){
+  var wrap=document.getElementById('sla-levels');
+  if(!wrap)return;
+  var levels=slaLevels();
+  var focusId=document.activeElement&&document.activeElement.id&&document.activeElement.id.indexOf('sla-lv-')===0?document.activeElement.id:'';
+  var focusPos=focusId&&document.activeElement.selectionStart;
+  var effLabels={soft:'Soft highlight',pulse:'Pulse',stripe:'Stripe',blink:'Blink',glow:'Glow',shimmer:'Shimmer',outline:'Outline',text:'Text in Concern'};
+  wrap.innerHTML=levels.map(function(l,i){
+    return '<div class="ctyp-card"><div class="auto-row">'
+      +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">'
+        +'<input type="checkbox" id="sla-lv-en-'+i+'" onchange="saveSlaLevels()" style="accent-color:var(--accent)"'+(l.enabled?' checked':'')+'> Enable</label>'
+      +'<span class="auto-label">Escalate to</span>'
+      +'<input class="fc" id="sla-lv-name-'+i+'" value="'+escAttr(l.label)+'" placeholder="e.g. L2" style="width:120px" oninput="saveSlaLevels()">'
+      +'<span class="auto-label">after</span>'
+      +'<input class="fc" id="sla-lv-hrs-'+i+'" type="number" min="1" max="168" step="0.5" value="'+l.hours+'" style="width:70px" onchange="saveSlaLevels()" oninput="saveSlaLevels()">'
+      +'<span class="auto-label">hrs</span>'
+      +'<button type="button" class="btn-icon btn-sm client-rule-del ml-auto" title="Remove this level" onclick="removeSlaLevel('+i+')">✕</button>'
+      +'</div><div class="auto-row">'
+      +'<span class="ctyp-grp"><span class="auto-label">effect</span>'
+      +'<select class="fsel" id="sla-lv-eff-'+i+'" onchange="saveSlaLevels()">'
+        +SLA_EFFECTS.map(function(e){return '<option value="'+e+'"'+(l.effect===e?' selected':'')+'>'+effLabels[e]+'</option>';}).join('')
+      +'</select></span>'
+      +'<span class="ctyp-grp"><span class="auto-label">color</span>'
+      +'<div class="sheet-color-picker" id="sla-lv-color-'+i+'"></div></span>'
+      +'</div></div>';
+  }).join('');
+  levels.forEach(function(l,i){renderSlaLevelColorPicker(i,l);});
+  _slaLevelsRendered=true;
+  if(focusId){
+    var back=document.getElementById(focusId);
+    if(back){back.focus();try{if(focusPos!==null&&focusPos!==undefined)back.setSelectionRange(focusPos,focusPos);}catch(e){}}
+  }
+}
+// Same swatch row as the other effect colors, but the value lives in the level, not a SETTINGS key
+function renderSlaLevelColorPicker(i,level){
+  var el=document.getElementById('sla-lv-color-'+i);
+  if(!el)return;
+  var fallback=slaFallbackColor(level.key);
+  var current=normalizeColorHex(level.color,fallback);
+  el.innerHTML=EFFECT_COLOR_PALETTE.map(function(color){
+    var hex=normalizeColorHex(color,fallback);
+    return '<button type="button" class="sheet-color-swatch'+(hex===current?' active':'')+'" data-light="'+(isLightColor(hex,fallback)?'1':'0')+'" style="background:'+hex+'" title="'+hex+'" onclick="selectSlaLevelColor('+i+',\''+hex+'\')"></button>';
+  }).join('');
+}
+function selectSlaLevelColor(i,color){
+  var levels=slaLevels();
+  if(!levels[i])return;
+  levels[i].color=normalizeColorHex(color,slaFallbackColor(levels[i].key));
+  SETTINGS.slaLevels=levels;
+  renderSlaLevels();
+  saveSettings();
+  applyFilters();
+}
+// Read the level cards back; null = not rendered yet, so leave SETTINGS alone
+function readSlaLevelsFromUI(){
+  if(!_slaLevelsRendered||!document.getElementById('sla-levels'))return null;
+  var current=Array.isArray(SETTINGS.slaLevels)?SETTINGS.slaLevels:slaLevels();
+  var out=[];
+  for(var i=0;;i++){
+    var nameEl=document.getElementById('sla-lv-name-'+i);
+    if(!nameEl)break;
+    var enEl=document.getElementById('sla-lv-en-'+i);
+    var hrsEl=document.getElementById('sla-lv-hrs-'+i);
+    var effEl=document.getElementById('sla-lv-eff-'+i);
+    var prev=current[i]||{};
+    var hrs=parseFloat(hrsEl&&hrsEl.value);
+    out.push({
+      key:prev.key||('lvl'+Date.now()+i),  // never regenerate an existing key
+      label:(nameEl.value||'').trim(),
+      enabled:enEl?enEl.checked:false,
+      hours:hrs>0?Math.min(168,hrs):(prev.hours||3),
+      effect:effEl?effEl.value:(prev.effect||'soft'),
+      color:prev.color
+    });
+  }
+  return out;
+}
+function saveSlaLevels(){
+  saveSettings(); // reads the cards itself, then syncs to every user
+  applyFilters();
+}
+function addSlaLevel(){
+  var levels=slaLevels();
+  if(levels.length>=10){toast('That is already 10 escalation levels','info');return;}
+  // Start one step past the slowest level so a new row does not fire immediately
+  var maxHrs=levels.reduce(function(m,l){return Math.max(m,l.hours||0);},0);
+  levels.push({key:'lvl'+Date.now(),label:'',enabled:false,hours:Math.min(168,(maxHrs||0)+2),effect:'soft',color:''});
+  SETTINGS.slaLevels=levels;
+  renderSlaLevels();
+  saveSettings();
+  var el=document.getElementById('sla-lv-name-'+(levels.length-1));
+  if(el)el.focus();
+}
+function removeSlaLevel(i){
+  var levels=slaLevels();
+  if(i<0||i>=levels.length)return;
+  var gone=levels[i].label;
+  levels.splice(i,1);
+  SETTINGS.slaLevels=levels;
+  renderSlaLevels();
+  saveSettings();
+  pruneSlaAlerts(); // any tray alert for that level no longer describes reality
+  applyFilters();
+  toast(gone?('Removed escalation level '+gone):'Level removed','info');
 }
 function testClientTypeTone(i,kind){
   var el=document.getElementById(kind==='reminder'?'ctyp-rem-'+i:'ctyp-alarm-'+i);
@@ -14067,6 +14205,10 @@ window.addClientTypeRule=addClientTypeRule;
 window.removeClientTypeRule=removeClientTypeRule;
 window.testClientTypeTone=testClientTypeTone;
 window.onAutoThirtyHoursChange=onAutoThirtyHoursChange;
+window.saveSlaLevels=saveSlaLevels;
+window.addSlaLevel=addSlaLevel;
+window.removeSlaLevel=removeSlaLevel;
+window.selectSlaLevelColor=selectSlaLevelColor;
 window._doSwitchTab=_doSwitchTab;
 window.openDailyReport=openDailyReport;
 window.closeDailyReport=closeDailyReport;
