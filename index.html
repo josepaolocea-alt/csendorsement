@@ -587,11 +587,12 @@ body.entry-compact .entry-comments .comment-bubble{padding:6px 10px;}
 body.entry-compact .entry-comments .comment-text{font-size:12px;line-height:1.42;}
 body.entry-compact .entry-comments .comment-new{gap:6px;}
 body.entry-compact .entry-comments .comment-empty{padding:20px 16px;}
-/* ── Entry window style: Center pop-up (default) / Side panel / Split view ──
+/* ── Entry window style: Center pop-up (default) / Side panel ──
    Per-device (localStorage cyn_entry_style). Scoped to the 3 entry popups via
    .entry-ov so every other modal (Settings, confirm, comments…) is untouched.
    Only the panel geometry + entrance animation change — the backdrop keeps
-   the existing ovFadeIn — so it stays as smooth as the default centre pop-up. */
+   the existing ovFadeIn — so it stays as smooth as the default centre pop-up.
+   ('split' / Split view and 'full' / Full window were both retired.) */
 .estyle-seg{display:inline-flex;gap:4px;padding:3px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;flex-wrap:wrap;}
 .estyle-opt{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text2);font-family:var(--sf);font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;}
 .estyle-opt svg{width:15px;height:15px;flex:0 0 auto;}
@@ -602,49 +603,21 @@ body.entry-style-panel .entry-ov{justify-content:flex-end;align-items:stretch;pa
 body.entry-style-panel .entry-ov .entry-modal{width:min(780px,100vw);max-width:min(780px,100vw);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-24px 0 60px rgba(0,0,0,.45);}
 body.entry-style-panel .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
 @keyframes entryDrawerIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
-/* SPLIT VIEW — preserve a fully interactive task workspace on the left and
-   dock the editor on the right. Only the editor pane captures pointer input. */
-body.entry-style-split{--entry-split-width:clamp(560px,46vw,780px);}
-body.entry-style-split .topbar,body.entry-style-split .main{transition:width .25s cubic-bezier(.22,.75,.3,1);}
-@media (min-width:1100px){
-  body.entry-style-split.entry-split-open .topbar,body.entry-style-split.entry-split-open .main{width:calc(100% - var(--entry-split-width));}
-  body.entry-style-split .entry-ov{justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden;background:transparent;backdrop-filter:none;pointer-events:none;}
-  body.entry-style-split .entry-ov .entry-modal{width:var(--entry-split-width);max-width:var(--entry-split-width);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-14px 0 34px rgba(0,0,0,.24);pointer-events:auto;}
-  body.entry-style-split.entry-split-open .topbar .ml-auto>#user-chip,
-  body.entry-style-split.entry-split-open .topbar .ml-auto>#logout-btn,
-  body.entry-style-split.entry-split-open .topbar .ml-auto>#new-btn,
-  body.entry-style-split.entry-split-open .topbar .ml-auto>#theme-btn{display:none!important;}
-  body.entry-style-split.entry-split-open .topbar .split-actions{display:block;}
-  body.entry-style-split .entry-ov:not(.hidden) .entry-modal{animation:entrySplitIn .25s cubic-bezier(.22,.75,.3,1);}
-  @keyframes entrySplitIn{from{transform:translateX(36px);opacity:.75}to{transform:translateX(0);opacity:1}}
-}
-/* A split would leave too little table space below desktop width, so retain
-   the user's Split View choice but present it as a conventional side panel. */
-@media (max-width:1099px){
-  body.entry-style-split .entry-ov{justify-content:flex-end;align-items:stretch;padding:0;overflow:hidden;}
-  body.entry-style-split .entry-ov .entry-modal{width:min(780px,100vw);max-width:min(780px,100vw);height:100vh;height:100dvh;max-height:none;border-radius:0;border-width:0 0 0 1px;box-shadow:-24px 0 60px rgba(0,0,0,.45);}
-  body.entry-style-split .entry-ov:not(.hidden) .entry-modal{animation:entryDrawerIn .28s cubic-bezier(.22,.75,.3,1);}
-}
 /* Entry exit animations. The overlay remains mounted until the modal animation
    finishes, so Escape, X, Cancel and Save all close smoothly. (A backdrop click is
    deliberately NOT a way out of an entry popup — see initEntryOverlays.) */
 .entry-ov.is-closing{animation:entryOverlayOut .22s ease forwards;pointer-events:none;}
 .entry-ov.is-closing .entry-modal{animation:entryModalOut .18s cubic-bezier(.4,0,1,1) forwards;}
 body.entry-style-panel .entry-ov.is-closing .entry-modal{animation:entryDrawerOut .24s cubic-bezier(.55,.05,.9,.45) forwards;}
-@media (min-width:1100px){body.entry-style-split .entry-ov.is-closing .entry-modal{animation:entrySplitOut .2s cubic-bezier(.4,0,1,1) forwards;}}
-@media (max-width:1099px){body.entry-style-split .entry-ov.is-closing .entry-modal{animation:entryDrawerOut .24s cubic-bezier(.55,.05,.9,.45) forwards;}}
 @keyframes entryOverlayOut{from{opacity:1}to{opacity:0}}
 @keyframes entryModalOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(7px) scale(.975)}}
 @keyframes entryDrawerOut{from{transform:translateX(0)}to{transform:translateX(100%)}}
-@keyframes entrySplitOut{from{opacity:1;transform:translateX(0)}to{opacity:.7;transform:translateX(42px)}}
 /* ── Freeze the page behind an open entry popup ───────────────────────────────
    Without this the wheel (or a finger) over the backdrop — or over the form once
    it has hit its last field — leaked through and scrolled the task table behind,
    so closing the popup left the list somewhere else. body's overflow propagates
    to the viewport while html stays overflow:visible, so this one rule stops the
-   page without the position:fixed jump-to-top trick. Toggled by syncEntrySplitOpen().
-   Split view is the deliberate exception: its backdrop is pointer-transparent on
-   purpose, so the left workspace must keep scrolling beside the editor. */
+   page without the position:fixed jump-to-top trick. Toggled by syncEntryScrollLock(). */
 body.entry-scroll-lock{overflow:hidden;overscroll-behavior:none;}
 /* Long Concern/Description/Comment boxes scroll on their own — keep that scroll
    inside the box instead of handing it off once the caret reaches the end. */
@@ -2164,9 +2137,6 @@ try{
         </button>
         <button type="button" class="estyle-opt" data-style="panel" onclick="setEntryStyle('panel')" title="Slides in as a tall panel docked to the right edge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="13" y1="5" x2="13" y2="19"/></svg><span>Side panel</span>
-        </button>
-        <button type="button" class="estyle-opt" data-style="split" onclick="setEntryStyle('split')" title="Keeps the task workspace visible beside a docked editor; uses a side panel on smaller screens">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="11" y1="5" x2="11" y2="19"/><path d="M6 9h2M6 12h2M6 15h2"/></svg><span>Split view</span>
         </button>
       </div>
       <span class="auto-label" style="color:var(--text3)">applies to New &amp; Edit in every tab — saved on this device only, not shared</span>
@@ -4390,18 +4360,18 @@ function toggleEntryCompact(){
 }
 applyEntryCompact();
 
-// ─── ENTRY MODAL WINDOW STYLE (per-device: center / side panel / split view) ───
+// ─── ENTRY MODAL WINDOW STYLE (per-device: center / side panel) ───
 // Same per-device idea as compact: one choice shared by the Endorsement / RR-RO /
 // DID add-or-edit popups. Toggles a body class the scoped CSS reacts to. Only the
 // geometry + entrance animation change; the backdrop keeps its fade so it stays
 // smooth. Default — or any unknown value — falls back to the centre pop-up.
-// ('full' / Full window was retired, so any device still holding it lands on centre.)
+// ('split' / Split view and 'full' / Full window were both retired, so any device
+// still holding one of those values lands on centre.)
 function applyEntryStyle(){
   var s=localStorage.getItem('cyn_entry_style')||'center';
-  if(s!=='panel'&&s!=='split')s='center';
+  if(s!=='panel')s='center';
   document.body.classList.toggle('entry-style-panel',s==='panel');
-  document.body.classList.toggle('entry-style-split',s==='split');
-  syncEntrySplitOpen();
+  syncEntryScrollLock();
   document.querySelectorAll('#estyle-seg .estyle-opt').forEach(function(b){
     var on=b.getAttribute('data-style')===s;
     b.classList.toggle('is-active',on);
@@ -4409,7 +4379,7 @@ function applyEntryStyle(){
   });
 }
 function setEntryStyle(s){
-  if(s!=='panel'&&s!=='split')s='center';
+  if(s!=='panel')s='center';
   localStorage.setItem('cyn_entry_style',s);
   applyEntryStyle();
 }
@@ -4417,17 +4387,13 @@ applyEntryStyle();
 
 // Close Add/Edit entry views when the user clicks the backdrop. Requiring the
 // overlay itself as the click target protects every control inside all layouts.
-function syncEntrySplitOpen(){
+function syncEntryScrollLock(){
   var open=Array.prototype.some.call(document.querySelectorAll('.entry-ov'),function(overlay){
     return !overlay.classList.contains('hidden');
   });
-  var split=document.body.classList.contains('entry-style-split');
-  document.body.classList.toggle('entry-split-open',split&&open);
-  // Lock the page behind the popup (see body.entry-scroll-lock). Desktop Split View is
-  // the one layout that must stay scrollable, since its backdrop lets clicks through to
-  // the task list on purpose; below 1100px Split falls back to a side panel, which locks.
-  var splitDesktop=split&&window.matchMedia('(min-width:1100px)').matches;
-  document.body.classList.toggle('entry-scroll-lock',open&&!splitDesktop);
+  // Lock the page behind the popup (see body.entry-scroll-lock) so the wheel or a
+  // finger over the backdrop can't scroll the task list out from under the form.
+  document.body.classList.toggle('entry-scroll-lock',open);
   if(!open)closeSplitActionMenu();
 }
 var _returnToTaskAlertCenterAfterEntry=false;
@@ -4466,20 +4432,17 @@ function closeEntryOverlay(id){
 }
 // The three entry popups deliberately do NOT close on a backdrop click. A stray click beside
 // a half-typed entry used to discard the whole form, so closing is now an explicit act: the ✕,
-// Cancel, or Esc. This only watches each overlay so the split-view layout stays in sync.
+// Cancel, or Esc. This only watches each overlay so the page scroll lock stays in sync.
 function initEntryOverlays(){
   ['record-modal','rr-modal','did-modal'].forEach(function(id){
     var overlay=document.getElementById(id);
     if(!overlay||overlay._entryOverlayBound)return;
     overlay._entryOverlayBound=true;
-    new MutationObserver(syncEntrySplitOpen).observe(overlay,{attributes:true,attributeFilter:['class']});
+    new MutationObserver(syncEntryScrollLock).observe(overlay,{attributes:true,attributeFilter:['class']});
   });
-  syncEntrySplitOpen();
+  syncEntryScrollLock();
 }
 initEntryOverlays();
-// Split View only skips the scroll lock above 1100px, so re-check when the window
-// crosses that line with a popup already open.
-window.addEventListener('resize',syncEntrySplitOpen);
 
 // ─── COLLAPSIBLE SETTINGS SECTIONS ───────────────────────────
 // Make each Settings section header toggle its content (default expanded; state per-section in localStorage).
