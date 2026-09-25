@@ -92,6 +92,22 @@ pre,code,kbd,samp{font-family:var(--mono);}
 .settings-sec .auto-row+.auto-row{margin-top:8px;}
 .auto-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .auto-label{font-size:12px;color:var(--text2);}
+/* Settings > Client timer rules: rows live inside their own container, so the
+   first rule and the "+ Add client rule" row need the gap added back. */
+#client-timer-rules>.auto-row:first-child,#client-timer-rules+.auto-row{margin-top:8px;}
+.client-rule-del{color:var(--text3);}
+.client-rule-del:hover{color:#f87171;}
+/* A label + its control stay together when a client type rule row wraps */
+.ctyp-grp{display:inline-flex;align-items:center;gap:8px;}
+/* Each client type rule is its own small card, so a rule reads as one unit */
+.ctyp-card{border:1px solid var(--border);border-radius:9px;background:var(--bg2);padding:9px 11px;margin-top:8px;}
+.ctyp-card .auto-row+.auto-row{margin-top:8px;}
+/* Settings > Client Types: one chip per type, with its client count */
+.ctype-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text);background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 8px;}
+.ctype-chip-default{color:var(--text2);}
+.ctype-chip .ctype-chip-n{font-size:10px;font-weight:500;color:var(--text3);}
+.ctype-chip button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 1px;}
+.ctype-chip button:hover{color:#f87171;}
 .sheet-color-picker{display:grid;grid-template-columns:repeat(10,18px);gap:4px;align-items:center;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);}
 .sheet-color-swatch{width:18px;height:18px;border-radius:3px;border:1px solid rgba(255,255,255,.18);cursor:pointer;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);position:relative;}
 .sheet-color-swatch:hover{transform:translateY(-1px);border-color:var(--text2);}
@@ -867,6 +883,8 @@ textarea.fc{resize:vertical;min-height:70px;}
 .client-tag button.tag-drag-handle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px;}
 .client-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
 .client-link-info{font-size:10px;color:#fbbf24;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.25);border-radius:4px;padding:1px 5px;white-space:nowrap;}
+/* Client type chip (SVIP / VIP …) — violet so it never reads as the amber link badge */
+.client-type-info{font-size:10px;font-weight:700;letter-spacing:.3px;color:#a78bfa;background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.3);border-radius:4px;padding:1px 5px;white-space:nowrap;}
 
 /* Dashboard */
 .dash-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow);}
@@ -2073,11 +2091,14 @@ try{
       </label>
     </div>
     <div class="auto-row">
-      <span class="auto-label">30m ×4 → 2h auto-timer:</span>
+      <span class="auto-label">30m ×4 → <span id="auto-thirty-long-label">2h</span> auto-timer:</span>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="auto-thirty-rule-enabled" onchange="onAutoThirtyRuleSettingChange()" style="accent-color:var(--accent)" checked> Enable
       </label>
-      <span class="auto-label" style="color:var(--text3)">Ordinary 30-minute timers run four short cycles, then repeat every 2 hours</span>
+      <span class="auto-label">then repeat every</span>
+      <input class="fc" id="auto-thirty-long-hours" type="number" min="1" max="168" step="1" value="2" style="width:80px" onchange="onAutoThirtyHoursChange()">
+      <span class="auto-label">hour(s)</span>
+      <span class="auto-label" style="color:var(--text3)">Ordinary 30-minute timers run four short cycles, then keep repeating on this interval</span>
     </div>
     <div class="auto-row">
       <span class="auto-label">Timer alarm:</span>
@@ -2116,6 +2137,25 @@ try{
         </optgroup>
       </select>
       <button class="btn btn-secondary btn-sm" onclick="testReminderAlert()">Test</button>
+    </div>
+    <div class="auto-row" style="margin-top:14px">
+      <span class="auto-label" style="font-weight:700;color:var(--text2)">Per Client Type</span>
+      <span class="auto-label" style="color:var(--text3)">a rule wins over the settings above for every client of that type</span>
+    </div>
+    <!-- One row per client type — built by renderClientTypeRules() -->
+    <div id="client-type-rules"></div>
+    <div class="auto-row">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="addClientTypeRule()">+ Add client type rule</button>
+      <span class="auto-label" style="color:var(--text3)">set a client's type in Admin → Client / Vendor List → <strong>Link</strong>; clients with no type count as <strong>Normal</strong>. The alarm sounds take effect right away; the timer fills in when an entry is created or edited.</span>
+    </div>
+    </div>
+    <div class="settings-sec">
+    <div class="settings-sec-title">👑 Client Types</div>
+    <div class="auto-row" id="client-type-list"></div>
+    <div class="auto-row">
+      <input class="fc" id="new-client-type" placeholder="New type, e.g. SVIP" style="width:190px" onkeydown="if(event.key==='Enter'){event.preventDefault();addClientType();}">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="addClientType()">+ Add type</button>
+      <span class="auto-label" style="color:var(--text3)">types are shared with the whole team — <strong>Normal</strong> is the built-in fallback and can't be removed</span>
     </div>
     </div>
     <div class="settings-sec">
@@ -2158,23 +2198,11 @@ try{
       <input class="fc" id="payment-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
       <span class="auto-label" style="color:var(--text3)">entries with Service = Payment use this timer</span>
     </div>
+    <!-- One row per client rule — built by renderClientTimerRules() -->
+    <div id="client-timer-rules"></div>
     <div class="auto-row">
-      <span class="auto-label">Client timer:</span>
-      <select class="fsel" id="payment-client" onchange="saveSettings()" style="max-width:230px">
-        <option value="">— None (off) —</option>
-      </select>
-      <span class="auto-label">uses</span>
-      <select class="fsel" id="payment-client-timer" onchange="saveSettings()">
-        <option value="1800">30 Minutes</option>
-        <option value="3600">1 Hour</option>
-        <option value="7200">2 Hours</option>
-        <option value="86400">1 Day (24 Hours)</option>
-        <option value="259200">3 Days (72 Hours)</option>
-        <option value="604800">7 Days (168 Hours)</option>
-        <option value="custom">Custom...</option>
-      </select>
-      <input class="fc" id="payment-client-timer-hours" type="number" min="1" max="8760" placeholder="Hours" style="width:90px;display:none" oninput="saveSettings()">
-      <span class="auto-label" style="color:var(--text3)">picking this Client / Vendor sets this timer (any service) — wins over the Payment timer</span>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="addClientTimerRule()">+ Add client rule</button>
+      <span class="auto-label" style="color:var(--text3)">picking one of these Clients / Vendors sets its timer (any service) — wins over the Payment timer</span>
     </div>
     </div>
     <div class="settings-sec">
@@ -2825,8 +2853,11 @@ try{
             <option value="Urgent">⚠️ Urgent</option>
           </select>
         </div>
+        <div class="fgrp full"><label>Client Type</label>
+          <select class="fc" id="cl-type"><option value="">— Normal —</option></select>
+        </div>
       </div>
-      <p style="font-size:11px;color:var(--text3);margin-top:12px">New entries for this client will start with this AM / RR by and Priority already filled in — you can still change them on each entry.<br><br><strong>High</strong> → All Tasks &amp; DID tabs. <strong>Critical / Urgent</strong> → Pending RR / RO tab (counts as High in the other tabs). In Pending RR / RO, the auto-fill kicks in when the client name appears in the Subject.</p>
+      <p style="font-size:11px;color:var(--text3);margin-top:12px">New entries for this client will start with this AM / RR by and Priority already filled in — you can still change them on each entry.<br><br><strong>High</strong> → All Tasks &amp; DID tabs. <strong>Critical / Urgent</strong> → Pending RR / RO tab (counts as High in the other tabs). In Pending RR / RO, the auto-fill kicks in when the client name appears in the Subject.<br><br><strong>Client Type</strong> decides which timer and alarm sounds this client uses — set them in Settings ⚙️ → Timers &amp; Alarms. Left unset, a client counts as Normal.</p>
     </div>
     <div class="modal-ftr">
       <button class="btn btn-secondary" onclick="closeClientLinkModal()">Cancel</button>
@@ -2979,7 +3010,7 @@ try{
           <span style="font-size:11px;color:var(--text3);margin-top:3px">e.g. 01:00 = 1 hour &nbsp;|&nbsp; 00:30 = 30 min</span>
         </div>
         <div class="fgrp"><label>Auto Restart</label>
-          <label class="timer-auto-toggle" title="Restart 10 seconds after expiry. Ordinary 30-minute All Tasks timers run 4 short cycles, then repeat every 2 hours. Payment and the configured special client keep their own timer rules.">
+          <label class="timer-auto-toggle" title="Restart 10 seconds after expiry. Ordinary 30-minute All Tasks timers run 4 short cycles, then repeat on the interval set in Settings (2 hours by default). Payment, the client timer rules and the client type rules keep their own timers.">
             <input type="checkbox" id="f-auto-restart"> Restart 10s after expiry
           </label>
         </div>
@@ -4045,14 +4076,14 @@ function saveSettings(){
     payHrs.style.display=paySel.value==='custom'?'':'none';
     SETTINGS.paymentTimer=paySel.value==='custom'?Math.max(1,parseInt(payHrs.value,10)||24)*3600:parseInt(paySel.value,10)||86400;
   }
-  var payClientSel=document.getElementById('payment-client');
-  if(payClientSel) SETTINGS.paymentClientName=payClientSel.value||'';
-  var pcSel=document.getElementById('payment-client-timer');
-  var pcHrs=document.getElementById('payment-client-timer-hours');
-  if(pcSel&&pcHrs){
-    pcHrs.style.display=pcSel.value==='custom'?'':'none';
-    SETTINGS.paymentClientTimer=pcSel.value==='custom'?Math.max(1,parseInt(pcHrs.value,10)||24)*3600:parseInt(pcSel.value,10)||86400;
-  }
+  var clientRules=readClientTimerRulesFromUI();
+  if(clientRules) SETTINGS.clientTimerRules=clientRules;
+  syncLegacyClientTimerKeys();
+  var typeRules=readClientTypeRulesFromUI();
+  if(typeRules) SETTINGS.clientTypeRules=typeRules;
+  clientTypes(); // normalise the shared type list before it is written out
+  var longHrsEl=document.getElementById('auto-thirty-long-hours');
+  if(longHrsEl) SETTINGS.autoThirtyLongHours=Math.max(1,Math.min(168,parseInt(longHrsEl.value,10)||AUTO_THIRTY_LONG_HOURS_DEFAULT));
   var autoThirtyRuleEl=document.getElementById('auto-thirty-rule-enabled');
   SETTINGS.autoThirtyRuleEnabled=autoThirtyRuleEl?autoThirtyRuleEl.checked:true;
   SETTINGS.autoAlert=document.getElementById('auto-alert').checked;
@@ -4150,6 +4181,12 @@ function disableActiveAutoThirtySequences(){
   if(changed.length)applyFilters();
   return changed.length;
 }
+// Keep the "30m ×4 → Nh auto-timer" caption in step with the chosen interval
+function autoThirtyRuleLabel(){return '30m ×'+AUTO_THIRTY_SHORT_CYCLES+' → '+hourLabel(autoThirtyLongSecs())+' auto-timer';}
+function refreshAutoThirtyLabel(){
+  var el=document.getElementById('auto-thirty-long-label');
+  if(el)el.textContent=hourLabel(autoThirtyLongSecs());
+}
 function onAutoThirtyRuleSettingChange(){
   var el=document.getElementById('auto-thirty-rule-enabled');
   var enabled=el?el.checked:true;
@@ -4158,7 +4195,18 @@ function onAutoThirtyRuleSettingChange(){
   saveSettings();
   var resetCount=wasEnabled&&!enabled?disableActiveAutoThirtySequences():0;
   applyFilters();
-  toast(enabled?'30m ×4 → 2h auto-timer enabled':'30m ×4 → 2h auto-timer disabled'+(resetCount?' — '+resetCount+' active timer'+(resetCount===1?'':'s')+' reset to 30 minutes':''),'info');
+  toast(enabled?autoThirtyRuleLabel()+' enabled':autoThirtyRuleLabel()+' disabled'+(resetCount?' — '+resetCount+' active timer'+(resetCount===1?'':'s')+' reset to 30 minutes':''),'info');
+}
+// Repeat interval after the four short cycles — new length applies on the next restart
+function onAutoThirtyHoursChange(){
+  var el=document.getElementById('auto-thirty-long-hours');
+  var hrs=Math.max(1,Math.min(168,parseInt(el&&el.value,10)||AUTO_THIRTY_LONG_HOURS_DEFAULT));
+  if(el)el.value=hrs;
+  SETTINGS.autoThirtyLongHours=hrs;
+  saveSettings();
+  refreshAutoThirtyLabel();
+  applyFilters();
+  toast('Repeat timer set to every '+hrs+' hour'+(hrs===1?'':'s')+' — applies when a timer next restarts','info');
 }
 
 function toggleTheme(){
@@ -5099,12 +5147,27 @@ function fmtRRDate(d){if(!d)return '';var s=String(d);if(s.indexOf('T')<0)return
 
 function getTimerSecs(r){return r.timerOverride?r.timerOverride:SETTINGS.defaultTimer;}
 
-// Ordinary All Tasks auto timers use four 30-minute cycles (2 hours total),
-// then repeat every 2 hours while the entry remains pending on our side.
-// Payment and the configured special client keep their own timer rules.
+// Ordinary All Tasks auto timers use four 30-minute cycles (2 hours total), then
+// repeat on the admin-set interval (2 hours by default) while the entry remains
+// pending on our side. Payment, a client timer rule and a client TYPE timer rule
+// each take a record out of this sequence and give it their own duration.
 var AUTO_THIRTY_SECS=1800;
-var AUTO_THIRTY_LONG_SECS=7200;
+var AUTO_THIRTY_LONG_HOURS_DEFAULT=2;
 var AUTO_THIRTY_SHORT_CYCLES=4;
+// How long the repeat cycle runs once the four short ones are done. Admin-set in
+// Settings > Timers & Alarms (default 2 hours); a change applies to each timer on
+// its next restart, so a cycle already running keeps the length it started with.
+function autoThirtyLongHours(){
+  var h=parseInt(SETTINGS.autoThirtyLongHours,10);
+  return h>0?Math.min(168,h):AUTO_THIRTY_LONG_HOURS_DEFAULT;
+}
+function autoThirtyLongSecs(){return autoThirtyLongHours()*3600;}
+function hourLabel(secs){
+  var s=Math.max(0,parseInt(secs,10)||0);
+  if(s%3600===0)return (s/3600)+'h';
+  if(s%60===0)return Math.round(s/60)+'m';
+  return Math.round(s/3600*10)/10+'h';
+}
 /* Which statuses run the 30m x 4 -> 2h repeat sequence.
    Every "Pending at ..." status qualifies, Vendor and Developer included. They
    used to be excluded (via isPendingOnOurSideStatus, which is now left alone for
@@ -5151,16 +5214,19 @@ function resetAutoThirtyCycle(r){
 }
 function nextAutoThirtyCycle(r){
   var completed=Math.min(AUTO_THIRTY_SHORT_CYCLES,(parseInt(r&&r.autoThirtyCycleCount,10)||0)+1);
-  return {completed:completed,secs:completed>=AUTO_THIRTY_SHORT_CYCLES?AUTO_THIRTY_LONG_SECS:AUTO_THIRTY_SECS};
+  return {completed:completed,secs:completed>=AUTO_THIRTY_SHORT_CYCLES?autoThirtyLongSecs():AUTO_THIRTY_SECS};
 }
 function autoThirtyPhase(r){
   if(!autoThirtySequenceApplies(r))return null;
   var completed=Math.max(0,Math.min(AUTO_THIRTY_SHORT_CYCLES,parseInt(r.autoThirtyCycleCount,10)||0));
-  if(getTimerSecs(r)===AUTO_THIRTY_LONG_SECS||completed>=AUTO_THIRTY_SHORT_CYCLES){
-    return {label:'2h',title:'2-hour repeat timer — all 4 short cycles completed'};
+  // The long phase is "running anything other than the 30-minute cycle", so a row
+  // started before the repeat interval was changed still reads correctly.
+  if(getTimerSecs(r)!==AUTO_THIRTY_SECS||completed>=AUTO_THIRTY_SHORT_CYCLES){
+    var lbl=hourLabel(getTimerSecs(r)!==AUTO_THIRTY_SECS?getTimerSecs(r):autoThirtyLongSecs());
+    return {label:lbl,title:lbl+' repeat timer — all '+AUTO_THIRTY_SHORT_CYCLES+' short cycles completed'};
   }
   var current=Math.min(AUTO_THIRTY_SHORT_CYCLES,completed+1);
-  return {label:'30m '+current+'/'+AUTO_THIRTY_SHORT_CYCLES,title:'30-minute cycle '+current+' of '+AUTO_THIRTY_SHORT_CYCLES+' — switches to a 2-hour timer after cycle 4'};
+  return {label:'30m '+current+'/'+AUTO_THIRTY_SHORT_CYCLES,title:'30-minute cycle '+current+' of '+AUTO_THIRTY_SHORT_CYCLES+' — switches to a '+hourLabel(autoThirtyLongSecs())+' timer after cycle '+AUTO_THIRTY_SHORT_CYCLES};
 }
 function timerBadgeHTML(r,rem){
   var text=rem===null?'--:--':fmtTime(rem);
@@ -6055,8 +6121,13 @@ function flushTaskAlertBatch(){
   var reminderCount=items.filter(function(item){return item.kind==='reminder';}).length;
   var slaCount=items.filter(function(item){return item.kind==='sla';}).length;
   var timerCount=items.length-reminderCount-slaCount;
-  // An SLA breach is as urgent as an expired timer, so it uses the alarm tone, not the reminder chime
-  try{playAlert((timerCount||slaCount)?(SETTINGS.alarmTone||'beep'):(SETTINGS.reminderTone||'bell'));}catch(e){}
+  // An SLA breach is as urgent as an expired timer, so it uses the alarm tone, not the reminder chime.
+  // The sound follows the client TYPE of the entry that leads the batch (Settings > Timers & Alarms),
+  // falling back to the general pair when that type has no sound of its own.
+  var leadKind=(timerCount||slaCount)?'timer':'reminder';
+  var lead=items.filter(function(item){return leadKind==='timer'?item.kind!=='reminder':item.kind==='reminder';})[0]||items[0];
+  var leadRec=lead?DATA.find(function(rec){return String(rec.id)===String(lead.id);}):null;
+  try{playAlert(alertToneFor(leadRec,leadKind));}catch(e){}
   var count=items.length;
   var allSla=slaCount===count;
   var body=count===1
@@ -9976,19 +10047,142 @@ function applyPaymentStatusRule(){
 }
 
 // Settings > Payment / Client timer:
-// - the chosen Client / Vendor (e.g. SIR GENE EMAIL) always gets the Client timer, any service
+// - any Client / Vendor listed in the Client timer rules always gets its own timer, any service
 // - otherwise Payment uses its service timer
+// Rules live in SETTINGS.clientTimerRules = [{name,secs},...]; the old single
+// paymentClientName/paymentClientTimer pair is migrated into rule #1 on first read
+// and kept mirrored (see syncLegacyClientTimerKeys) so older tabs still work.
+var CLIENT_RULE_DURATIONS=[1800,3600,7200,86400,259200,604800];
+function clientTimerRules(){
+  var raw=SETTINGS.clientTimerRules;
+  if(!Array.isArray(raw)){
+    raw=[];
+    var legacyName=typeof SETTINGS.paymentClientName==='string'?SETTINGS.paymentClientName.trim():'';
+    if(legacyName)raw=[{name:legacyName,secs:SETTINGS.paymentClientTimer}];
+  }
+  // Rows with no client picked yet are kept — that's a rule the admin is still filling in.
+  // `custom` remembers that the admin chose "Custom..." so a re-render keeps that choice
+  // even when the hours happen to match a listed duration.
+  var out=raw.map(function(r){
+    var name=(r&&typeof r==='object')?String(r.name||''):String(r||'');
+    var secs=parseInt(r&&r.secs,10);
+    return {name:name.trim(),secs:secs>0?Math.min(8760*3600,secs):86400,custom:!!(r&&r.custom)};
+  });
+  SETTINGS.clientTimerRules=out;
+  return out;
+}
+// Keep the pre-multi-rule keys pointing at the first real rule
+function syncLegacyClientTimerKeys(){
+  var first=clientTimerRules().filter(function(r){return !!r.name;})[0];
+  SETTINGS.paymentClientName=first?first.name:'';
+  SETTINGS.paymentClientTimer=first?first.secs:86400;
+}
+/* ── CLIENT TYPES (SVIP / VIP / Normal …) ────────────────────────────────────
+   Every Client / Vendor can carry a type, picked in Admin > Link Client and
+   stored on the client document as `clientType`. A client with no type set
+   counts as the default type (Normal), so nothing has to be back-filled.
+   The list of types lives in SETTINGS.clientTypes and is team-synced like the
+   rest of Settings; each type can own a timer + its two alarm sounds through
+   SETTINGS.clientTypeRules = [{type,secs,alarmTone,reminderTone},...]. */
+var DEFAULT_CLIENT_TYPE='Normal';
+var DEFAULT_CLIENT_TYPES=['SVIP','VIP','Normal'];
+// Same alarm sounds the two general pickers offer, in one reusable list.
+// Declared here because the Settings panel is rendered while this file loads.
+var ALERT_TONE_GROUPS=[
+  {label:'Alerting',items:[['beep','🔔 Classic Beep'],['siren','🚨 Siren'],['pulse','💓 Pulse'],['alarm','⏰ Alarm Clock']]},
+  {label:'Gentle (not alarming)',items:[['bell','🔕 Bell'],['ding','✨ Ding Ding'],['chime','🎐 Wind Chime'],['marimba','🎶 Marimba'],['soft','🌙 Soft Ping'],['waterdrop','💧 Water Drop']]}
+];
+function clientTypes(){
+  var raw=Array.isArray(SETTINGS.clientTypes)?SETTINGS.clientTypes:DEFAULT_CLIENT_TYPES.slice();
+  var out=[],seen={};
+  raw.forEach(function(t){
+    var name=String(t||'').trim();
+    if(!name)return;
+    var k=name.toUpperCase();
+    if(seen[k])return;
+    seen[k]=true;
+    out.push(name);
+  });
+  // The fallback type always exists — unset clients are reported as this one
+  if(!out.some(function(t){return t.toUpperCase()===DEFAULT_CLIENT_TYPE.toUpperCase();}))out.push(DEFAULT_CLIENT_TYPE);
+  SETTINGS.clientTypes=out;
+  return out;
+}
+function isDefaultClientType(t){
+  return String(t||'').trim().toUpperCase()===DEFAULT_CLIENT_TYPE.toUpperCase();
+}
+// Type of one client by name; anything unknown or unset falls back to Normal
+function clientTypeOf(name){
+  if(!name)return DEFAULT_CLIENT_TYPE;
+  var link=CLIENT_LINKS[String(name).trim().toUpperCase()];
+  var t=link&&link.clientType?String(link.clientType).trim():'';
+  if(!t)return DEFAULT_CLIENT_TYPE;
+  // A type deleted from Settings behaves like the default again
+  var known=clientTypes().filter(function(x){return x.toUpperCase()===t.toUpperCase();})[0];
+  return known||DEFAULT_CLIENT_TYPE;
+}
+function clientTypeRules(){
+  var raw=SETTINGS.clientTypeRules;
+  // Seeded with a single Normal row — more types are added from Settings
+  if(!Array.isArray(raw))raw=[{type:DEFAULT_CLIENT_TYPE,secs:0,alarmTone:'',reminderTone:''}];
+  var out=raw.map(function(r){
+    var secs=parseInt(r&&r.secs,10);
+    return {
+      type:String((r&&r.type)||'').trim(),
+      secs:secs>0?Math.min(8760*3600,secs):0, // 0 = no timer of its own, use the normal rules
+      custom:!!(r&&r.custom),                 // admin picked "Custom..." — keep that on re-render
+      alarmTone:String((r&&r.alarmTone)||''), // '' = use the general Timer / Reminder alarm
+      reminderTone:String((r&&r.reminderTone)||'')
+    };
+  });
+  SETTINGS.clientTypeRules=out;
+  return out;
+}
+function clientTypeRuleFor(type){
+  var t=String(type||'').trim().toUpperCase();
+  if(!t)return null;
+  var rules=clientTypeRules();
+  for(var i=0;i<rules.length;i++){
+    if(rules[i].type&&rules[i].type.trim().toUpperCase()===t)return rules[i];
+  }
+  return null;
+}
+// The client a record belongs to — RR / RO rows carry the name in the Subject
+function recordClientName(r){
+  if(!r)return '';
+  if(r.client)return String(r.client);
+  if(r._type==='rr')return matchClientInText(r.subject||'')||'';
+  return '';
+}
+// Which alarm sound this record should use: its client type's pick, else the general one
+function alertToneFor(r,kind){
+  var general=kind==='reminder'?(SETTINGS.reminderTone||'bell'):(SETTINGS.alarmTone||'beep');
+  var rule=clientTypeRuleFor(clientTypeOf(recordClientName(r)));
+  if(!rule)return general;
+  var tone=kind==='reminder'?rule.reminderTone:rule.alarmTone;
+  return tone||general;
+}
 function ruleTimerSecs(client,svc){
   var c=(client||'').trim().toUpperCase();
-  var target=(SETTINGS.paymentClientName||'').trim().toUpperCase();
-  if(target&&c===target){
-    var s=parseInt(SETTINGS.paymentClientTimer,10);
-    if(s>0) return s;
+  if(c){
+    var rules=clientTimerRules();
+    for(var i=0;i<rules.length;i++){
+      var name=(rules[i].name||'').trim().toUpperCase();
+      if(name&&name===c){
+        var s=parseInt(rules[i].secs,10);
+        if(s>0) return s;
+      }
+    }
   }
   var service=(svc||'').trim().toLowerCase();
   if(service==='payment'){
     var p=parseInt(SETTINGS.paymentTimer,10);
     return p>0?p:86400;
+  }
+  // Nothing client- or service-specific — fall back to this client's TYPE rule
+  if(c){
+    var typeRule=clientTypeRuleFor(clientTypeOf(c));
+    if(typeRule&&typeRule.secs>0)return typeRule.secs;
   }
   return 0;
 }
@@ -10249,15 +10443,19 @@ if(document.getElementById('default-timer').value==='custom'){
 }
 SETTINGS.paymentTimer=parseInt(SETTINGS.paymentTimer,10)>0?parseInt(SETTINGS.paymentTimer,10):86400;
 delete SETTINGS.vipPaymentTimer;
-SETTINGS.paymentClientTimer=parseInt(SETTINGS.paymentClientTimer,10)>0?parseInt(SETTINGS.paymentClientTimer,10):86400;
 if(typeof SETTINGS.paymentClientName!=='string')SETTINGS.paymentClientName='SIR GENE EMAIL';
-[['payment-timer','payment-timer-hours',SETTINGS.paymentTimer],['payment-client-timer','payment-client-timer-hours',SETTINGS.paymentClientTimer]].forEach(function(cfg){
+[['payment-timer','payment-timer-hours',SETTINGS.paymentTimer]].forEach(function(cfg){
   var sel=document.getElementById(cfg[0]),hrs=document.getElementById(cfg[1]);
   if(!sel||!hrs)return;
   if([1800,3600,7200,86400,259200,604800].indexOf(cfg[2])>-1){sel.value=String(cfg[2]);}
   else{sel.value='custom';hrs.value=Math.max(1,Math.round(cfg[2]/3600));hrs.style.display='';}
 });
-populatePaymentClientSetting();
+renderClientTimerRules();
+renderClientTypeList();
+renderClientTypeRules();
+var _longHrsEl=document.getElementById('auto-thirty-long-hours');
+if(_longHrsEl)_longHrsEl.value=autoThirtyLongHours();
+refreshAutoThirtyLabel();
 document.getElementById('auto-alert').checked=SETTINGS.autoAlert||false;
 document.getElementById('alarm-tone').value=SETTINGS.alarmTone||'beep';
 document.getElementById('reminder-alarm-tone').value=SETTINGS.reminderTone||'bell';
@@ -11188,7 +11386,7 @@ function saveEditUser(){
 function loadClientsAdmin(){
   getDocs(collection(db,'clients')).then(function(snap){
     CLIENTS=[];CLIENT_LINKS={};
-    snap.forEach(function(d){var c=d.data();CLIENTS.push(c.name);if(c.rrBy||c.priority)CLIENT_LINKS[c.name]={rrBy:c.rrBy||'',priority:c.priority||''};});
+    snap.forEach(function(d){var c=d.data();CLIENTS.push(c.name);if(c.rrBy||c.priority||c.clientType)CLIENT_LINKS[c.name]={rrBy:c.rrBy||'',priority:c.priority||'',clientType:c.clientType||''};});
     CLIENTS.sort();
     renderClientGrid();
     populateClientDropdowns();
@@ -11210,6 +11408,10 @@ function renderClientGrid(){
         +escHtml(link.rrBy||'')
         +(link.priority?((link.rrBy?' · ':'')+escHtml(link.priority)):'')
         +'</span>';
+    }
+    // Only a non-default type is worth a badge — everything else is Normal
+    if(link&&link.clientType&&!isDefaultClientType(link.clientType)){
+      badge+='<span class="client-type-info" title="Client type — decides this client’s timer and alarm sounds">'+escHtml(link.clientType)+'</span>';
     }
     return '<div class="client-tag" data-name="'+escAttr(c)+'">'+escHtml(c)+badge
       +'<button class="tag-edit" data-name="'+escAttr(c)+'" onclick="openClientLink(this)" title="Link AM / RR by + Priority to this client">Link</button>'
@@ -11306,18 +11508,253 @@ function populateClientDropdowns(){
       +CLIENTS.map(function(c){return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>';}).join('');
     if(cur) el.value=cur;
   });
-  populatePaymentClientSetting();
+  renderClientTimerRules();
 }
 
-function populatePaymentClientSetting(){
-  var el=document.getElementById('payment-client');
-  if(!el)return;
-  var saved=typeof SETTINGS.paymentClientName==='string'?SETTINGS.paymentClientName:'SIR GENE EMAIL';
+// ── Settings > Client timer rules (add / remove as many as needed) ──
+var _clientRulesRendered=false;
+function renderClientTimerRules(){
+  var wrap=document.getElementById('client-timer-rules');
+  if(!wrap)return;
+  var rules=clientTimerRules();
+  // Keep the caret where it was — the client list can refresh mid-edit
+  var focusId=document.activeElement&&document.activeElement.id&&document.activeElement.id.indexOf('ctr-')===0?document.activeElement.id:'';
   var names=CLIENTS.slice();
-  if(saved&&names.indexOf(saved)===-1)names.unshift(saved);
-  el.innerHTML='<option value="">— None (off) —</option>'
-    +names.map(function(c){return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>';}).join('');
-  el.value=saved;
+  rules.forEach(function(r){if(r.name&&names.indexOf(r.name)===-1)names.unshift(r.name);});
+  var durLabels={1800:'30 Minutes',3600:'1 Hour',7200:'2 Hours',86400:'1 Day (24 Hours)',259200:'3 Days (72 Hours)',604800:'7 Days (168 Hours)'};
+  wrap.innerHTML=rules.map(function(r,i){
+    var custom=r.custom||CLIENT_RULE_DURATIONS.indexOf(r.secs)===-1;
+    return '<div class="auto-row">'
+      +'<span class="auto-label">Client timer:</span>'
+      +'<select class="fsel" id="ctr-name-'+i+'" onchange="saveClientTimerRules()" style="max-width:230px">'
+        +'<option value="">— Select Client / Vendor —</option>'
+        +names.map(function(n){return '<option value="'+escHtml(n)+'"'+(n===r.name?' selected':'')+'>'+escHtml(n)+'</option>';}).join('')
+      +'</select>'
+      +'<span class="auto-label">uses</span>'
+      +'<select class="fsel" id="ctr-dur-'+i+'" onchange="saveClientTimerRules()">'
+        +CLIENT_RULE_DURATIONS.map(function(s){return '<option value="'+s+'"'+(!custom&&r.secs===s?' selected':'')+'>'+durLabels[s]+'</option>';}).join('')
+        +'<option value="custom"'+(custom?' selected':'')+'>Custom...</option>'
+      +'</select>'
+      +'<input class="fc" id="ctr-hrs-'+i+'" type="number" min="1" max="8760" placeholder="Hours" value="'+(custom?Math.max(1,Math.round(r.secs/3600)):'')+'" style="width:90px;'+(custom?'':'display:none')+'" oninput="saveClientTimerRules()">'
+      +'<button type="button" class="btn-icon btn-sm client-rule-del" title="Remove this rule" onclick="removeClientTimerRule('+i+')">✕</button>'
+      +'</div>';
+  }).join('');
+  _clientRulesRendered=true;
+  if(focusId){var back=document.getElementById(focusId);if(back)back.focus();}
+}
+// Read every rule row back out of the panel; null = not rendered yet, so don't touch SETTINGS
+function readClientTimerRulesFromUI(){
+  if(!_clientRulesRendered||!document.getElementById('client-timer-rules'))return null;
+  var out=[];
+  for(var i=0;;i++){
+    var nameEl=document.getElementById('ctr-name-'+i);
+    if(!nameEl)break;
+    var durEl=document.getElementById('ctr-dur-'+i),hrsEl=document.getElementById('ctr-hrs-'+i);
+    var custom=durEl&&durEl.value==='custom';
+    if(hrsEl)hrsEl.style.display=custom?'':'none';
+    var secs=custom?Math.max(1,Math.min(8760,parseInt(hrsEl&&hrsEl.value,10)||24))*3600:(parseInt(durEl&&durEl.value,10)||86400);
+    out.push({name:(nameEl.value||'').trim(),secs:secs,custom:!!custom});
+  }
+  return out;
+}
+function saveClientTimerRules(){
+  saveSettings(); // reads the rows itself, then syncs to every user
+  applyFilters();
+  // Two rules for the same client: the upper one is the one that applies
+  var seen={},dupe='';
+  clientTimerRules().forEach(function(r){
+    var k=(r.name||'').trim().toUpperCase();
+    if(!k)return;
+    if(seen[k]&&!dupe)dupe=r.name;
+    seen[k]=true;
+  });
+  if(dupe)toast(dupe+' already has a rule above — the first one wins','info');
+}
+function addClientTimerRule(){
+  var rules=clientTimerRules();
+  if(rules.length>=20){toast('That is already 20 client rules','info');return;}
+  rules.push({name:'',secs:86400});
+  SETTINGS.clientTimerRules=rules;
+  renderClientTimerRules();
+  saveSettings();
+  var el=document.getElementById('ctr-name-'+(rules.length-1));
+  if(el)el.focus();
+}
+function removeClientTimerRule(i){
+  var rules=clientTimerRules();
+  if(i<0||i>=rules.length)return;
+  var gone=rules[i].name;
+  rules.splice(i,1);
+  SETTINGS.clientTimerRules=rules;
+  renderClientTimerRules();
+  saveSettings();
+  applyFilters();
+  toast(gone?('Removed client timer rule for '+gone):'Rule removed','info');
+}
+
+// ── Settings > Client Types, and their timer / alarm rules ──
+function toneOptionsHTML(sel,defaultLabel){
+  return '<option value=""'+(!sel?' selected':'')+'>'+escHtml(defaultLabel)+'</option>'
+    +ALERT_TONE_GROUPS.map(function(g){
+      return '<optgroup label="'+escAttr(g.label)+'">'
+        +g.items.map(function(it){return '<option value="'+it[0]+'"'+(sel===it[0]?' selected':'')+'>'+escHtml(it[1])+'</option>';}).join('')
+        +'</optgroup>';
+    }).join('');
+}
+function clientCountByType(type){
+  var t=String(type||'').trim().toUpperCase();
+  if(!t||!Array.isArray(CLIENTS))return 0;
+  return CLIENTS.filter(function(c){return clientTypeOf(c).toUpperCase()===t;}).length;
+}
+// The chips in Settings > Client Types
+function renderClientTypeList(){
+  var wrap=document.getElementById('client-type-list');
+  if(!wrap)return;
+  wrap.innerHTML=clientTypes().map(function(t){
+    var n=clientCountByType(t);
+    return '<span class="ctype-chip'+(isDefaultClientType(t)?' ctype-chip-default':'')+'">'+escHtml(t)
+      +'<span class="ctype-chip-n">'+n+' client'+(n===1?'':'s')+'</span>'
+      +(isDefaultClientType(t)?'':'<button type="button" title="Remove this type" onclick="removeClientType(\''+encodeURIComponent(t)+'\')">×</button>')
+      +'</span>';
+  }).join('');
+}
+function addClientType(){
+  var inp=document.getElementById('new-client-type');
+  if(!inp)return;
+  var name=inp.value.trim();
+  if(!name){toast('Type a client type first','error');return;}
+  if(name.length>24){toast('Keep the type short (24 characters max)','error');return;}
+  var list=clientTypes();
+  if(list.some(function(t){return t.toUpperCase()===name.toUpperCase();})){toast(name+' is already a client type','info');inp.value='';return;}
+  list.push(name);
+  SETTINGS.clientTypes=list;
+  inp.value='';
+  renderClientTypeList();
+  renderClientTypeRules();
+  saveSettings();
+  toast('Client type added: '+name,'success');
+}
+function removeClientType(encoded){
+  var name=decodeURIComponent(encoded);
+  if(isDefaultClientType(name)){toast(DEFAULT_CLIENT_TYPE+' is the fallback type and stays','info');return;}
+  var used=clientCountByType(name);
+  appConfirm('Remove client type "'+name+'"?'+(used?' '+used+' client'+(used===1?'':'s')+' will go back to '+DEFAULT_CLIENT_TYPE+'.':'')+' Any timer rule for it is removed too.','Remove').then(function(ok){
+    if(!ok)return;
+    SETTINGS.clientTypes=clientTypes().filter(function(t){return t.toUpperCase()!==name.toUpperCase();});
+    SETTINGS.clientTypeRules=clientTypeRules().filter(function(r){return r.type.toUpperCase()!==name.toUpperCase();});
+    renderClientTypeList();
+    renderClientTypeRules();
+    saveSettings();
+    applyFilters();
+    toast('Removed client type: '+name,'info');
+  });
+}
+// One row per type rule: type → its own timer + its own two alarm sounds
+var _clientTypeRulesRendered=false;
+function renderClientTypeRules(){
+  var wrap=document.getElementById('client-type-rules');
+  if(!wrap)return;
+  var rules=clientTypeRules();
+  var focusId=document.activeElement&&document.activeElement.id&&document.activeElement.id.indexOf('ctyp-')===0?document.activeElement.id:'';
+  var types=clientTypes();
+  var durLabels={1800:'30 Minutes',3600:'1 Hour',7200:'2 Hours',86400:'1 Day (24 Hours)',259200:'3 Days (72 Hours)',604800:'7 Days (168 Hours)'};
+  wrap.innerHTML=rules.map(function(r,i){
+    var custom=r.secs>0&&(r.custom||CLIENT_RULE_DURATIONS.indexOf(r.secs)===-1);
+    var names=types.slice();
+    if(r.type&&!names.some(function(t){return t.toUpperCase()===r.type.toUpperCase();}))names.unshift(r.type);
+    var n=clientCountByType(r.type);
+    return '<div class="ctyp-card"><div class="auto-row">'
+      +'<span class="auto-label">Client type:</span>'
+      +'<select class="fsel" id="ctyp-type-'+i+'" onchange="saveClientTypeRules()" style="max-width:170px">'
+        +'<option value="">— Select type —</option>'
+        +names.map(function(t){return '<option value="'+escAttr(t)+'"'+(r.type&&t.toUpperCase()===r.type.toUpperCase()?' selected':'')+'>'+escHtml(t)+'</option>';}).join('')
+      +'</select>'
+      +(r.type?'<span class="auto-label" style="color:var(--text3)">'+n+' client'+(n===1?'':'s')+' with this type</span>':'')
+      +'<button type="button" class="btn-icon btn-sm client-rule-del ml-auto" title="Remove this rule" onclick="removeClientTypeRule('+i+')">✕</button>'
+      +'</div><div class="auto-row">'
+      // each label keeps its own control next to it when the row wraps
+      +'<span class="ctyp-grp"><span class="auto-label">timer</span>'
+      +'<select class="fsel" id="ctyp-dur-'+i+'" onchange="saveClientTypeRules()">'
+        +'<option value=""'+(r.secs>0?'':' selected')+'>— Default —</option>'
+        +CLIENT_RULE_DURATIONS.map(function(s){return '<option value="'+s+'"'+(!custom&&r.secs===s?' selected':'')+'>'+durLabels[s]+'</option>';}).join('')
+        +'<option value="custom"'+(custom?' selected':'')+'>Custom...</option>'
+      +'</select>'
+      +'<input class="fc" id="ctyp-hrs-'+i+'" type="number" min="1" max="8760" placeholder="Hours" value="'+(custom?Math.max(1,Math.round(r.secs/3600)):'')+'" style="width:88px;'+(custom?'':'display:none')+'" oninput="saveClientTypeRules()"></span>'
+      +'<span class="ctyp-grp"><span class="auto-label">timer alarm</span>'
+      +'<select class="fsel" id="ctyp-alarm-'+i+'" onchange="saveClientTypeRules()">'+toneOptionsHTML(r.alarmTone,'— Default —')+'</select>'
+      +'<button type="button" class="btn btn-secondary btn-sm" onclick="testClientTypeTone('+i+',\'timer\')">Test</button></span>'
+      +'<span class="ctyp-grp"><span class="auto-label">reminder alarm</span>'
+      +'<select class="fsel" id="ctyp-rem-'+i+'" onchange="saveClientTypeRules()">'+toneOptionsHTML(r.reminderTone,'— Default —')+'</select>'
+      +'<button type="button" class="btn btn-secondary btn-sm" onclick="testClientTypeTone('+i+',\'reminder\')">Test</button></span>'
+      +'</div></div>';
+  }).join('');
+  _clientTypeRulesRendered=true;
+  if(focusId){var back=document.getElementById(focusId);if(back)back.focus();}
+}
+// Read the rows back; null = panel not rendered yet, so leave SETTINGS alone
+function readClientTypeRulesFromUI(){
+  if(!_clientTypeRulesRendered||!document.getElementById('client-type-rules'))return null;
+  var out=[];
+  for(var i=0;;i++){
+    var typeEl=document.getElementById('ctyp-type-'+i);
+    if(!typeEl)break;
+    var durEl=document.getElementById('ctyp-dur-'+i),hrsEl=document.getElementById('ctyp-hrs-'+i);
+    var custom=durEl&&durEl.value==='custom';
+    if(hrsEl)hrsEl.style.display=custom?'':'none';
+    var secs=custom?Math.max(1,Math.min(8760,parseInt(hrsEl&&hrsEl.value,10)||24))*3600:(parseInt(durEl&&durEl.value,10)||0);
+    var alarmEl=document.getElementById('ctyp-alarm-'+i),remEl=document.getElementById('ctyp-rem-'+i);
+    out.push({
+      type:(typeEl.value||'').trim(),
+      secs:secs>0?secs:0,
+      custom:!!custom,
+      alarmTone:alarmEl?alarmEl.value:'',
+      reminderTone:remEl?remEl.value:''
+    });
+  }
+  return out;
+}
+function saveClientTypeRules(){
+  saveSettings(); // reads the rows itself, then syncs to every user
+  renderClientTypeRules(); // client counts + the "N clients" hint follow the picked type
+  applyFilters();
+  var seen={},dupe='';
+  clientTypeRules().forEach(function(r){
+    var k=(r.type||'').trim().toUpperCase();
+    if(!k)return;
+    if(seen[k]&&!dupe)dupe=r.type;
+    seen[k]=true;
+  });
+  if(dupe)toast(dupe+' already has a rule above — the first one wins','info');
+}
+function addClientTypeRule(){
+  var rules=clientTypeRules();
+  if(rules.length>=20){toast('That is already 20 client type rules','info');return;}
+  // Offer a type that has no rule yet, so a new row is usually ready to save
+  var free=clientTypes().filter(function(t){return !clientTypeRuleFor(t);})[0]||'';
+  rules.push({type:free,secs:0,alarmTone:'',reminderTone:''});
+  SETTINGS.clientTypeRules=rules;
+  renderClientTypeRules();
+  saveSettings();
+  var el=document.getElementById('ctyp-type-'+(rules.length-1));
+  if(el)el.focus();
+}
+function removeClientTypeRule(i){
+  var rules=clientTypeRules();
+  if(i<0||i>=rules.length)return;
+  var gone=rules[i].type;
+  rules.splice(i,1);
+  SETTINGS.clientTypeRules=rules;
+  renderClientTypeRules();
+  saveSettings();
+  applyFilters();
+  toast(gone?('Removed the '+gone+' rule'):'Rule removed','info');
+}
+function testClientTypeTone(i,kind){
+  var el=document.getElementById(kind==='reminder'?'ctyp-rem-'+i:'ctyp-alarm-'+i);
+  var fallback=kind==='reminder'?(SETTINGS.reminderTone||'bell'):(SETTINGS.alarmTone||'beep');
+  var tone=(el&&el.value)||fallback;
+  playAlert(tone);
+  toast((kind==='reminder'?'Reminder':'Timer')+' alarm test'+(el&&el.value?'':' (using the general sound)'),'info');
 }
 
 function addClientName(){
@@ -11399,7 +11836,7 @@ function escAttr(s){return escHtml(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;
 function getClientLink(name){
   if(!name)return null;
   var l=CLIENT_LINKS[String(name).trim().toUpperCase()];
-  return (l&&(l.rrBy||l.priority))?l:null;
+  return (l&&(l.rrBy||l.priority))?l:null; // clientType alone is not an auto-fill link
 }
 
 // Set a <select> value; if the option no longer exists (e.g. person removed
@@ -11427,6 +11864,13 @@ function openClientLink(btn){
   var link=CLIENT_LINKS[name]||{};
   if(link.rrBy)setSelectValueSafe(sel,link.rrBy);
   document.getElementById('cl-priority').value=link.priority||'';
+  var typeSel=document.getElementById('cl-type');
+  if(typeSel){
+    typeSel.innerHTML='<option value="">— '+escHtml(DEFAULT_CLIENT_TYPE)+' —</option>'
+      +clientTypes().filter(function(t){return !isDefaultClientType(t);})
+        .map(function(t){return '<option value="'+escAttr(t)+'">'+escHtml(t)+'</option>';}).join('');
+    setSelectValueSafe(typeSel,isDefaultClientType(link.clientType)?'':(link.clientType||''));
+  }
   document.getElementById('client-link-modal').classList.remove('hidden');
 }
 function closeClientLinkModal(){document.getElementById('client-link-modal').classList.add('hidden');_linkingClient=null;}
@@ -11435,11 +11879,13 @@ function saveClientLink(){
   var name=_linkingClient;
   var rrBy=document.getElementById('cl-rrby').value;
   var priority=document.getElementById('cl-priority').value;
+  var typeSel=document.getElementById('cl-type');
+  var clientType=typeSel?typeSel.value:'';
   var id=name.replace(/[^A-Z0-9]/g,'_');
-  setDoc(doc(db,'clients',id),{name:name,rrBy:rrBy,priority:priority},{merge:true}).then(function(){
-    if(rrBy||priority){
-      toast('Linked '+name+(rrBy?' → '+rrBy:'')+(priority?' ('+priority+')':''),'success');
-      writeLog('updated','Client: '+name,'Linked AM/RR by: '+(rrBy||'—')+', Priority: '+(priority||'—'));
+  setDoc(doc(db,'clients',id),{name:name,rrBy:rrBy,priority:priority,clientType:clientType},{merge:true}).then(function(){
+    if(rrBy||priority||clientType){
+      toast('Linked '+name+(rrBy?' → '+rrBy:'')+(priority?' ('+priority+')':'')+(clientType?' · '+clientType:''),'success');
+      writeLog('updated','Client: '+name,'Linked AM/RR by: '+(rrBy||'—')+', Priority: '+(priority||'—')+', Type: '+(clientType||DEFAULT_CLIENT_TYPE));
     }else{
       toast('Link removed for '+name,'info');
       writeLog('updated','Client: '+name,'Removed client link');
@@ -11471,6 +11917,20 @@ function applyClientLink(prefix){
   if(filled.length)toast('Auto-filled — '+filled.join(', '),'info');
 }
 
+// Longest linked client name that appears as a whole word inside some text
+// (RR / RO rows have no client field — the name sits in the Subject).
+function matchClientInText(text){
+  var s=String(text||'').toUpperCase();
+  if(!s)return null;
+  var best=null;
+  Object.keys(CLIENT_LINKS).forEach(function(name){
+    if(!name)return;
+    var esc=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    var re=new RegExp('(^|[^A-Z0-9])'+esc+'([^A-Z0-9]|$)');
+    if(re.test(s)&&(!best||name.length>best.length))best=name;
+  });
+  return best;
+}
 // RR / RO modal has no client dropdown — detect a linked client name inside the Subject
 var _rrAutoClient=null;
 function onRRSubjectInput(){
@@ -11478,13 +11938,7 @@ function onRRSubjectInput(){
   if(!subjEl)return;
   var subj=subjEl.value.toUpperCase();
   if(!subj){_rrAutoClient=null;return;}
-  var best=null;
-  Object.keys(CLIENT_LINKS).forEach(function(name){
-    if(!name)return;
-    var esc=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    var re=new RegExp('(^|[^A-Z0-9])'+esc+'([^A-Z0-9]|$)');
-    if(re.test(subj)&&(!best||name.length>best.length))best=name;
-  });
+  var best=matchClientInText(subj);
   if(!best){_rrAutoClient=null;return;}
   if(best===_rrAutoClient)return; // already handled this client — don't refill if user cleared it
   _rrAutoClient=best;
@@ -11507,9 +11961,10 @@ function loadClientsGlobal(){
   if(_clientsUnsub)return;
   _clientsUnsub=onSnapshot(collection(db,'clients'),function(snap){
     CLIENTS=[];CLIENT_LINKS={};
-    snap.forEach(function(d){var c=d.data();CLIENTS.push(c.name);if(c.rrBy||c.priority)CLIENT_LINKS[c.name]={rrBy:c.rrBy||'',priority:c.priority||''};});
+    snap.forEach(function(d){var c=d.data();CLIENTS.push(c.name);if(c.rrBy||c.priority||c.clientType)CLIENT_LINKS[c.name]={rrBy:c.rrBy||'',priority:c.priority||'',clientType:c.clientType||''};});
     CLIENTS.sort();
     populateClientDropdowns();
+    renderClientTypeRules(); // per-type rows show live client counts
     // Always re-render the admin grid if it's visible
     if(currentTab==='admin') renderClientGrid();
   });
@@ -13597,6 +14052,16 @@ window.addRRComment=addRRComment;
 window.renderRRModalComments=renderRRModalComments;
 window.onSvcChange=onSvcChange;
 window.applyPaymentTimerRule=applyPaymentTimerRule;
+window.saveClientTimerRules=saveClientTimerRules;
+window.addClientTimerRule=addClientTimerRule;
+window.removeClientTimerRule=removeClientTimerRule;
+window.addClientType=addClientType;
+window.removeClientType=removeClientType;
+window.saveClientTypeRules=saveClientTypeRules;
+window.addClientTypeRule=addClientTypeRule;
+window.removeClientTypeRule=removeClientTypeRule;
+window.testClientTypeTone=testClientTypeTone;
+window.onAutoThirtyHoursChange=onAutoThirtyHoursChange;
 window._doSwitchTab=_doSwitchTab;
 window.openDailyReport=openDailyReport;
 window.closeDailyReport=closeDailyReport;
